@@ -1,0 +1,80 @@
+<section class="drawer-content">
+  <header class="drawer-header">
+    <div class="identity-copy">
+      <span class="eyebrow">CE Record</span>
+      <h2>{{ view().title }}</h2>
+      <p>{{ view().provider }} · {{ view().completedDateLabel }}</p>
+      <span class="hours-chip">{{ view().hoursLabel }}</span>
+    </div>
+
+    <button
+      pButton
+      type="button"
+      icon="pi pi-times"
+      severity="secondary"
+      text
+      rounded
+      aria-label="Close CE record drawer"
+      (click)="close.emit()"
+    ></button>
+  </header>
+
+  <section class="metadata-grid">
+    @for (field of view().metadata; track field.label) {
+      <article class="meta-card">
+        <span>{{ field.label }}</span>
+        <strong>{{ field.value }}</strong>
+      </article>
+    }
+  </section>
+
+  <section class="section-card">
+    <div class="section-header">
+      <div>
+        <h3>Associated Credential</h3>
+        <p>This CE entry counts toward the credential below.</p>
+      </div>
+    </div>
+
+    <button class="credential-link" type="button" (click)="credentialSelected.emit(view().credentialId)">
+      <div>
+        <strong>{{ view().credentialName }}</strong>
+        <span>{{ view().credentialOrganization }}</span>
+      </div>
+      <i class="pi pi-arrow-right"></i>
+    </button>
+  </section>
+
+  <section class="section-card">
+    <div class="section-header section-header-stack">
+      <div>
+        <h3>Certificate</h3>
+        <p>Supporting documentation for this CE completion.</p>
+      </div>
+    </div>
+
+    @if (view().certificateUrl) {
+      <a class="certificate-link" [href]="view().certificateUrl" target="_blank" rel="noreferrer">
+        <span>{{ view().certificateLabel }}</span>
+        <i class="pi pi-external-link"></i>
+      </a>
+    } @else {
+      <div class="empty-state">
+        <strong>No certificate uploaded</strong>
+        <p>Add a file later to keep this record audit-ready.</p>
+      </div>
+    }
+  </section>
+
+  <footer class="drawer-footer">
+    @for (action of view().actions; track action.label) {
+      <button
+        pButton
+        type="button"
+        [label]="action.label"
+        [outlined]="action.variant === 'secondary'"
+        [severity]="action.variant === 'danger' ? 'danger' : action.variant === 'secondary' ? 'secondary' : 'primary'"
+      ></button>
+    }
+  </footer>
+</section>

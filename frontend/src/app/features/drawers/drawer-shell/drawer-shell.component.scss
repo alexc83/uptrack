@@ -1,0 +1,40 @@
+:host {
+  display: contents;
+}
+
+:host ::ng-deep .ut-drawer {
+  width: min(92vw, 30rem);
+  border: 1px solid color-mix(in srgb, var(--surface-border) 82%, var(--text-color) 18%);
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--ut-primary) 10%, transparent), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 97%, var(--ut-primary) 3%), #ffffff 38%);
+  box-shadow: -24px 0 60px rgb(15 23 42 / 0.16);
+}
+
+:host ::ng-deep .ut-drawer .p-drawer-content {
+  padding: 0;
+}
+
+.drawer-shell {
+  min-height: 100%;
+}
+
+:host-context(html.dark) ::ng-deep .ut-drawer {
+  border-color: #2a303b;
+  background:
+    radial-gradient(circle at top right, rgb(111 172 255 / 0.12), transparent 38%),
+    linear-gradient(180deg, #171b23, #11151c 44%);
+  box-shadow: -24px 0 60px rgb(0 0 0 / 0.32);
+}
+
+@media (max-width: 1024px) {
+  :host ::ng-deep .ut-drawer {
+    width: min(96vw, 34rem);
+  }
+}
+
+@media (max-width: 640px) {
+  :host ::ng-deep .ut-drawer {
+    width: 100vw;
+  }
+}

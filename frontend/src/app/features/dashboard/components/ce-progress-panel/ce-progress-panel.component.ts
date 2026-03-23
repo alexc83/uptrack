@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CardModule } from 'primeng/card';
 
 import { CeProgressRowView } from '../../models/dashboard.models';
@@ -12,4 +12,6 @@ import { CeProgressRowView } from '../../models/dashboard.models';
 export class CeProgressPanelComponent {
   readonly rows = input.required<CeProgressRowView[]>();
   readonly overflowCount = input(0);
+  readonly rowSelected = output<string>();
+  readonly overflowSelected = output<void>();
 }

@@ -6,12 +6,46 @@
     <app-expirations-panel
       [rows]="view.expirations"
       [overflowCount]="view.expirationsOverflowCount"
+      (rowSelected)="openCredentialDetail($event)"
+      (overflowSelected)="openCredentialList('expiring')"
     />
     <app-ce-progress-panel
       [rows]="view.progress"
       [overflowCount]="view.progressOverflowCount"
+      (rowSelected)="openCredentialDetail($event)"
+      (overflowSelected)="openCredentialList('needs-ce')"
     />
   </section>
 
   <app-recent-activity-panel [rows]="view.recentActivity" />
 </section>
+
+<app-drawer-shell [open]="isDrawerOpen()" (close)="closeDrawer()">
+  @switch (drawerType()) {
+    @case ('credential-detail') {
+      @if (selectedCredentialDrawer(); as credentialDrawer) {
+        <app-credential-detail-drawer
+          [view]="credentialDrawer"
+          (close)="closeDrawer()"
+          (ceRecordSelected)="openCeRecordDetail($event)"
+        />
+      }
+    }
+    @case ('ce-record-detail') {
+      @if (selectedCeRecordDrawer(); as ceRecordDrawer) {
+        <app-ce-record-detail-drawer
+          [view]="ceRecordDrawer"
+          (close)="closeDrawer()"
+          (credentialSelected)="openCredentialDetail($event)"
+        />
+      }
+    }
+    @case ('credential-list') {
+      <app-credential-list-drawer
+        [view]="credentialListDrawer()"
+        (close)="closeDrawer()"
+        (credentialSelected)="openCredentialDetail($event)"
+      />
+    }
+  }
+</app-drawer-shell>

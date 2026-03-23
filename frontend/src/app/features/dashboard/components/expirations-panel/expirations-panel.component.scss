@@ -65,7 +65,29 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  width: 100%;
   padding: 1.05rem 1.5rem 1rem;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-top: 1px solid #d7dfeb;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.expiration-row:hover {
+  background: #f8fbff;
+}
+
+.expiration-row:focus-visible,
+.see-more-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ut-primary) 55%, white 45%);
+  outline-offset: -2px;
+}
+
+.expiration-row {
   border-top: 1px solid #d7dfeb;
 }
 
@@ -207,6 +229,10 @@
 :host-context(html.dark) .attention-pill {
   background: #1f2c42;
   color: #8fb6f0;
+}
+
+:host-context(html.dark) .expiration-row:hover {
+  background: #1b2029;
 }
 
 :host-context(html.dark) .type-pill {

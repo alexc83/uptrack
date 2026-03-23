@@ -71,8 +71,27 @@
 }
 
 .progress-row {
+  display: block;
+  width: 100%;
   padding: 0.95rem 1.25rem 0.9rem;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
   border-top: 1px solid #d7dfeb;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.progress-row:hover {
+  background: #f8fbff;
+}
+
+.progress-row:focus-visible,
+.see-more-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ut-primary) 55%, white 45%);
+  outline-offset: -2px;
 }
 
 .progress-row-header,
@@ -200,6 +219,10 @@
 :host-context(html.dark) .section-title-copy p,
 :host-context(html.dark) .progress-row-footer {
   color: #98a1b2;
+}
+
+:host-context(html.dark) .progress-row:hover {
+  background: #1b2029;
 }
 
 :host-context(html.dark) .see-more-button {

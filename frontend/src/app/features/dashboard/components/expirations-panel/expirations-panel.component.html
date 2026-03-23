@@ -12,7 +12,12 @@
   <div class="section-body">
     @if (rows().length > 0) {
       @for (row of rows(); track row.id) {
-        <article class="expiration-row" [class.expiration-row-first]="row.highlighted">
+        <button
+          class="expiration-row"
+          [class.expiration-row-first]="row.highlighted"
+          type="button"
+          (click)="rowSelected.emit(row.id)"
+        >
           <div class="expiration-main">
             <div class="expiration-heading">
               <h3>{{ row.name }}</h3>
@@ -37,11 +42,16 @@
             </span>
             <span class="date-label">{{ row.formattedDate }}</span>
           </div>
-        </article>
+        </button>
       }
 
       @if (overflowCount() > 0) {
-        <button class="see-more-button" type="button" aria-label="See more upcoming expirations">
+        <button
+          class="see-more-button"
+          type="button"
+          aria-label="See more upcoming expirations"
+          (click)="overflowSelected.emit()"
+        >
           <span>See {{ overflowCount() }} more expirations</span>
           <i class="pi pi-arrow-right"></i>
         </button>

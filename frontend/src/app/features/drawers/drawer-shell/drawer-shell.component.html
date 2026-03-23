@@ -1,0 +1,15 @@
+<p-drawer
+  [visible]="open()"
+  [position]="'right'"
+  [modal]="true"
+  [dismissible]="true"
+  [showCloseIcon]="false"
+  [blockScroll]="true"
+  styleClass="ut-drawer"
+  (visibleChange)="!$event && close.emit()"
+  (onHide)="close.emit()"
+>
+  <div class="drawer-shell">
+    <ng-content />
+  </div>
+</p-drawer>

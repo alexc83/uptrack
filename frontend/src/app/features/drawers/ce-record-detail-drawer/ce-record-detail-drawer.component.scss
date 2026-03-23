@@ -1,0 +1,185 @@
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.eyebrow {
+  color: #2b68b0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.identity-copy h2 {
+  margin: 0.45rem 0 0;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.identity-copy p {
+  margin: 0.4rem 0 0;
+  color: #75839a;
+}
+
+.hours-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.85rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.8rem;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #2b68b0;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.meta-card,
+.section-card {
+  border: 1px solid #d6deea;
+  border-radius: 1.15rem;
+  background: rgb(255 255 255 / 0.72);
+}
+
+.meta-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.95rem 1rem;
+}
+
+.meta-card span {
+  color: #75839a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.meta-card strong {
+  font-size: 0.96rem;
+  line-height: 1.35;
+}
+
+.section-card {
+  padding: 1rem;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.section-header p {
+  margin: 0.35rem 0 0;
+  color: #75839a;
+  font-size: 0.88rem;
+}
+
+.credential-link,
+.certificate-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid #d6deea;
+  border-radius: 1rem;
+  background: #fbfdff;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+
+.credential-link {
+  cursor: pointer;
+}
+
+.credential-link strong,
+.certificate-link span {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.credential-link span {
+  display: block;
+  margin-top: 0.35rem;
+  color: #75839a;
+  font-size: 0.84rem;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  color: #75839a;
+}
+
+.empty-state strong {
+  color: var(--text-color);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.drawer-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+:host-context(html.dark) .eyebrow,
+:host-context(html.dark) .hours-chip {
+  color: #9fc2f7;
+}
+
+:host-context(html.dark) .hours-chip {
+  background: #1d3150;
+}
+
+:host-context(html.dark) .identity-copy p,
+:host-context(html.dark) .meta-card span,
+:host-context(html.dark) .section-header p,
+:host-context(html.dark) .credential-link span,
+:host-context(html.dark) .empty-state {
+  color: #98a1b2;
+}
+
+:host-context(html.dark) .meta-card,
+:host-context(html.dark) .section-card,
+:host-context(html.dark) .credential-link,
+:host-context(html.dark) .certificate-link {
+  border-color: #2d3440;
+  background: rgb(21 26 34 / 0.85);
+}
+
+@media (max-width: 640px) {
+  .drawer-content {
+    padding: 1rem;
+  }
+
+  .metadata-grid {
+    grid-template-columns: 1fr;
+  }
+}

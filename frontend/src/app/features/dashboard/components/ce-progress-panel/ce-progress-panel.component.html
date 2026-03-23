@@ -15,7 +15,7 @@
   <div class="section-body">
     @if (rows().length > 0) {
       @for (row of rows(); track row.id) {
-        <article class="progress-row">
+        <button class="progress-row" type="button" (click)="rowSelected.emit(row.id)">
           <div class="progress-row-header">
             <h3>{{ row.name }}</h3>
             <span class="progress-percent" [class]="'progress-percent progress-percent-' + row.tone">
@@ -33,11 +33,16 @@
             <span>{{ row.dueDateLabel }}</span>
             <span>{{ row.hoursLabel }}</span>
           </div>
-        </article>
+        </button>
       }
 
       @if (overflowCount() > 0) {
-        <button class="see-more-button" type="button" aria-label="See more pending CE items">
+        <button
+          class="see-more-button"
+          type="button"
+          aria-label="See more pending CE items"
+          (click)="overflowSelected.emit()"
+        >
           <span>See {{ overflowCount() }} more pending CE items</span>
           <i class="pi pi-arrow-right"></i>
         </button>
