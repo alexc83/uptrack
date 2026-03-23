@@ -1,0 +1,56 @@
+<p-card styleClass="dashboard-card section-card">
+  <ng-template pTemplate="header">
+    <div class="section-header">
+      <div class="section-title">
+        <i class="pi pi-exclamation-triangle section-title-expiring"></i>
+        <h2>Upcoming Expirations</h2>
+      </div>
+      <span class="section-meta">Next 90 days</span>
+    </div>
+  </ng-template>
+
+  <div class="section-body">
+    @if (rows().length > 0) {
+      @for (row of rows(); track row.id) {
+        <article class="expiration-row" [class.expiration-row-first]="row.highlighted">
+          <div class="expiration-main">
+            <div class="expiration-heading">
+              <h3>{{ row.name }}</h3>
+              <span class="type-pill">
+                <i class="pi pi-shield"></i>
+                {{ row.typeLabel }}
+              </span>
+            </div>
+            <p>{{ row.organization }}</p>
+            @if (row.ceAttentionLabel) {
+              <span class="attention-pill">
+                <i class="pi pi-bookmark"></i>
+                {{ row.ceAttentionLabel }}
+              </span>
+            }
+          </div>
+
+          <div class="expiration-side">
+            <span class="status-pill" [class]="'status-pill status-pill-' + row.badgeTone">
+              <i [class]="row.badgeTone === 'expired' ? 'pi pi-times-circle' : 'pi pi-clock'"></i>
+              {{ row.badgeLabel }}
+            </span>
+            <span class="date-label">{{ row.formattedDate }}</span>
+          </div>
+        </article>
+      }
+
+      @if (overflowCount() > 0) {
+        <button class="see-more-button" type="button" aria-label="See more upcoming expirations">
+          <span>See {{ overflowCount() }} more expirations</span>
+          <i class="pi pi-arrow-right"></i>
+        </button>
+      }
+    } @else {
+      <div class="empty-state">
+        <strong>No upcoming expirations</strong>
+        <p>Nothing is due in the next 90 days.</p>
+      </div>
+    }
+  </div>
+</p-card>

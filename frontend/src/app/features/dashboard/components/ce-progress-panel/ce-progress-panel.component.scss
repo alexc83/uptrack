@@ -1,0 +1,234 @@
+:host {
+  display: block;
+}
+
+:host ::ng-deep .dashboard-card.p-card {
+  border: 1px solid color-mix(in srgb, var(--surface-border) 86%, var(--text-color) 14%);
+  border-radius: 1.5rem;
+  background: #fff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+:host ::ng-deep .dashboard-card .p-card-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--surface-border) 84%, transparent);
+}
+
+:host ::ng-deep .dashboard-card .p-card-body,
+:host ::ng-deep .dashboard-card .p-card-content {
+  padding: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 4.9rem;
+  padding: 1rem 1.5rem 0.95rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-title i {
+  color: var(--ut-primary);
+  font-size: 1.35rem;
+}
+
+.section-title-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.section-title-copy h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.section-title-copy p {
+  margin: 0;
+  color: #7a889d;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.section-meta {
+  color: #7a889d;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.progress-row {
+  padding: 0.95rem 1.25rem 0.9rem;
+  border-top: 1px solid #d7dfeb;
+}
+
+.progress-row-header,
+.progress-row-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.progress-row h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.progress-percent {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.progress-percent-primary {
+  color: #2b68b0;
+}
+
+.progress-percent-active {
+  color: #2f6412;
+}
+
+.progress-percent-expiring {
+  color: #915919;
+}
+
+.progress-percent-expired {
+  color: #a13030;
+}
+
+.progress-track {
+  width: 100%;
+  height: 0.7rem;
+  margin-top: 0.85rem;
+  background: #e8edf3;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.progress-fill-primary {
+  background: #2b68b0;
+}
+
+.progress-fill-active {
+  background: #2f6412;
+}
+
+.progress-fill-expiring {
+  background: #915919;
+}
+
+.progress-fill-expired {
+  background: #a13030;
+}
+
+.progress-row-footer {
+  justify-content: space-between;
+  margin-top: 0.7rem;
+  color: #7a889d;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.see-more-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% - 2rem);
+  margin: 0.9rem 1rem 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed #cad5e3;
+  border-radius: 1rem;
+  background: #fbfcfe;
+  color: #2b68b0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 14rem;
+  padding: 1.25rem 1.5rem;
+  color: #7a889d;
+  text-align: center;
+}
+
+.empty-state strong {
+  color: var(--text-color);
+  font-size: 1rem;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+:host-context(html.dark) ::ng-deep .dashboard-card.p-card {
+  background: #171a21;
+  border-color: #2a303b;
+}
+
+:host-context(html.dark) .dashboard-card .p-card-header,
+:host-context(html.dark) .progress-row {
+  border-color: #2a303b;
+}
+
+:host-context(html.dark) .section-meta,
+:host-context(html.dark) .section-title-copy p,
+:host-context(html.dark) .progress-row-footer {
+  color: #98a1b2;
+}
+
+:host-context(html.dark) .see-more-button {
+  border-color: #344054;
+  background: #1a1e27;
+  color: #8fb6f0;
+}
+
+:host-context(html.dark) .empty-state {
+  color: #98a1b2;
+}
+
+:host-context(html.dark) .progress-track {
+  background: #2a2f39;
+}
+
+@media (max-width: 768px) {
+  .section-header {
+    min-height: auto;
+    padding: 0.95rem 1rem 0.9rem;
+  }
+
+  .progress-row {
+    padding: 0.95rem 1rem;
+  }
+
+  .progress-row-header,
+  .progress-row-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

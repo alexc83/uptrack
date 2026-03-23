@@ -1,0 +1,17 @@
+<section class="dashboard-page">
+  <app-dashboard-header [header]="view.header" />
+  <app-stats-cards [cards]="view.stats" />
+
+  <section class="dashboard-grid">
+    <app-expirations-panel
+      [rows]="view.expirations"
+      [overflowCount]="view.expirationsOverflowCount"
+    />
+    <app-ce-progress-panel
+      [rows]="view.progress"
+      [overflowCount]="view.progressOverflowCount"
+    />
+  </section>
+
+  <app-recent-activity-panel [rows]="view.recentActivity" />
+</section>

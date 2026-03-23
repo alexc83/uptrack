@@ -1,0 +1,133 @@
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+:host ::ng-deep .dashboard-card.p-card {
+  border: 1px solid color-mix(in srgb, var(--surface-border) 86%, var(--text-color) 14%);
+  border-radius: 1.5rem;
+  background: #fff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+:host ::ng-deep .dashboard-card .p-card-body,
+:host ::ng-deep .dashboard-card .p-card-content {
+  padding: 0;
+}
+
+.stat-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 8.4rem;
+  padding: 1.2rem 1.45rem 1.1rem;
+}
+
+.stat-copy p {
+  margin: 0;
+  color: #7a889d;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.stat-copy strong {
+  display: block;
+  margin-top: 0.55rem;
+  color: var(--text-color);
+  font-size: 2.35rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1.15rem;
+  font-size: 1.4rem;
+}
+
+.stat-icon-primary {
+  background: #edf3fb;
+  color: #2f68b0;
+}
+
+.stat-icon-active {
+  background: #e7f3d9;
+  color: #326413;
+}
+
+.stat-icon-expiring {
+  background: #fff0d7;
+  color: #8e5613;
+}
+
+.stat-icon-expired {
+  background: #fde8e8;
+  color: #a13030;
+}
+
+:host-context(html.dark) ::ng-deep .dashboard-card.p-card {
+  background: #171a21;
+  border-color: #2a303b;
+}
+
+:host-context(html.dark) .stat-copy p {
+  color: #98a1b2;
+}
+
+:host-context(html.dark) .stat-icon-primary {
+  background: #1f2c42;
+  color: #6a9ae4;
+}
+
+:host-context(html.dark) .stat-icon-active {
+  background: #24351d;
+  color: #b9d88f;
+}
+
+:host-context(html.dark) .stat-icon-expiring {
+  background: #352814;
+  color: #e7c072;
+}
+
+:host-context(html.dark) .stat-icon-expired {
+  background: #341c1c;
+  color: #ecb0b0;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card-body {
+    min-height: auto;
+    padding: 1.05rem 1.1rem;
+  }
+
+  .stat-copy p {
+    font-size: 0.94rem;
+  }
+
+  .stat-copy strong {
+    font-size: 2.15rem;
+  }
+
+  .stat-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    font-size: 1.2rem;
+  }
+}

@@ -81,10 +81,11 @@
 }
 
 .brand-name {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 1.52rem;
+  font-weight: 700;
   color: var(--text-color);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
 }
 
 .header-actions {
@@ -178,7 +179,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 1.15rem 1rem 1.25rem;
-  border-top: 1px solid color-mix(in srgb, var(--surface-border) 75%, var(--text-color) 25%);
+  border-top: 1px solid #cfd7e3;
+  box-shadow: inset 0 1px 0 #f7f9fc;
   flex-shrink: 0;
   min-height: 84px;
 }
@@ -199,6 +201,11 @@
 .sidebar.sidebar-collapsed .user-info {
   justify-content: center;
   flex: 0 0 auto;
+}
+
+:host-context(html.dark) .sidebar-footer {
+  border-top-color: #2f3642;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
 }
 
 :host ::ng-deep .user-avatar {

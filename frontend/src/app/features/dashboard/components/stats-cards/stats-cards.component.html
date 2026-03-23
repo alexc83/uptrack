@@ -1,0 +1,15 @@
+<section class="stats-grid">
+  @for (card of cards(); track card.title) {
+    <p-card styleClass="dashboard-card stat-card">
+      <div class="stat-card-body">
+        <div class="stat-copy">
+          <p>{{ card.title }}</p>
+          <strong>{{ card.value }}</strong>
+        </div>
+        <span class="stat-icon" [class]="'stat-icon stat-icon-' + card.tone">
+          <i [class]="card.icon"></i>
+        </span>
+      </div>
+    </p-card>
+  }
+</section>

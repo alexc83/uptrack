@@ -1,0 +1,134 @@
+:host ::ng-deep .dashboard-card.p-card {
+  border: 1px solid color-mix(in srgb, var(--surface-border) 86%, var(--text-color) 14%);
+  border-radius: 1.5rem;
+  background: #fff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+:host ::ng-deep .dashboard-card .p-card-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--surface-border) 84%, transparent);
+}
+
+:host ::ng-deep .dashboard-card .p-card-body,
+:host ::ng-deep .dashboard-card .p-card-content {
+  padding: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 4.9rem;
+  padding: 1rem 1.5rem 0.95rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-title i {
+  color: var(--ut-primary);
+  font-size: 1.35rem;
+}
+
+.section-title h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.section-body {
+  padding: 0;
+}
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.05rem 1.5rem 1rem;
+  border-top: 1px solid #d7dfeb;
+}
+
+.activity-left {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  min-width: 0;
+}
+
+.activity-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 1rem;
+  background: #f2f5f9;
+  color: #708099;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.activity-copy {
+  min-width: 0;
+}
+
+.activity-copy h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.activity-copy p {
+  margin: 0.5rem 0 0;
+  color: #7a889d;
+  font-size: 0.92rem;
+}
+
+.activity-time {
+  color: #7a889d;
+  font-size: 0.92rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+:host-context(html.dark) ::ng-deep .dashboard-card.p-card {
+  background: #171a21;
+  border-color: #2a303b;
+}
+
+:host-context(html.dark) .dashboard-card .p-card-header,
+:host-context(html.dark) .activity-row {
+  border-color: #2a303b;
+}
+
+:host-context(html.dark) .activity-copy p,
+:host-context(html.dark) .activity-time {
+  color: #98a1b2;
+}
+
+:host-context(html.dark) .activity-icon {
+  background: #222733;
+  color: #98a1b2;
+}
+
+@media (max-width: 768px) {
+  .section-header {
+    min-height: auto;
+    padding: 0.95rem 1rem 0.9rem;
+  }
+
+  .activity-row {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.95rem 1rem;
+  }
+
+  .activity-left {
+    width: 100%;
+  }
+}
