@@ -1,7 +1,10 @@
 package com.ccruce.backend.controller;
 
 import com.ccruce.backend.dto.request.CredentialRequestDto;
+import com.ccruce.backend.dto.response.CERecordResponseDto;
 import com.ccruce.backend.dto.response.CredentialResponseDto;
+import com.ccruce.backend.enums.CredentialStatus;
+import com.ccruce.backend.enums.CredentialType;
 import com.ccruce.backend.service.CredentialService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -36,13 +40,23 @@ public class CredentialController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CredentialResponseDto>> getAllCredentials() {
-        return ResponseEntity.ok(credentialService.getAllCredentials());
+    public ResponseEntity<List<CredentialResponseDto>> getAllCredentials(
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) CredentialStatus status,
+            @RequestParam(required = false) CredentialType type,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(credentialService.getAllCredentials(userId, status, type, search));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CredentialResponseDto> getCredentialById(@PathVariable UUID id) {
         return ResponseEntity.ok(credentialService.getCredentialById(id));
+    }
+
+    @GetMapping("/{id}/ce-records")
+    public ResponseEntity<List<CERecordResponseDto>> getCredentialCERecords(@PathVariable UUID id) {
+        return ResponseEntity.ok(credentialService.getCredentialCERecords(id));
     }
 
     @PutMapping("/{id}")

@@ -19,3 +19,4 @@ Idle
 - **2026-03-23** — Completed User CRUD with backend DTOs, service-layer mapping and validation, repository-backed email uniqueness checks, REST controller endpoints under `/api/users`, and missing-user handling aligned with global exceptions.
 - **2026-03-23** — Completed Credential CRUD with credential request/response DTOs, derived status calculation in the service layer, `/api/credentials` REST endpoints, required user validation, and integration coverage for CRUD and status behavior.
 - **2026-03-23** — Completed CE Record CRUD with dedicated request/response DTOs, `/api/ce-records` REST endpoints, credential and user ownership validation, and integration coverage for CRUD plus missing-resource edge cases.
+- **2026-03-23** — Completed Relationship & Query Endpoints with aggregated credential detail responses, `/api/credentials/{id}/ce-records`, service-layer CE hour/progress calculations, and optional credential filters for user, status, type, and search.
