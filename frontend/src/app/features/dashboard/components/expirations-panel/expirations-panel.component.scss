@@ -1,0 +1,256 @@
+:host {
+  display: block;
+}
+
+:host ::ng-deep .dashboard-card.p-card {
+  border: 1px solid color-mix(in srgb, var(--surface-border) 86%, var(--text-color) 14%);
+  border-radius: 1.5rem;
+  background: #fff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+:host ::ng-deep .dashboard-card .p-card-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--surface-border) 84%, transparent);
+}
+
+:host ::ng-deep .dashboard-card .p-card-body,
+:host ::ng-deep .dashboard-card .p-card-content {
+  padding: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 4.9rem;
+  padding: 1rem 1.5rem 0.95rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-title i {
+  font-size: 1.35rem;
+}
+
+.section-title-expiring {
+  color: #8e5613;
+}
+
+.section-title h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.section-meta {
+  color: #7a889d;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.expiration-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.05rem 1.5rem 1rem;
+  border-top: 1px solid #d7dfeb;
+}
+
+.expiration-row-first {
+  border-left: 3px solid #955a17;
+  padding-left: calc(1.5rem - 3px);
+}
+
+.expiration-main {
+  min-width: 0;
+}
+
+.expiration-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.expiration-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.expiration-main p {
+  margin: 0.5rem 0 0;
+  color: #7a889d;
+  font-size: 0.92rem;
+}
+
+.attention-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  margin-top: 0.7rem;
+  min-height: 1.9rem;
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #2b68b0;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.type-pill,
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  min-height: 2.15rem;
+  padding: 0.2rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.type-pill {
+  background: #eef3f9;
+  color: #7a889d;
+}
+
+.expiration-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.status-pill-expiring {
+  background: #fff0d7;
+  color: #915919;
+}
+
+.status-pill-expired {
+  background: #fde6e6;
+  color: #a13030;
+}
+
+.date-label {
+  color: #7a889d;
+  font-size: 0.92rem;
+}
+
+.see-more-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% - 2rem);
+  margin: 0.9rem 1rem 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed #cad5e3;
+  border-radius: 1rem;
+  background: #fbfcfe;
+  color: #2b68b0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 14rem;
+  padding: 1.25rem 1.5rem;
+  color: #7a889d;
+  text-align: center;
+}
+
+.empty-state strong {
+  color: var(--text-color);
+  font-size: 1rem;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+:host-context(html.dark) ::ng-deep .dashboard-card.p-card {
+  background: #171a21;
+  border-color: #2a303b;
+}
+
+:host-context(html.dark) .dashboard-card .p-card-header,
+:host-context(html.dark) .expiration-row {
+  border-color: #2a303b;
+}
+
+:host-context(html.dark) .section-meta,
+:host-context(html.dark) .expiration-main p,
+:host-context(html.dark) .date-label {
+  color: #98a1b2;
+}
+
+:host-context(html.dark) .attention-pill {
+  background: #1f2c42;
+  color: #8fb6f0;
+}
+
+:host-context(html.dark) .type-pill {
+  background: #222733;
+  color: #98a1b2;
+}
+
+:host-context(html.dark) .status-pill-expiring {
+  background: #352814;
+  color: #e7c072;
+}
+
+:host-context(html.dark) .status-pill-expired {
+  background: #341c1c;
+  color: #ecb0b0;
+}
+
+:host-context(html.dark) .see-more-button {
+  border-color: #344054;
+  background: #1a1e27;
+  color: #8fb6f0;
+}
+
+:host-context(html.dark) .empty-state {
+  color: #98a1b2;
+}
+
+@media (max-width: 768px) {
+  .section-header {
+    min-height: auto;
+    padding: 0.95rem 1rem 0.9rem;
+  }
+
+  .expiration-row {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.95rem 1rem;
+  }
+
+  .expiration-row-first {
+    padding-left: calc(1rem - 3px);
+  }
+
+  .expiration-side {
+    align-items: flex-start;
+  }
+}

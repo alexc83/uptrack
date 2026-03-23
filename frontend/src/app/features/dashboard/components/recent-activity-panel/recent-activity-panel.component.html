@@ -1,0 +1,27 @@
+<p-card styleClass="dashboard-card section-card activity-card">
+  <ng-template pTemplate="header">
+    <div class="section-header">
+      <div class="section-title">
+        <i class="pi pi-file"></i>
+        <h2>Recent Activity</h2>
+      </div>
+    </div>
+  </ng-template>
+
+  <div class="section-body">
+    @for (row of rows(); track row.id) {
+      <article class="activity-row">
+        <div class="activity-left">
+          <span class="activity-icon">
+            <i [class]="row.icon"></i>
+          </span>
+          <div class="activity-copy">
+            <h3>{{ row.title }}</h3>
+            <p>{{ row.subtitle }}</p>
+          </div>
+        </div>
+        <span class="activity-time">{{ row.relativeTime }}</span>
+      </article>
+    }
+  </div>
+</p-card>

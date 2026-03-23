@@ -1,0 +1,52 @@
+<p-card styleClass="dashboard-card section-card">
+  <ng-template pTemplate="header">
+    <div class="section-header">
+      <div class="section-title">
+        <i class="pi pi-book section-title-attention"></i>
+        <div class="section-title-copy">
+          <h2>CEs Still Needed</h2>
+          <p>Handle these first</p>
+        </div>
+      </div>
+      <span class="section-meta">{{ rows().length }} items</span>
+    </div>
+  </ng-template>
+
+  <div class="section-body">
+    @if (rows().length > 0) {
+      @for (row of rows(); track row.id) {
+        <article class="progress-row">
+          <div class="progress-row-header">
+            <h3>{{ row.name }}</h3>
+            <span class="progress-percent" [class]="'progress-percent progress-percent-' + row.tone">
+              {{ row.percentLabel }}
+            </span>
+          </div>
+          <div class="progress-track">
+            <span
+              class="progress-fill"
+              [class]="'progress-fill progress-fill-' + row.tone"
+              [style.width.%]="row.percent"
+            ></span>
+          </div>
+          <div class="progress-row-footer">
+            <span>{{ row.dueDateLabel }}</span>
+            <span>{{ row.hoursLabel }}</span>
+          </div>
+        </article>
+      }
+
+      @if (overflowCount() > 0) {
+        <button class="see-more-button" type="button" aria-label="See more pending CE items">
+          <span>See {{ overflowCount() }} more pending CE items</span>
+          <i class="pi pi-arrow-right"></i>
+        </button>
+      }
+    } @else {
+      <div class="empty-state">
+        <strong>No pending CE items</strong>
+        <p>All required CE work is currently up to date.</p>
+      </div>
+    }
+  </div>
+</p-card>
