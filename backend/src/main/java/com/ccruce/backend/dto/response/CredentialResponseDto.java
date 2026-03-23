@@ -5,6 +5,7 @@ import com.ccruce.backend.enums.CredentialType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public record CredentialResponseDto(
@@ -15,6 +16,9 @@ public record CredentialResponseDto(
         LocalDate expirationDate,
         Integer renewalCycleMonths,
         BigDecimal requiredCEHours,
-        CredentialStatus status
+        CredentialStatus status,
+        BigDecimal ceHoursEarned,
+        BigDecimal ceProgress,
+        List<CERecordResponseDto> ceRecords
 ) {
 }
