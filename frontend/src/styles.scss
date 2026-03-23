@@ -1,1 +1,69 @@
-/* You can add global styles to this file, and also import other style files */
+@layer theme, base, primeng;
+
+// ─── PrimeIcons ───────────────────────────────────────────────────────────────
+@import 'primeicons/primeicons.css';
+
+// ─── Base reset ───────────────────────────────────────────────────────────────
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ─── UpTrack design tokens ────────────────────────────────────────────────────
+// Light mode (default)
+:root {
+  --ut-primary: #185fa5;
+  --ut-primary-dark: #134d87;
+  --ut-primary-subtle: #e8f1fb;
+
+  // Layout surfaces — distinct sidebar vs main
+  --ut-sidebar-bg: #f8f9fa;
+  --ut-main-bg: #eef0f3;
+
+  // Status — Active
+  --ut-status-active-bg: #eaf3de;
+  --ut-status-active-text: #27500a;
+
+  // Status — Expiring Soon
+  --ut-status-expiring-bg: #faeeda;
+  --ut-status-expiring-text: #633806;
+
+  // Status — Expired
+  --ut-status-expired-bg: #fcebeb;
+  --ut-status-expired-text: #791f1f;
+}
+
+// Dark mode
+html.dark {
+  --ut-primary: #378add;
+  --ut-primary-dark: #5499e3;
+  --ut-primary-subtle: #172233;
+
+  // Layout surfaces
+  --ut-sidebar-bg: #1a1a1a;
+  --ut-main-bg: #111111;
+
+  // Status — Active
+  --ut-status-active-bg: #1e2d1a;
+  --ut-status-active-text: #c0dd97;
+
+  // Status — Expiring Soon
+  --ut-status-expiring-bg: #2d2010;
+  --ut-status-expiring-text: #fac775;
+
+  // Status — Expired
+  --ut-status-expired-bg: #2d1515;
+  --ut-status-expired-text: #f7c1c1;
+}

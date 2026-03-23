@@ -1,18 +1,18 @@
 # Current Feature
 
-<!-- Feature name and short description -->
+None
 
 ## Status
 
-<!-- Not Started | In Progress | Completed -->
+Finished
 
 ## Goals
 
-<!-- Goals and Requirements -->
+- No active feature.
 
 ## Notes
 
-<!-- Any extra notes -->
+- Dashboard UI Phase 1 is complete and recorded in history below.
 
 ## History
 
@@ -20,3 +20,4 @@
 
 - **2026-03-23** — Bootstrapped Angular 21 frontend with standalone components and PrimeNG UI library.
 - **2026-03-23** — Bootstrapped Spring Boot 3.5 backend with Java 21, Spring Data JPA, and Spring Security.
+- **2026-03-23** — Completed Dashboard UI Phase 1 with a persistent shell layout, themed sidebar, dashboard/credentials/CE routes, profile footer, desktop collapse behavior, and responsive mobile navigation.

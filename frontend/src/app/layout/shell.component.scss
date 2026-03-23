@@ -1,0 +1,317 @@
+.app-shell {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: var(--surface-ground);
+  position: relative;
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  background: color-mix(in srgb, #020617 42%, transparent);
+  z-index: 19;
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 272px;
+  min-width: 272px;
+  height: 100%;
+  background-color: var(--ut-sidebar-bg);
+  border-right: 1px solid var(--surface-border);
+  padding: 0;
+  z-index: 10;
+  transition: width 0.2s ease, min-width 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar.sidebar-collapsed {
+  width: 88px;
+  min-width: 88px;
+}
+
+// Header
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.15rem 1.125rem 1.1rem 1.375rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--surface-border) 75%, var(--text-color) 25%);
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.sidebar.sidebar-collapsed .sidebar-header {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding: 1rem 0.75rem 1.1rem;
+}
+
+.sidebar.sidebar-collapsed .sidebar-brand {
+  justify-content: center;
+  width: 100%;
+}
+
+.brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  aspect-ratio: 1;
+  background-color: var(--ut-primary);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-color);
+  letter-spacing: -0.01em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.sidebar.sidebar-collapsed .header-actions {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.theme-toggle,
+.collapse-toggle,
+.mobile-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background-color: var(--surface-hover);
+    color: var(--text-color);
+  }
+}
+
+// Nav
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1.2rem 0.9rem 1rem;
+  flex: 1;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  color: var(--text-color-secondary);
+  text-decoration: none;
+  font-size: 0.98rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+
+  i {
+    font-size: 1rem;
+    width: 18px;
+    text-align: center;
+  }
+
+  &:hover {
+    background-color: var(--surface-hover);
+    color: var(--text-color);
+  }
+
+  &.active {
+    background-color: var(--ut-primary-subtle);
+    color: var(--ut-primary);
+    font-weight: 600;
+  }
+}
+
+.sidebar.sidebar-collapsed .sidebar-nav {
+  align-items: center;
+  padding-inline: 0.6rem;
+}
+
+.sidebar.sidebar-collapsed .nav-link {
+  justify-content: center;
+  width: 100%;
+  padding-inline: 0.75rem;
+}
+
+// Footer
+
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.15rem 1rem 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--surface-border) 75%, var(--text-color) 25%);
+  flex-shrink: 0;
+  min-height: 84px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar.sidebar-collapsed .sidebar-footer {
+  justify-content: center;
+  padding-inline: 0.75rem;
+}
+
+.sidebar.sidebar-collapsed .user-info {
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+:host ::ng-deep .user-avatar {
+  width: 42px;
+  height: 42px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background-color: var(--ut-primary);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background-color: var(--surface-hover);
+    color: var(--text-color);
+  }
+}
+
+// ─── Main content ─────────────────────────────────────────────────────────────
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background-color: var(--ut-main-bg);
+}
+
+.main-toolbar {
+  display: none;
+  padding: 1rem 1rem 0;
+}
+
+.mobile-menu-btn {
+  width: 40px;
+  height: 40px;
+  background: var(--ut-sidebar-bg);
+  border: 1px solid var(--surface-border);
+  color: var(--text-color);
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(300px, calc(100vw - 2rem));
+    min-width: min(300px, calc(100vw - 2rem));
+    height: 100dvh;
+    border-right: 1px solid var(--surface-border);
+    border-bottom: none;
+    box-shadow: 0 20px 40px color-mix(in srgb, #020617 18%, transparent);
+    transform: translateX(calc(-100% - 1rem));
+    z-index: 20;
+  }
+
+  .sidebar.sidebar-mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-nav {
+    padding-top: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .sidebar-footer {
+    padding-top: 1rem;
+    min-height: 76px;
+  }
+
+  .main-toolbar {
+    display: flex;
+  }
+}
