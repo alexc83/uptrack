@@ -1,0 +1,123 @@
+<div class="app-shell">
+  @if (isMobile() && mobileSidebarOpen()) {
+    <button
+      class="sidebar-backdrop"
+      type="button"
+      (click)="closeMobileSidebar()"
+      aria-label="Close navigation"
+    ></button>
+  }
+
+  <!-- Sidebar -->
+  <aside
+    class="sidebar"
+    [class.sidebar-collapsed]="!isMobile() && isDesktopCollapsed()"
+    [class.sidebar-mobile]="isMobile()"
+    [class.sidebar-mobile-open]="isMobile() && mobileSidebarOpen()"
+  >
+    <!-- Header -->
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <span class="brand-icon">
+          <i class="pi pi-shield"></i>
+        </span>
+        @if (!isSidebarCollapsed()) {
+          <span class="brand-name">UpTrack</span>
+        }
+      </div>
+      <div class="header-actions">
+        <button
+          class="theme-toggle"
+          [pTooltip]="themeLabel()"
+          tooltipPosition="right"
+          (click)="toggleTheme()"
+          aria-label="Toggle theme"
+        >
+          <i [class]="themeIcon()"></i>
+        </button>
+        <button
+          class="collapse-toggle"
+          [pTooltip]="collapseLabel()"
+          tooltipPosition="right"
+          (click)="toggleSidebar()"
+          [attr.aria-label]="collapseLabel()"
+        >
+          <i [class]="collapseIcon()"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Nav links -->
+    <nav class="sidebar-nav">
+      <a
+        class="nav-link"
+        routerLink="/dashboard"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="handleNavClick()"
+      >
+        <i class="pi pi-objects-column"></i>
+        @if (!isSidebarCollapsed()) {
+          <span>Dashboard</span>
+        }
+      </a>
+      <a
+        class="nav-link"
+        routerLink="/credentials"
+        routerLinkActive="active"
+        (click)="handleNavClick()"
+      >
+        <i class="pi pi-id-card"></i>
+        @if (!isSidebarCollapsed()) {
+          <span>Credentials</span>
+        }
+      </a>
+      <a
+        class="nav-link"
+        routerLink="/ce-records"
+        routerLinkActive="active"
+        (click)="handleNavClick()"
+      >
+        <i class="pi pi-book"></i>
+        @if (!isSidebarCollapsed()) {
+          <span>CE Records</span>
+        }
+      </a>
+    </nav>
+
+    <!-- User area -->
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <p-avatar
+          [label]="userInitials()"
+          shape="circle"
+          styleClass="user-avatar"
+        />
+        @if (!isSidebarCollapsed()) {
+          <div class="user-details">
+            <span class="user-name">{{ user.name }}</span>
+            <span class="user-role">RN, BSN, CCRN</span>
+          </div>
+        }
+      </div>
+      <button class="logout-btn" pTooltip="Log out" tooltipPosition="right" aria-label="Log out">
+        <i class="pi pi-sign-out"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <div class="main-toolbar">
+      <button
+        class="mobile-menu-btn"
+        type="button"
+        (click)="toggleSidebar()"
+        [attr.aria-label]="collapseLabel()"
+      >
+        <i [class]="collapseIcon()"></i>
+      </button>
+    </div>
+    <router-outlet />
+  </main>
+</div>

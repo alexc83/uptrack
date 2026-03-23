@@ -499,31 +499,45 @@ Professional, modern, consumer-facing SaaS product — not a hospital intranet o
 
 **Design references:** Linear (card layouts, status indicators), Notion (calm whitespace, readability), Stripe Dashboard (professional data display, progress indicators)
 
+### Screenshots
+
+Refer to the screenshots below as the basis for the dashboard UI. It does not have to be exact; use it as a reference.
+
+- @context/screenshots/dark-mode-dashboard-1.png
+- @context/screenshots/dark-mode-dashboard-2.png
+- @context/screenshots/dark-mode-drawer-example.png
+- @context/screenshots/dark-mode-modal-example.png
+- @context/screenshots/light-mode-dashboard-1.png
+- @context/screenshots/light-mode-dashboard-2.png
+- @context/screenshots/light-mode-drawer-example.png
+- @context/screenshots/light-mode-modal-example.png
+
+
 ### Color System
 
 **Primary accent:** `#185FA5` (light) / `#378ADD` (dark) — a calm, trustworthy medium blue.
 
 **Status tokens:**
 
-| Status | Light BG | Light Text | Dark BG | Dark Text |
-|---|---|---|---|---|
-| 🟢 Active | `#EAF3DE` | `#27500A` | `#1e2d1a` | `#C0DD97` |
-| 🟡 Expiring Soon | `#FAEEDA` | `#633806` | `#2d2010` | `#FAC775` |
-| 🔴 Expired | `#FCEBEB` | `#791F1F` | `#2d1515` | `#F7C1C1` |
+| Status           | Light BG  | Light Text | Dark BG   | Dark Text |
+| ---------------- | --------- | ---------- | --------- | --------- |
+| 🟢 Active        | `#EAF3DE` | `#27500A`  | `#1e2d1a` | `#C0DD97` |
+| 🟡 Expiring Soon | `#FAEEDA` | `#633806`  | `#2d2010` | `#FAC775` |
+| 🔴 Expired       | `#FCEBEB` | `#791F1F`  | `#2d1515` | `#F7C1C1` |
 
 Both light and dark modes are fully specified. Dark mode is intentional and polished — backgrounds go dark and tinted, text lightens within the same color family, progress fills are brightened so they remain visible against dark surfaces.
 
 ### Icons
 
-| Element | Icon |
-|---|---|
-| 🛡️ License | `Shield` or `IdCard` |
-| 🏅 Certification | `Award` or `BadgeCheck` |
-| 📖 CE Record | `BookOpen` |
-| ❤️ BLS / ACLS / PALS | `Heart` |
-| 📊 Dashboard nav | `LayoutDashboard` |
-| 📂 Credentials nav | `FolderOpen` |
-| 📋 CE Records nav | `ClipboardList` |
+| Element              | Icon                    |
+| -------------------- | ----------------------- |
+| 🛡️ License          | `Shield` or `IdCard`    |
+| 🏅 Certification     | `Award` or `BadgeCheck` |
+| 📖 CE Record         | `BookOpen`              |
+| ❤️ BLS / ACLS / PALS | `Heart`                 |
+| 📊 Dashboard nav     | `LayoutDashboard`       |
+| 📂 Credentials nav   | `FolderOpen`            |
+| 📋 CE Records nav    | `ClipboardList`         |
 
 ### Layout
 
@@ -544,6 +558,105 @@ Both light and dark modes are fully specified. Dark mode is intentional and poli
 **Credential cards** include: type pill (License/Certification), credential name, issuing organization, status badge, quick facts row (expiration, renewal cycle, CE hours), and a CE progress bar. Expiring Soon cards receive an additional colored border as a passive visual alert.
 
 **CE Record entries** include: course title, provider and date (muted secondary text), hours earned (right-aligned), certificate link if present, and a summary row at the bottom with total records and total hours.
+
+---
+
+### Interaction Patterns (Drawers, Modals, Navigation)
+
+UpTrack uses a combination of **full-page views, drawers, and modals** to create a fast, modern SaaS experience while maintaining clarity and context.
+
+The goal is to minimize unnecessary navigation while supporting both **data exploration** and **focused task completion**.
+
+#### Full Pages (Primary Navigation)
+
+Full pages are used for **browsing, searching, and managing collections of data**.
+
+**Examples:**
+
+* Credentials list
+* CE records list
+* Dashboard overview
+
+These views support:
+
+* Filtering and search
+* Scanning multiple items
+* Comparing data across records
+
+Full pages provide the necessary space for structured layouts such as tables, grids, and summary sections.
+
+#### Drawers (Detail Views)
+
+A **right-side drawer panel** is used for viewing and interacting with **individual records** without leaving the current page.
+
+**Examples:**
+
+* Viewing a credential’s full details
+* Reviewing CE records associated with a credential
+* Editing a credential inline
+
+**Behavior:**
+
+* Opens from the right side of the screen
+* Overlays the current page while preserving background context
+* Supports scrolling and structured content sections
+
+**Purpose:**
+
+* Maintain user context (no full page navigation)
+* Enable fast, iterative workflows
+* Reduce friction when moving between multiple records
+
+This pattern aligns with modern SaaS applications such as Linear, Notion, and Stripe.
+
+#### Modals (Focused Actions)
+
+Modals are used for **short, focused tasks** that require temporary user input.
+
+**Examples:**
+
+* Add Credential
+* Add CE Record
+* Confirm delete actions
+
+**Behavior:**
+
+* Centered overlay with background dimming
+* Limited vertical space
+* Clear primary and secondary actions
+
+**Purpose:**
+
+* Keep interactions lightweight and contained
+* Avoid navigating away from the current context
+* Provide clear start and end to an action
+
+Modals are intentionally **not used for complex or long-form content**, which is instead handled in drawers or full pages.
+
+#### Interaction Philosophy
+
+The overall interaction model follows a simple hierarchy:
+
+* **Pages → for exploration and management**
+* **Drawers → for detailed viewing and editing**
+* **Modals → for quick actions**
+
+This approach ensures the interface feels:
+
+* Fast and responsive
+* Context-aware
+* Consistent across all workflows
+
+#### Example User Flow
+
+A typical interaction flow in UpTrack:
+
+1. User views an expiring credential on the **Dashboard**
+2. Clicks the item → **Drawer opens** with full credential details
+3. Clicks “Add CE Record” → **Modal opens**
+4. Submits form → modal closes, drawer updates in place
+
+This avoids full-page transitions and creates a seamless, modern user experience.
 
 ---
 
