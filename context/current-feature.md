@@ -1,6 +1,6 @@
 # Current Feature
 
-User CRUD
+Credential CRUD
 
 ## Status
 
@@ -17,3 +17,4 @@ Completed
 - **2026-03-23** — Completed Drawer UI System with reusable right-side drawers for credential details, CE record details, and dashboard overflow lists, including dashboard-triggered interactions and polished responsive styling.
 - **2026-03-23** — Completed Backend Step 1 - Spring Boot API Foundation with layered package scaffolding, JPA entities, repositories, DTO scaffolding, global exception handling, YAML configuration, and an isolated H2-backed test profile.
 - **2026-03-23** — Completed User CRUD with backend DTOs, service-layer mapping and validation, repository-backed email uniqueness checks, REST controller endpoints under `/api/users`, and missing-user handling aligned with global exceptions.
+- **2026-03-23** — Completed Credential CRUD with credential request/response DTOs, derived status calculation in the service layer, `/api/credentials` REST endpoints, required user validation, and integration coverage for CRUD and status behavior.

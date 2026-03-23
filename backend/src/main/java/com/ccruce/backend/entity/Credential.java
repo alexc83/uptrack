@@ -14,6 +14,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,8 +43,8 @@ public class Credential {
     @Column(nullable = false)
     private Integer renewalCycleMonths;
 
-    @Column(nullable = false)
-    private Integer requiredCEHours;
+    @Column(nullable = false, precision = 5, scale = 2)
+    private BigDecimal requiredCEHours;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -107,11 +108,11 @@ public class Credential {
         this.renewalCycleMonths = renewalCycleMonths;
     }
 
-    public Integer getRequiredCEHours() {
+    public BigDecimal getRequiredCEHours() {
         return requiredCEHours;
     }
 
-    public void setRequiredCEHours(Integer requiredCEHours) {
+    public void setRequiredCEHours(BigDecimal requiredCEHours) {
         this.requiredCEHours = requiredCEHours;
     }
 
