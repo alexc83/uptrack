@@ -67,3 +67,33 @@ html.dark {
   --ut-status-expired-bg: #2d1515;
   --ut-status-expired-text: #f7c1c1;
 }
+
+// ─── Shared PrimeNG button defaults ──────────────────────────────────────────
+body .p-button:not(.p-button-secondary):not(.p-button-contrast):not(.p-button-danger):not(
+    .p-button-success
+  ):not(.p-button-help):not(.p-button-info):not(.p-button-warn):not(.p-button-outlined):not(
+    .p-button-text
+  ):not(.p-button-link) {
+  background: var(--ut-primary);
+  border-color: var(--ut-primary);
+  color: #fff;
+}
+
+body .p-button:not(.p-button-secondary):not(.p-button-contrast):not(.p-button-danger):not(
+    .p-button-success
+  ):not(.p-button-help):not(.p-button-info):not(.p-button-warn):not(.p-button-outlined):not(
+    .p-button-text
+  ):not(.p-button-link):hover {
+  background: var(--ut-primary-dark);
+  border-color: var(--ut-primary-dark);
+  color: #fff;
+}
+
+body .p-button:not(.p-button-secondary):not(.p-button-contrast):not(.p-button-danger):not(
+    .p-button-success
+  ):not(.p-button-help):not(.p-button-info):not(.p-button-warn):not(.p-button-outlined):not(
+    .p-button-text
+  ):not(.p-button-link):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ut-primary) 30%, transparent 70%);
+  outline-offset: 2px;
+}
