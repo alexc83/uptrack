@@ -2,20 +2,49 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 1.5rem;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  color: var(--ut-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .dashboard-heading h1 {
   margin: 0;
-  font-size: clamp(1.7rem, 2.4vw, 2.05rem);
+  font-size: clamp(2rem, 4vw, 2.8rem);
   line-height: 1.05;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
 }
 
-.dashboard-heading p {
-  margin: 0.55rem 0 0;
+.dashboard-subtext {
+  max-width: 42rem;
+  margin: 0.9rem 0 0;
+  color: var(--text-color-secondary);
+  line-height: 1.65;
+}
+
+.dashboard-greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 1rem;
+}
+
+.dashboard-greeting strong {
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.dashboard-greeting span {
   color: #7a889d;
-  font-size: 0.92rem;
+  font-size: 1rem;
 }
 
 .wave {
@@ -29,68 +58,48 @@
   gap: 0.75rem;
 }
 
-.action-button {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.7rem;
-  min-height: 2.7rem;
-  padding: 0.72rem 1.05rem;
-  border-radius: 0.95rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-  }
+:host ::ng-deep button.dashboard-primary-button.p-button {
+  background: var(--ut-primary) !important;
+  border-color: var(--ut-primary) !important;
+  color: #fff !important;
 }
 
-.action-button-secondary {
-  border: 1px solid #cfd8e4;
-  background: #fff;
-  color: var(--text-color);
+:host ::ng-deep button.dashboard-primary-button.p-button:hover {
+  background: var(--ut-primary-dark) !important;
+  border-color: var(--ut-primary-dark) !important;
+  color: #fff !important;
+}
+
+:host ::ng-deep button.dashboard-secondary-button.p-button {
+  border-color: #cfd8e4 !important;
+  background: #fff !important;
+  color: var(--text-color) !important;
   box-shadow: inset 0 0 0 1px #e7edf5;
-
-  &:hover {
-    background: #f8fbff;
-    border-color: #bcc9d9;
-    box-shadow: inset 0 0 0 1px #dce6f1;
-  }
 }
 
-.action-button-primary {
-  border: 1px solid transparent;
-  background: var(--ut-primary);
-  color: #fff;
-
-  &:hover {
-    background: var(--ut-primary-dark);
-    box-shadow: 0 8px 18px color-mix(in srgb, var(--ut-primary) 20%, transparent);
-  }
+:host ::ng-deep button.dashboard-secondary-button.p-button:hover {
+  background: #f8fbff !important;
+  border-color: #bcc9d9 !important;
+  color: var(--text-color) !important;
+  box-shadow: inset 0 0 0 1px #dce6f1;
 }
 
-:host-context(html.dark) .dashboard-heading p {
+:host-context(html.dark) .dashboard-greeting span {
   color: #98a1b2;
 }
 
-:host-context(html.dark) .action-button-secondary {
-  background: #171a21;
-  border-color: #3a4352;
+:host-context(html.dark) ::ng-deep button.dashboard-secondary-button.p-button {
+  background: #171a21 !important;
+  border-color: #3a4352 !important;
+  color: var(--text-color) !important;
   box-shadow: inset 0 0 0 1px #2a303b;
+}
 
-  &:hover {
-    background: #1c212b;
-    border-color: #4a5567;
-    box-shadow: inset 0 0 0 1px #364154;
-  }
+:host-context(html.dark) ::ng-deep button.dashboard-secondary-button.p-button:hover {
+  background: #1c212b !important;
+  border-color: #4a5567 !important;
+  color: var(--text-color) !important;
+  box-shadow: inset 0 0 0 1px #364154;
 }
 
 @media (max-width: 768px) {
@@ -103,7 +112,7 @@
     justify-content: stretch;
   }
 
-  .action-button {
+  .dashboard-actions .p-button {
     flex: 1 1 0;
   }
 }

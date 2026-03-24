@@ -11,7 +11,6 @@ export interface CredentialRequest {
   expirationDate: IsoDate;
   renewalCycleMonths: number;
   requiredCEHours: number;
-  userId: ApiId;
 }
 
 export interface CredentialFilters {

@@ -1,17 +1,32 @@
 <header class="dashboard-header">
   <div class="dashboard-heading">
-    <h1>{{ header().greeting }}, {{ header().firstName }} <span class="wave">👋</span></h1>
-    <p>{{ header().formattedDate }}</p>
+    <span class="eyebrow">Dashboard</span>
+    <h1>Live compliance overview</h1>
+    <p class="dashboard-subtext">
+      Monitor credential urgency, CE progress, and recent activity from one live dashboard.
+    </p>
+    <div class="dashboard-greeting">
+      <strong>{{ header().greeting }}, {{ header().firstName }} <span class="wave">👋</span></strong>
+      <span>{{ header().formattedDate }}</span>
+    </div>
   </div>
 
   <div class="dashboard-actions">
-    <button class="action-button action-button-secondary" type="button">
-      <i class="pi pi-plus"></i>
-      <span>Add CE Record</span>
-    </button>
-    <button class="action-button action-button-primary" type="button">
-      <i class="pi pi-plus"></i>
-      <span>Add Credential</span>
-    </button>
+    <button
+      pButton
+      class="dashboard-secondary-button"
+      type="button"
+      label="Add CE Record"
+      icon="pi pi-plus"
+      severity="secondary"
+    ></button>
+    <button
+      pButton
+      class="dashboard-primary-button"
+      type="button"
+      label="Add Credential"
+      icon="pi pi-plus"
+      (click)="addCredentialRequested.emit()"
+    ></button>
   </div>
 </header>

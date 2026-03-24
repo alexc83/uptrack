@@ -8,6 +8,7 @@ import { getApiErrorMessage } from '../../core/api/api.helpers';
 import { AuthStore } from '../../core/auth/auth.store';
 import { CredentialStatus, CredentialType } from '../../models/credential.models';
 import { CredentialService } from '../../services/credential.service';
+import { CredentialWriteEventsService } from '../../services/credential-write-events.service';
 import {
   CeRecordDetailDrawerContainerComponent,
   CeRecordSelectionContext,
@@ -17,6 +18,7 @@ import {
   CredentialDetailSelectionEvent,
 } from '../drawers/credential-detail-drawer-container/credential-detail-drawer-container.component';
 import { DrawerShellComponent } from '../drawers/drawer-shell/drawer-shell.component';
+import { CredentialFormDialogComponent } from './credential-form-dialog.component';
 import {
   buildCredentialListCardViews,
   CredentialListCardView,
@@ -29,6 +31,7 @@ import {
     DrawerShellComponent,
     CredentialDetailDrawerContainerComponent,
     CeRecordDetailDrawerContainerComponent,
+    CredentialFormDialogComponent,
   ],
   templateUrl: './credentials.component.html',
   styleUrl: './credentials.component.scss',
@@ -36,6 +39,7 @@ import {
 export class CredentialsComponent {
   private readonly authStore = inject(AuthStore);
   private readonly credentialService = inject(CredentialService);
+  private readonly credentialWriteEvents = inject(CredentialWriteEventsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -57,6 +61,7 @@ export class CredentialsComponent {
   readonly typeFilter = signal<CredentialType | ''>('');
   readonly selectedCredentialId = signal<string | null>(null);
   readonly drawerType = signal<'credential-detail' | 'ce-record-detail' | null>(null);
+  readonly addCredentialOpen = signal(false);
 
   readonly hasCredentials = computed(() => this.credentials().length > 0);
   readonly isDrawerOpen = computed(() => this.drawerType() !== null);
@@ -81,6 +86,7 @@ export class CredentialsComponent {
     const status = this.statusFilter();
     const type = this.typeFilter();
     const search = this.search();
+    this.credentialWriteEvents.revision();
 
     if (!userId) {
       this.credentials.set([]);
@@ -174,6 +180,18 @@ export class CredentialsComponent {
       this.typeFilter() || undefined,
       this.search() || undefined,
     );
+  }
+
+  openAddCredential(): void {
+    this.addCredentialOpen.set(true);
+  }
+
+  closeAddCredential(): void {
+    this.addCredentialOpen.set(false);
+  }
+
+  handleCredentialDeleted(): void {
+    this.closeDrawer();
   }
 
   private loadCredentials(

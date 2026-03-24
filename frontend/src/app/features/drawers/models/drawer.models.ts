@@ -1,6 +1,14 @@
 export type DrawerType = 'credential-detail' | 'ce-record-detail' | 'credential-list';
 export type CredentialListMode = 'expiring' | 'needs-ce';
 export type DrawerTone = 'primary' | 'active' | 'expiring' | 'expired';
+export type DrawerActionId =
+  | 'add-ce-record'
+  | 'edit-credential'
+  | 'delete-credential'
+  | 'export-ce-summary'
+  | 'edit-ce-record'
+  | 'replace-certificate'
+  | 'delete-ce-record';
 
 export interface DrawerMetaFieldView {
   label: string;
@@ -8,6 +16,7 @@ export interface DrawerMetaFieldView {
 }
 
 export interface DrawerActionView {
+  id: DrawerActionId;
   label: string;
   variant: 'primary' | 'secondary' | 'text' | 'danger';
 }

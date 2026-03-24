@@ -25,9 +25,9 @@ class DashboardControllerIntegrationTest extends AbstractControllerIntegrationTe
         AuthSession session = registerUser("Alex Carter", "alex.dashboard@example.com");
         String userId = session.userId();
 
-        String activeCredentialId = createCredential(session, userId, "RN License", "LICENSE", LocalDate.now().plusDays(180), 20.0);
-        String expiringCredentialId = createCredential(session, userId, "ACLS", "CERTIFICATION", LocalDate.now().plusDays(20), 8.0);
-        createCredential(session, userId, "PALS", "CERTIFICATION", LocalDate.now().minusDays(2), 0.0);
+        String activeCredentialId = createCredential(session, "RN License", "LICENSE", LocalDate.now().plusDays(180), 20.0);
+        String expiringCredentialId = createCredential(session, "ACLS", "CERTIFICATION", LocalDate.now().plusDays(20), 8.0);
+        createCredential(session, "PALS", "CERTIFICATION", LocalDate.now().minusDays(2), 0.0);
 
         createCeRecord(session, userId, activeCredentialId, "Nursing Update", 5.0, false);
         createCeRecord(session, userId, expiringCredentialId, "Cardiac Review", 2.0, true);
@@ -64,7 +64,6 @@ class DashboardControllerIntegrationTest extends AbstractControllerIntegrationTe
 
     private String createCredential(
             AuthSession session,
-            String userId,
             String name,
             String type,
             LocalDate expirationDate,
@@ -77,10 +76,9 @@ class DashboardControllerIntegrationTest extends AbstractControllerIntegrationTe
                   "issuingOrganization": "AHA",
                   "expirationDate": "%s",
                   "renewalCycleMonths": 24,
-                  "requiredCEHours": %s,
-                  "userId": "%s"
+                  "requiredCEHours": %s
                 }
-                """.formatted(name, type, expirationDate, requiredCeHours, userId);
+                """.formatted(name, type, expirationDate, requiredCeHours);
 
         String response = mockMvc.perform(post("/api/credentials")
                         .header("Authorization", bearerToken(session))
