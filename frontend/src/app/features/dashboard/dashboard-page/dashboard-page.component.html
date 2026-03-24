@@ -67,6 +67,7 @@
       @if (selectedCredentialId(); as credentialId) {
         <app-credential-detail-drawer-container
           [credentialId]="credentialId"
+          reportReturnTo="/dashboard"
           (close)="closeDrawer()"
           (ceRecordSelected)="openCeRecordDetail($event)"
           (deleted)="handleCredentialDeleted()"

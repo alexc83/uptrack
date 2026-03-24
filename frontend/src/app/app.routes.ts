@@ -15,6 +15,12 @@ export const routes: Routes = [
   { path: 'app/credentials', redirectTo: 'credentials', pathMatch: 'full' },
   { path: 'app/ce-records', redirectTo: 'ce-records', pathMatch: 'full' },
   {
+    path: 'credentials/:credentialId/ce-report',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/ce-report/ce-report-page.component').then((m) => m.CeReportPageComponent),
+  },
+  {
     path: '',
     component: ShellComponent,
     canActivate: [authGuard],

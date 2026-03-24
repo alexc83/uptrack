@@ -1,11 +1,5 @@
 # Current Feature
 
-No feature currently in progress.
-
-## Status
-
-Idle
-
 ## History
 
 <!-- Keep this updated, earliest to latest -->
@@ -36,3 +30,7 @@ Idle
 - **2026-03-24** — Completed Cloudinary backend integration with secure server-side certificate upload configuration, authenticated upload endpoint, file validation, Cloudinary-hosted asset response DTOs, and backend verification for valid and invalid upload flows.
 - **2026-03-24** — Completed certificate upload UI integration with CE form file selection, authenticated backend upload wiring, Cloudinary-backed certificate metadata persistence, inline upload status and error handling, reliable PDF/image certificate viewing, direct remove actions in form and drawer flows, and cleanup of replaced or deleted certificate assets.
 - **2026-03-24** — Completed CE report backend support with an authenticated per-credential report endpoint, report-specific DTOs for credential and CE summary data, newest-first CE record ordering, reused aggregation logic, user-scoped validation, and backend verification for totals and access control.
+- **2026-03-24** — Completed CE report UI and print flow with a credential-specific report view, typed frontend report models and service wiring, clean loading/empty/error states, browser print support with print-specific styling, credentials-page and drawer entry points, and verified printable CE summary output.
+- **2026-03-24** — Completed CE report UI refinement with a stronger audit-ready header, authenticated user display, clearer CE progress emphasis, grouped summary sections, improved CE record table readability, styled certificate indicators, and stronger print or PDF page handling.
+- **2026-03-24** — Completed CE report layout cleanup by removing duplicated header and summary content, restoring a single clean report header, simplifying the credential summary into a compact grid, keeping the CE records table print-friendly, and reducing the PDF output to one disciplined bottom summary section.
+- **2026-03-24** — Completed CE report and credentials polish with clearer credentials-page CE report actions, cleaned card affordances, dark-mode-safe printable report output, stabilized CE summary and table layout, proper print header repetition through native table headers, multi-page CE records support, and final print overflow cleanup for certificate text.

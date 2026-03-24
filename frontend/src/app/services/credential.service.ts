@@ -9,6 +9,7 @@ import {
   CredentialFilters,
   CredentialRequest,
 } from '../models/credential.models';
+import { CeReportResponse } from '../models/ce-report.models';
 import { CeRecordDetail } from '../models/ce-record.models';
 
 @Injectable({ providedIn: 'root' })
@@ -43,5 +44,11 @@ export class CredentialService {
     return this.http.get<CeRecordDetail[]>(buildApiUrl(this.credentialsUrl, `/${credentialId}/ce-records`), {
       params: buildHttpParams(params),
     });
+  }
+
+  getCredentialCeReport(credentialId: string) {
+    return this.http.get<CeReportResponse>(
+      buildApiUrl(this.credentialsUrl, `/${credentialId}/ce-report`),
+    );
   }
 }

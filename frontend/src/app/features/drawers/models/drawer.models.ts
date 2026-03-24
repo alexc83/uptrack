@@ -5,7 +5,7 @@ export type DrawerActionId =
   | 'add-ce-record'
   | 'edit-credential'
   | 'delete-credential'
-  | 'export-ce-summary'
+  | 'open-ce-report'
   | 'edit-ce-record'
   | 'delete-ce-record';
 

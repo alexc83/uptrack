@@ -195,7 +195,7 @@ function buildCredentialActions(): DrawerActionView[] {
     { id: 'add-ce-record', label: 'Add CE Record', variant: 'primary' },
     { id: 'edit-credential', label: 'Edit Credential', variant: 'secondary' },
     { id: 'delete-credential', label: 'Delete Credential', variant: 'danger' },
-    { id: 'export-ce-summary', label: 'Export CE Summary', variant: 'text' },
+    { id: 'open-ce-report', label: 'Open CE Report', variant: 'text' },
   ];
 }
 
