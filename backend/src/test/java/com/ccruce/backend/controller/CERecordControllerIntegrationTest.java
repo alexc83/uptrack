@@ -26,7 +26,7 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
     void shouldPerformFullCERecordCrudFlow() throws Exception {
         AuthSession session = registerUser("Jamie Carter", "jamie.carter@example.com");
         String userId = session.userId();
-        String credentialId = createCredential(session, userId, "RN License - Texas");
+        String credentialId = createCredential(session, "RN License - Texas");
 
         String createPayload = """
                 {
@@ -124,8 +124,7 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
     @Test
     void shouldRejectMissingUserOnCreate() throws Exception {
         AuthSession session = registerUser("Casey Hart", "casey.hart@example.com");
-        String userId = session.userId();
-        String credentialId = createCredential(session, userId, "BLS");
+        String credentialId = createCredential(session, "BLS");
 
         String payload = """
                 {
@@ -150,7 +149,7 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
     void shouldRejectCredentialOwnedByDifferentUser() throws Exception {
         AuthSession credentialOwner = registerUser("Dana Price", "dana.price@example.com");
         AuthSession anotherUser = registerUser("Jordan Vale", "jordan.vale@example.com");
-        String credentialId = createCredential(credentialOwner, credentialOwner.userId(), "CCRN");
+        String credentialId = createCredential(credentialOwner, "CCRN");
 
         String payload = """
                 {
@@ -171,7 +170,7 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
                 .andExpect(jsonPath("$.message").value("Credential does not belong to the specified user."));
     }
 
-    private String createCredential(AuthSession session, String userId, String name) throws Exception {
+    private String createCredential(AuthSession session, String name) throws Exception {
         String payload = """
                 {
                   "name": "%s",
@@ -179,10 +178,9 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
                   "issuingOrganization": "AHA",
                   "expirationDate": "%s",
                   "renewalCycleMonths": 24,
-                  "requiredCEHours": 8.0,
-                  "userId": "%s"
+                  "requiredCEHours": 8.0
                 }
-                """.formatted(name, LocalDate.now().plusDays(180), userId);
+                """.formatted(name, LocalDate.now().plusDays(180));
 
         String response = mockMvc.perform(post("/api/credentials")
                         .header("Authorization", bearerToken(session))

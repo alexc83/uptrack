@@ -55,4 +55,30 @@ describe('CredentialService', () => {
     expect(request.request.method).toBe('GET');
     request.flush([]);
   });
+
+  it('creates credentials without a userId payload field', () => {
+    service
+      .createCredential({
+        name: 'RN License',
+        type: 'LICENSE',
+        issuingOrganization: 'Texas Board of Nursing',
+        expirationDate: '2027-03-23',
+        renewalCycleMonths: 24,
+        requiredCEHours: 20,
+      })
+      .subscribe();
+
+    const request = httpTesting.expectOne('http://localhost:8080/api/credentials');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      name: 'RN License',
+      type: 'LICENSE',
+      issuingOrganization: 'Texas Board of Nursing',
+      expirationDate: '2027-03-23',
+      renewalCycleMonths: 24,
+      requiredCEHours: 20,
+    });
+    expect('userId' in request.request.body).toBe(false);
+    request.flush({});
+  });
 });

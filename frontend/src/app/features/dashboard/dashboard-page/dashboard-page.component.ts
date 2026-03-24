@@ -10,6 +10,7 @@ import { ExpirationsPanelComponent } from '../components/expirations-panel/expir
 import { RecentActivityPanelComponent } from '../components/recent-activity-panel/recent-activity-panel.component';
 import { StatsCardsComponent } from '../components/stats-cards/stats-cards.component';
 import { DashboardService } from '../../../services/dashboard.service';
+import { CredentialWriteEventsService } from '../../../services/credential-write-events.service';
 import { buildDashboardPageView } from '../utils/dashboard.mappers';
 import {
   CeRecordDetailDrawerContainerComponent,
@@ -23,6 +24,7 @@ import { CredentialListDrawerComponent } from '../../drawers/credential-list-dra
 import { DrawerShellComponent } from '../../drawers/drawer-shell/drawer-shell.component';
 import { CredentialListMode, DrawerType } from '../../drawers/models/drawer.models';
 import { buildCredentialListDrawerView } from '../../drawers/utils/drawer.mappers';
+import { CredentialFormDialogComponent } from '../../credentials/credential-form-dialog.component';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -36,6 +38,7 @@ import { buildCredentialListDrawerView } from '../../drawers/utils/drawer.mapper
     CredentialDetailDrawerContainerComponent,
     CeRecordDetailDrawerContainerComponent,
     CredentialListDrawerComponent,
+    CredentialFormDialogComponent,
     ButtonModule,
   ],
   templateUrl: './dashboard-page.component.html',
@@ -44,6 +47,7 @@ import { buildCredentialListDrawerView } from '../../drawers/utils/drawer.mapper
 export class DashboardPageComponent {
   private readonly authStore = inject(AuthStore);
   private readonly dashboardService = inject(DashboardService);
+  private readonly credentialWriteEvents = inject(CredentialWriteEventsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly now = new Date();
   private readonly currentUserId = computed(() => this.authStore.currentUser()?.id ?? null);
@@ -55,6 +59,7 @@ export class DashboardPageComponent {
   readonly drawerType = signal<DrawerType | null>(null);
   readonly credentialListMode = signal<CredentialListMode>('expiring');
   readonly selectedCredentialId = signal<string | null>(null);
+  readonly addCredentialOpen = signal(false);
 
   readonly view = computed(() =>
     buildDashboardPageView({
@@ -89,6 +94,7 @@ export class DashboardPageComponent {
 
   readonly loadDashboardEffect = effect(() => {
     const userId = this.currentUserId();
+    this.credentialWriteEvents.revision();
 
     if (!userId) {
       this.dashboard.set(this.buildEmptyDashboard());
@@ -138,6 +144,18 @@ export class DashboardPageComponent {
     }
 
     this.loadDashboardData();
+  }
+
+  openAddCredential(): void {
+    this.addCredentialOpen.set(true);
+  }
+
+  closeAddCredential(): void {
+    this.addCredentialOpen.set(false);
+  }
+
+  handleCredentialDeleted(): void {
+    this.closeDrawer();
   }
 
   private readonly dashboard = signal<Dashboard>(this.buildEmptyDashboard());

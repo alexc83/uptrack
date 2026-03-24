@@ -102,9 +102,9 @@ export function buildCeRecordDetailDrawerView(params: {
     certificateLabel: record.certificateUrl ? 'View certificate' : 'No certificate uploaded',
     certificateUrl: record.certificateUrl ?? undefined,
     actions: [
-      { label: 'Edit CE Record', variant: 'primary' },
-      { label: 'Upload / Replace Certificate', variant: 'secondary' },
-      { label: 'Delete CE Record', variant: 'danger' },
+      { id: 'edit-ce-record', label: 'Edit CE Record', variant: 'primary' },
+      { id: 'replace-certificate', label: 'Upload / Replace Certificate', variant: 'secondary' },
+      { id: 'delete-ce-record', label: 'Delete CE Record', variant: 'danger' },
     ],
   };
 }
@@ -193,9 +193,10 @@ export function buildCredentialListDrawerView(params: {
 
 function buildCredentialActions(): DrawerActionView[] {
   return [
-    { label: 'Add CE Record', variant: 'primary' },
-    { label: 'Edit Credential', variant: 'secondary' },
-    { label: 'Export CE Summary', variant: 'text' },
+    { id: 'add-ce-record', label: 'Add CE Record', variant: 'primary' },
+    { id: 'edit-credential', label: 'Edit Credential', variant: 'secondary' },
+    { id: 'delete-credential', label: 'Delete Credential', variant: 'danger' },
+    { id: 'export-ce-summary', label: 'Export CE Summary', variant: 'text' },
   ];
 }
 

@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.UUID;
 
 public record CredentialRequestDto(
         @NotBlank String name,
@@ -16,7 +15,6 @@ public record CredentialRequestDto(
         @NotBlank String issuingOrganization,
         @NotNull LocalDate expirationDate,
         @NotNull @Min(1) Integer renewalCycleMonths,
-        @NotNull @DecimalMin("0.0") BigDecimal requiredCEHours,
-        @NotNull UUID userId
+        @NotNull @DecimalMin("0.0") BigDecimal requiredCEHours
 ) {
 }

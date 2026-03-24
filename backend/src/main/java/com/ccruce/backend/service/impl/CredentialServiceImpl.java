@@ -9,10 +9,14 @@ import com.ccruce.backend.entity.User;
 import com.ccruce.backend.enums.CredentialStatus;
 import com.ccruce.backend.enums.CredentialType;
 import com.ccruce.backend.exception.ResourceNotFoundException;
+import com.ccruce.backend.exception.UnauthorizedException;
 import com.ccruce.backend.repository.CERecordRepository;
 import com.ccruce.backend.repository.CredentialRepository;
 import com.ccruce.backend.repository.UserRepository;
+import com.ccruce.backend.security.AuthenticatedUser;
 import com.ccruce.backend.service.CredentialService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -42,7 +46,7 @@ public class CredentialServiceImpl implements CredentialService {
 
     @Override
     public CredentialResponseDto createCredential(CredentialRequestDto requestDto) {
-        User user = getExistingUser(requestDto.userId());
+        User user = getAuthenticatedUser();
 
         Credential credential = new Credential();
         applyRequest(credential, requestDto, user);
@@ -82,7 +86,8 @@ public class CredentialServiceImpl implements CredentialService {
     @Override
     public CredentialResponseDto updateCredential(UUID id, CredentialRequestDto requestDto) {
         Credential credential = getExistingCredential(id);
-        User user = getExistingUser(requestDto.userId());
+        User user = getAuthenticatedUser();
+        ensureCredentialBelongsToUser(credential, user);
         applyRequest(credential, requestDto, user);
 
         return toResponse(credentialRepository.save(credential));
@@ -91,6 +96,7 @@ public class CredentialServiceImpl implements CredentialService {
     @Override
     public void deleteCredential(UUID id) {
         Credential credential = getExistingCredential(id);
+        ensureCredentialBelongsToAuthenticatedUser(credential);
         credentialRepository.delete(credential);
     }
 
@@ -102,6 +108,25 @@ public class CredentialServiceImpl implements CredentialService {
     private User getExistingUser(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found for id: " + id));
+    }
+
+    private User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser currentUser)) {
+            throw new UnauthorizedException("Authentication is required.");
+        }
+
+        return getExistingUser(currentUser.id());
+    }
+
+    private void ensureCredentialBelongsToAuthenticatedUser(Credential credential) {
+        ensureCredentialBelongsToUser(credential, getAuthenticatedUser());
+    }
+
+    private void ensureCredentialBelongsToUser(Credential credential, User user) {
+        if (!credential.getUser().getId().equals(user.getId())) {
+            throw new ResourceNotFoundException("Credential not found for id: " + credential.getId());
+        }
     }
 
     private void applyRequest(Credential credential, CredentialRequestDto requestDto, User user) {

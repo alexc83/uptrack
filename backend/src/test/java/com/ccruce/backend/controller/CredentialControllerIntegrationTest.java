@@ -27,7 +27,6 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
     @Test
     void shouldPerformFullCredentialCrudFlow() throws Exception {
         AuthSession session = registerUser("Taylor Brooks", "taylor.brooks@example.com");
-        String userId = session.userId();
 
         String createPayload = """
                 {
@@ -36,10 +35,9 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
                   "issuingOrganization": "Texas Board of Nursing",
                   "expirationDate": "%s",
                   "renewalCycleMonths": 24,
-                  "requiredCEHours": 20.5,
-                  "userId": "%s"
+                  "requiredCEHours": 20.5
                 }
-                """.formatted(LocalDate.now().plusDays(120), userId);
+                """.formatted(LocalDate.now().plusDays(120));
 
         String createResponse = mockMvc.perform(post("/api/credentials")
                         .header("Authorization", bearerToken(session))
@@ -77,10 +75,9 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
                   "issuingOrganization": "Texas BON",
                   "expirationDate": "%s",
                   "renewalCycleMonths": 36,
-                  "requiredCEHours": 24.0,
-                  "userId": "%s"
+                  "requiredCEHours": 24.0
                 }
-                """.formatted(LocalDate.now().plusDays(30), userId);
+                """.formatted(LocalDate.now().plusDays(30));
 
         mockMvc.perform(put("/api/credentials/{id}", credentialId)
                         .header("Authorization", bearerToken(session))
@@ -104,8 +101,7 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
     }
 
     @Test
-    void shouldRejectMissingUserOnCreate() throws Exception {
-        AuthSession session = registerUser("Rory Hale", "rory.hale@example.com");
+    void shouldRejectCredentialWriteWithoutAuthentication() throws Exception {
         String payload = """
                 {
                   "name": "BLS",
@@ -113,26 +109,72 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
                   "issuingOrganization": "AHA",
                   "expirationDate": "%s",
                   "renewalCycleMonths": 24,
-                  "requiredCEHours": 0,
-                  "userId": "00000000-0000-0000-0000-000000000001"
+                  "requiredCEHours": 0
                 }
                 """.formatted(LocalDate.now().plusDays(45));
 
         mockMvc.perform(post("/api/credentials")
-                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication is required."));
+    }
+
+    @Test
+    void shouldNotAllowUpdatingAnotherUsersCredential() throws Exception {
+        AuthSession ownerSession = registerUser("Rory Hale", "rory.hale@example.com");
+        AuthSession attackerSession = registerUser("Jordan Hale", "jordan.hale@example.com");
+        String credentialId = createCredential(
+                ownerSession,
+                "BLS",
+                "CERTIFICATION",
+                LocalDate.now().plusDays(45),
+                0.0
+        );
+
+        String payload = """
+                {
+                  "name": "Updated BLS",
+                  "type": "CERTIFICATION",
+                  "issuingOrganization": "AHA",
+                  "expirationDate": "%s",
+                  "renewalCycleMonths": 24,
+                  "requiredCEHours": 0
+                }
+                """.formatted(LocalDate.now().plusDays(90));
+
+        mockMvc.perform(put("/api/credentials/{id}", credentialId)
+                        .header("Authorization", bearerToken(attackerSession))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("User not found for id: 00000000-0000-0000-0000-000000000001"));
+                .andExpect(jsonPath("$.message").value("Credential not found for id: " + credentialId));
+    }
+
+    @Test
+    void shouldNotAllowDeletingAnotherUsersCredential() throws Exception {
+        AuthSession ownerSession = registerUser("Parker Moss", "parker.moss@example.com");
+        AuthSession attackerSession = registerUser("Drew Moss", "drew.moss@example.com");
+        String credentialId = createCredential(
+                ownerSession,
+                "RN License",
+                "LICENSE",
+                LocalDate.now().plusDays(120),
+                20.0
+        );
+
+        mockMvc.perform(delete("/api/credentials/{id}", credentialId)
+                        .header("Authorization", bearerToken(attackerSession)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Credential not found for id: " + credentialId));
     }
 
     @Test
     void shouldReturnDerivedStatuses() throws Exception {
         AuthSession session = registerUser("Morgan Lee", "morgan.lee@example.com");
-        String userId = session.userId();
 
-        String expiredCredentialId = createCredential(session, userId, "Expired Cert", LocalDate.now().minusDays(1));
-        String expiringSoonCredentialId = createCredential(session, userId, "Soon Cert", LocalDate.now().plusDays(15));
+        String expiredCredentialId = createCredential(session, "Expired Cert", LocalDate.now().minusDays(1));
+        String expiringSoonCredentialId = createCredential(session, "Soon Cert", LocalDate.now().plusDays(15));
 
         mockMvc.perform(get("/api/credentials/{id}", expiredCredentialId)
                         .header("Authorization", bearerToken(session)))
@@ -159,7 +201,7 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
     void shouldReturnCredentialDetailWithAggregatedCEData() throws Exception {
         AuthSession session = registerUser("Jamie Brooks", "jamie.brooks@example.com");
         String userId = session.userId();
-        String credentialId = createCredential(session, userId, "Telemetry Cert", LocalDate.now().plusDays(20), 10.0);
+        String credentialId = createCredential(session, "Telemetry Cert", LocalDate.now().plusDays(20), 10.0);
 
         createCERecord(session, userId, credentialId, "Telemetry Basics", 3.5);
         createCERecord(session, userId, credentialId, "Arrhythmia Review", 2.0);
@@ -177,7 +219,7 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
     void shouldReturnCERecordsForCredentialRelationshipEndpoint() throws Exception {
         AuthSession session = registerUser("Riley Hart", "riley.hart@example.com");
         String userId = session.userId();
-        String credentialId = createCredential(session, userId, "Stroke Cert", LocalDate.now().plusDays(100), 8.0);
+        String credentialId = createCredential(session, "Stroke Cert", LocalDate.now().plusDays(100), 8.0);
 
         createCERecord(session, userId, credentialId, "Stroke Update", 2.0);
         createCERecord(session, userId, credentialId, "Neuro Assessment", 1.5);
@@ -195,9 +237,9 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
         AuthSession session = registerUser("Avery Stone", "avery.stone@example.com");
         String userId = session.userId();
 
-        createCredential(session, userId, "RN License", "LICENSE", LocalDate.now().plusDays(180), 20.0);
-        createCredential(session, userId, "BLS", "CERTIFICATION", LocalDate.now().plusDays(15), 0.0);
-        createCredential(session, userId, "Pharmacy License", "LICENSE", LocalDate.now().minusDays(1), 0.0);
+        createCredential(session, "RN License", "LICENSE", LocalDate.now().plusDays(180), 20.0);
+        createCredential(session, "BLS", "CERTIFICATION", LocalDate.now().plusDays(15), 0.0);
+        createCredential(session, "Pharmacy License", "LICENSE", LocalDate.now().minusDays(1), 0.0);
 
         mockMvc.perform(get("/api/credentials")
                         .header("Authorization", bearerToken(session))
@@ -223,23 +265,21 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
                 .andExpect(jsonPath("$[0].name").value("RN License"));
     }
 
-    private String createCredential(AuthSession session, String userId, String name, LocalDate expirationDate) throws Exception {
-        return createCredential(session, userId, name, "CERTIFICATION", expirationDate, 0.0);
+    private String createCredential(AuthSession session, String name, LocalDate expirationDate) throws Exception {
+        return createCredential(session, name, "CERTIFICATION", expirationDate, 0.0);
     }
 
     private String createCredential(
             AuthSession session,
-            String userId,
             String name,
             LocalDate expirationDate,
             double requiredCEHours
     ) throws Exception {
-        return createCredential(session, userId, name, "CERTIFICATION", expirationDate, requiredCEHours);
+        return createCredential(session, name, "CERTIFICATION", expirationDate, requiredCEHours);
     }
 
     private String createCredential(
             AuthSession session,
-            String userId,
             String name,
             String type,
             LocalDate expirationDate,
@@ -252,10 +292,9 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
                   "issuingOrganization": "AHA",
                   "expirationDate": "%s",
                   "renewalCycleMonths": 24,
-                  "requiredCEHours": %s,
-                  "userId": "%s"
+                  "requiredCEHours": %s
                 }
-                """.formatted(name, type, expirationDate, requiredCEHours, userId);
+                """.formatted(name, type, expirationDate, requiredCEHours);
 
         String response = mockMvc.perform(post("/api/credentials")
                         .header("Authorization", bearerToken(session))
