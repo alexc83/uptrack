@@ -200,11 +200,10 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
     @Test
     void shouldReturnCredentialDetailWithAggregatedCEData() throws Exception {
         AuthSession session = registerUser("Jamie Brooks", "jamie.brooks@example.com");
-        String userId = session.userId();
         String credentialId = createCredential(session, "Telemetry Cert", LocalDate.now().plusDays(20), 10.0);
 
-        createCERecord(session, userId, credentialId, "Telemetry Basics", 3.5);
-        createCERecord(session, userId, credentialId, "Arrhythmia Review", 2.0);
+        createCERecord(session, credentialId, "Telemetry Basics", 3.5);
+        createCERecord(session, credentialId, "Arrhythmia Review", 2.0);
 
         mockMvc.perform(get("/api/credentials/{id}", credentialId)
                         .header("Authorization", bearerToken(session)))
@@ -218,11 +217,10 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
     @Test
     void shouldReturnCERecordsForCredentialRelationshipEndpoint() throws Exception {
         AuthSession session = registerUser("Riley Hart", "riley.hart@example.com");
-        String userId = session.userId();
         String credentialId = createCredential(session, "Stroke Cert", LocalDate.now().plusDays(100), 8.0);
 
-        createCERecord(session, userId, credentialId, "Stroke Update", 2.0);
-        createCERecord(session, userId, credentialId, "Neuro Assessment", 1.5);
+        createCERecord(session, credentialId, "Stroke Update", 2.0);
+        createCERecord(session, credentialId, "Neuro Assessment", 1.5);
 
         mockMvc.perform(get("/api/credentials/{id}/ce-records", credentialId)
                         .header("Authorization", bearerToken(session)))
@@ -236,7 +234,6 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
     void shouldFilterCredentialsByStatusTypeAndSearch() throws Exception {
         AuthSession session = registerUser("Avery Stone", "avery.stone@example.com");
         String userId = session.userId();
-
         createCredential(session, "RN License", "LICENSE", LocalDate.now().plusDays(180), 20.0);
         createCredential(session, "BLS", "CERTIFICATION", LocalDate.now().plusDays(15), 0.0);
         createCredential(session, "Pharmacy License", "LICENSE", LocalDate.now().minusDays(1), 0.0);
@@ -310,7 +307,6 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
 
     private String createCERecord(
             AuthSession session,
-            String userId,
             String credentialId,
             String title,
             double hours
@@ -321,10 +317,9 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
                   "provider": "AHA",
                   "hours": %s,
                   "dateCompleted": "2026-03-23",
-                  "credentialId": "%s",
-                  "userId": "%s"
+                  "credentialId": "%s"
                 }
-                """.formatted(title, hours, credentialId, userId);
+                """.formatted(title, hours, credentialId);
 
         String response = mockMvc.perform(post("/api/ce-records")
                         .header("Authorization", bearerToken(session))

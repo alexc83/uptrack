@@ -194,6 +194,10 @@ export class CredentialsComponent {
     this.closeDrawer();
   }
 
+  handleCeRecordDeleted(credentialId: string): void {
+    this.openCredentialDetail(credentialId);
+  }
+
   private loadCredentials(
     userId: string,
     status?: CredentialStatus,

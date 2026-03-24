@@ -16,7 +16,6 @@ export interface CeRecordRequest {
   dateCompleted: IsoDate;
   certificateUrl?: string | null;
   credentialId: ApiId;
-  userId: ApiId;
 }
 
 export interface CeRecordFilters {
@@ -26,7 +25,6 @@ export interface CeRecordFilters {
 
 export interface CredentialCeRecord extends CeRecordResponse {
   credentialId: ApiId;
-  userId?: ApiId;
   credentialName?: string;
   credentialOrganization?: string;
 }

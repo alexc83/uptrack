@@ -1,6 +1,7 @@
 import { Component, signal, computed, OnInit, Renderer2, inject, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { AvatarModule } from 'primeng/avatar';
 
@@ -8,7 +9,15 @@ import { AuthStore } from '../core/auth/auth.store';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, ButtonModule, TooltipModule, AvatarModule],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    ButtonModule,
+    DialogModule,
+    TooltipModule,
+    AvatarModule,
+  ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })
@@ -22,6 +31,7 @@ export class ShellComponent implements OnInit {
   readonly isMobile = signal(false);
   readonly isDesktopCollapsed = signal(false);
   readonly mobileSidebarOpen = signal(false);
+  readonly logoutConfirmOpen = signal(false);
 
   readonly themeIcon = computed(() => (this.isDark() ? 'pi pi-sun' : 'pi pi-moon'));
   readonly themeLabel = computed(() => (this.isDark() ? 'Light mode' : 'Dark mode'));
@@ -85,7 +95,16 @@ export class ShellComponent implements OnInit {
     this.closeMobileSidebar();
   }
 
+  requestLogout(): void {
+    this.logoutConfirmOpen.set(true);
+  }
+
+  closeLogoutConfirm(): void {
+    this.logoutConfirmOpen.set(false);
+  }
+
   logout(): void {
+    this.logoutConfirmOpen.set(false);
     this.closeMobileSidebar();
     this.authStore.logout();
   }

@@ -1,5 +1,9 @@
 <section class="dashboard-page">
-  <app-dashboard-header [header]="view().header" (addCredentialRequested)="openAddCredential()" />
+  <app-dashboard-header
+    [header]="view().header"
+    (addCredentialRequested)="openAddCredential()"
+    (addCeRecordRequested)="openAddCeRecord()"
+  />
 
   @if (isLoading()) {
     <section class="loading-shell" aria-label="Loading dashboard">
@@ -77,6 +81,7 @@
             [context]="ceRecordContext"
             (close)="closeDrawer()"
             (credentialSelected)="openCredentialDetail($event)"
+            (deleted)="handleCeRecordDeleted($event)"
           />
         }
       }
@@ -92,3 +97,10 @@
 </app-drawer-shell>
 
 <app-credential-form-dialog [open]="addCredentialOpen()" (close)="closeAddCredential()" />
+
+<app-ce-record-form-dialog
+  [open]="addCeRecordOpen()"
+  [credentialOptions]="credentialOptions()"
+  (close)="closeAddCeRecord()"
+  (saved)="handleCeRecordSaved()"
+/>

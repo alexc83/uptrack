@@ -1,7 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 
-import { CeRecordDetailDrawerView } from '../models/drawer.models';
+import { CeRecordDetailDrawerView, DrawerActionId } from '../models/drawer.models';
 
 @Component({
   selector: 'app-ce-record-detail-drawer',
@@ -14,4 +14,5 @@ export class CeRecordDetailDrawerComponent {
 
   readonly close = output<void>();
   readonly credentialSelected = output<string>();
+  readonly actionSelected = output<DrawerActionId>();
 }

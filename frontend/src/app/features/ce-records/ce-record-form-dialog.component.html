@@ -1,0 +1,31 @@
+<p-dialog
+  [visible]="open()"
+  [modal]="true"
+  [appendTo]="'body'"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="false"
+  styleClass="ce-record-form-dialog"
+  (visibleChange)="handleVisibleChange($event)"
+>
+  <ng-template pTemplate="header">
+    <div class="dialog-header">
+      <span class="eyebrow">CE Record</span>
+      <h2>{{ title() }}</h2>
+      <p>{{ description() }}</p>
+      <small>{{ selectedCredentialSummary() }}</small>
+    </div>
+  </ng-template>
+
+  <app-ce-record-form
+    [form]="form"
+    [submitLabel]="submitLabel()"
+    [isSubmitting]="isSubmitting()"
+    [submitError]="submitError()"
+    [credentialOptions]="credentialOptions()"
+    [showCredentialField]="shouldSelectCredential()"
+    (submitted)="submit()"
+    (cancelled)="handleClose()"
+  />
+</p-dialog>

@@ -12,10 +12,9 @@ import java.util.UUID;
 public record CERecordRequestDto(
         @NotBlank @Size(max = 180) String title,
         @NotBlank @Size(max = 180) String provider,
-        @NotNull @DecimalMin("0.0") BigDecimal hours,
+        @NotNull @DecimalMin(value = "0.0", inclusive = false) BigDecimal hours,
         @NotNull LocalDate dateCompleted,
         @Size(max = 500) String certificateUrl,
-        @NotNull UUID credentialId,
-        @NotNull UUID userId
+        @NotNull UUID credentialId
 ) {
 }

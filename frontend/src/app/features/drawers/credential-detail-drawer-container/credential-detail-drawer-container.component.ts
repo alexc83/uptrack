@@ -9,6 +9,7 @@ import { CeRecord } from '../../../models/ce-record.models';
 import { getApiErrorMessage } from '../../../core/api/api.helpers';
 import { CredentialService } from '../../../services/credential.service';
 import { CredentialWriteEventsService } from '../../../services/credential-write-events.service';
+import { CeRecordFormDialogComponent } from '../../ce-records/ce-record-form-dialog.component';
 import { CredentialFormComponent } from '../../credentials/components/credential-form/credential-form.component';
 import {
   buildCredentialFormValue,
@@ -26,7 +27,13 @@ export interface CredentialDetailSelectionEvent {
 
 @Component({
   selector: 'app-credential-detail-drawer-container',
-  imports: [ButtonModule, DialogModule, CredentialDetailDrawerComponent, CredentialFormComponent],
+  imports: [
+    ButtonModule,
+    DialogModule,
+    CredentialDetailDrawerComponent,
+    CredentialFormComponent,
+    CeRecordFormDialogComponent,
+  ],
   templateUrl: './credential-detail-drawer-container.component.html',
   styleUrl: './credential-detail-drawer-container.component.scss',
 })
@@ -54,6 +61,7 @@ export class CredentialDetailDrawerContainerComponent {
   readonly deleteConfirmOpen = signal(false);
   readonly isDeleting = signal(false);
   readonly deleteError = signal<string | null>(null);
+  readonly addCeRecordOpen = signal(false);
   readonly form = createCredentialForm(this.formBuilder);
 
   readonly view = computed(() => {
@@ -72,6 +80,7 @@ export class CredentialDetailDrawerContainerComponent {
 
   readonly loadCredentialEffect = effect(() => {
     const credentialId = this.credentialId();
+    this.credentialWriteEvents.revision();
     this.loadCredential(credentialId);
   });
 
@@ -97,6 +106,11 @@ export class CredentialDetailDrawerContainerComponent {
   }
 
   handleActionSelected(actionId: DrawerActionId): void {
+    if (actionId === 'add-ce-record') {
+      this.addCeRecordOpen.set(true);
+      return;
+    }
+
     if (actionId === 'edit-credential') {
       this.enterEditMode();
       return;
@@ -106,6 +120,14 @@ export class CredentialDetailDrawerContainerComponent {
       this.deleteError.set(null);
       this.deleteConfirmOpen.set(true);
     }
+  }
+
+  closeAddCeRecord(): void {
+    this.addCeRecordOpen.set(false);
+  }
+
+  handleCeRecordSaved(): void {
+    this.addCeRecordOpen.set(false);
   }
 
   cancelEdit(): void {
