@@ -8,7 +8,11 @@ Idle
 
 ## Purpose
 
-No active feature is currently in progress.
+No active feature right now.
+
+## Scope
+
+N/A
 
 ## History
 
@@ -28,3 +32,4 @@ No active feature is currently in progress.
 - **2026-03-23** — Completed auth integration with Spring Security + JWT backend endpoints, Angular auth state/bootstrap/guards/interceptor, reactive login and sign-up modal submission, real shell identity/logout behavior, and live dashboard data loading for authenticated users.
 - **2026-03-23** — Completed the frontend API foundation with environment-based API configuration, shared API helpers and error parsing, typed auth/credential/CE/dashboard models, reusable dashboard/credential/CE services, auth compatibility updates, and focused frontend verification for endpoint paths, query params, and interceptor behavior.
 - **2026-03-23** — Completed dashboard live data integration with a real aggregated `/api/dashboard` backend endpoint, dashboard stats/expirations/CE attention/recent activity wiring, preserved drawer interactions, and explicit dashboard loading, empty, and error states verified through backend and frontend tests/builds.
+- **2026-03-23** — Completed landing page dark mode with a subtle header toggle, persistent landing-only theme state, dark-mode auth modal styling, and matched light/dark landing screenshots without layout shifts.
