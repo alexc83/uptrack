@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -30,6 +31,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage());
     }
 
+    @ExceptionHandler(UploadFailedException.class)
+    public ResponseEntity<ErrorResponse> handleUploadFailed(UploadFailedException exception) {
+        return buildResponse(HttpStatus.BAD_GATEWAY, exception.getMessage());
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException exception) {
         return buildResponse(HttpStatus.FORBIDDEN, "You do not have permission to perform this action.");
@@ -44,6 +50,11 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining("; "));
 
         return buildResponse(HttpStatus.BAD_REQUEST, message);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestPart(MissingServletRequestPartException exception) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Certificate file is required.");
     }
 
     @ExceptionHandler(Exception.class)
