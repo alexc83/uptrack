@@ -1,0 +1,72 @@
+-- =========================================
+-- FINAL FIXED TEST DATA
+-- Matches Hibernate-generated MySQL schema
+-- UUID columns stored as BINARY(16)
+-- =========================================
+
+DELETE FROM ce_records;
+DELETE FROM credentials;
+DELETE FROM users;
+
+-- USERS
+INSERT INTO users (id, name, email, password, created_at) VALUES
+(UUID_TO_BIN('11111111-1111-1111-1111-111111111111'), 'Alex Nurse', 'alex@example.com', 'password123', NOW()),
+(UUID_TO_BIN('22222222-2222-2222-2222-222222222222'), 'Jordan RT', 'jordan@example.com', 'password123', NOW());
+
+-- CREDENTIALS
+INSERT INTO credentials (
+    id, name, type, issuing_organization, expiration_date,
+    renewal_cycle_months, requiredcehours, user_id
+) VALUES
+(UUID_TO_BIN('c1a1a1a1-1111-1111-1111-111111111111'), 'RN License - Texas', 'LICENSE', 'Texas Board of Nursing',
+ DATE_ADD(CURDATE(), INTERVAL 365 DAY), 24, 20.00, UUID_TO_BIN('11111111-1111-1111-1111-111111111111')),
+
+(UUID_TO_BIN('c2a2a2a2-2222-2222-2222-222222222222'), 'ACLS Certification', 'CERTIFICATION', 'American Heart Association',
+ DATE_ADD(CURDATE(), INTERVAL 30 DAY), 24, 8.00, UUID_TO_BIN('11111111-1111-1111-1111-111111111111')),
+
+(UUID_TO_BIN('c3a3a3a3-3333-3333-3333-333333333333'), 'BLS Certification', 'CERTIFICATION', 'American Heart Association',
+ DATE_SUB(CURDATE(), INTERVAL 10 DAY), 24, 4.00, UUID_TO_BIN('11111111-1111-1111-1111-111111111111')),
+
+(UUID_TO_BIN('c4a4a4a4-4444-4444-4444-444444444444'), 'NRP Certification', 'CERTIFICATION', 'AAP',
+ DATE_ADD(CURDATE(), INTERVAL 200 DAY), 24, 0.00, UUID_TO_BIN('11111111-1111-1111-1111-111111111111')),
+
+(UUID_TO_BIN('c5b5b5b5-5555-5555-5555-555555555555'), 'RRT License', 'LICENSE', 'NBRC',
+ DATE_ADD(CURDATE(), INTERVAL 120 DAY), 24, 15.00, UUID_TO_BIN('22222222-2222-2222-2222-222222222222'));
+
+-- CE RECORDS
+INSERT INTO ce_records (
+    id, title, provider, hours, date_completed, certificate_url,
+    credential_id, user_id
+) VALUES
+(UUID_TO_BIN('aa100000-0000-0000-0000-000000000001'), 'Sepsis Management', 'AACN', 5.00,
+ DATE_SUB(CURDATE(), INTERVAL 60 DAY), 'https://example.com/cert1.pdf',
+ UUID_TO_BIN('c1a1a1a1-1111-1111-1111-111111111111'), UUID_TO_BIN('11111111-1111-1111-1111-111111111111')),
+
+(UUID_TO_BIN('aa100000-0000-0000-0000-000000000002'), 'Ventilator Basics', 'Hospital LMS', 4.00,
+ DATE_SUB(CURDATE(), INTERVAL 45 DAY), NULL,
+ UUID_TO_BIN('c1a1a1a1-1111-1111-1111-111111111111'), UUID_TO_BIN('11111111-1111-1111-1111-111111111111')),
+
+(UUID_TO_BIN('aa100000-0000-0000-0000-000000000003'), 'Critical Care Pharmacology', 'AACN', 6.50,
+ DATE_SUB(CURDATE(), INTERVAL 30 DAY), 'https://example.com/cert2.pdf',
+ UUID_TO_BIN('c1a1a1a1-1111-1111-1111-111111111111'), UUID_TO_BIN('11111111-1111-1111-1111-111111111111')),
+
+(UUID_TO_BIN('bb200000-0000-0000-0000-000000000001'), 'ACLS Renewal Course', 'AHA', 4.00,
+ DATE_SUB(CURDATE(), INTERVAL 20 DAY), 'https://example.com/acls.pdf',
+ UUID_TO_BIN('c2a2a2a2-2222-2222-2222-222222222222'), UUID_TO_BIN('11111111-1111-1111-1111-111111111111')),
+
+(UUID_TO_BIN('cc300000-0000-0000-0000-000000000001'), 'BLS Training', 'AHA', 4.00,
+ DATE_SUB(CURDATE(), INTERVAL 200 DAY), NULL,
+ UUID_TO_BIN('c3a3a3a3-3333-3333-3333-333333333333'), UUID_TO_BIN('11111111-1111-1111-1111-111111111111')),
+
+(UUID_TO_BIN('dd400000-0000-0000-0000-000000000001'), 'Respiratory Care Update', 'NBRC', 7.00,
+ DATE_SUB(CURDATE(), INTERVAL 25 DAY), 'https://example.com/rrt1.pdf',
+ UUID_TO_BIN('c5b5b5b5-5555-5555-5555-555555555555'), UUID_TO_BIN('22222222-2222-2222-2222-222222222222')),
+
+(UUID_TO_BIN('dd400000-0000-0000-0000-000000000002'), 'Advanced Ventilation Strategies', 'NBRC', 5.00,
+ DATE_SUB(CURDATE(), INTERVAL 10 DAY), NULL,
+ UUID_TO_BIN('c5b5b5b5-5555-5555-5555-555555555555'), UUID_TO_BIN('22222222-2222-2222-2222-222222222222'));
+
+-- Helpful verification queries
+-- SELECT BIN_TO_UUID(id) AS id, name, email FROM users;
+-- SELECT BIN_TO_UUID(id) AS id, name, BIN_TO_UUID(user_id) AS user_id, requiredcehours FROM credentials;
+-- SELECT BIN_TO_UUID(id) AS id, title, BIN_TO_UUID(credential_id) AS credential_id, BIN_TO_UUID(user_id) AS user_id FROM ce_records;
