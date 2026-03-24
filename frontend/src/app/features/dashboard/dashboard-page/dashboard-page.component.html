@@ -1,23 +1,60 @@
 <section class="dashboard-page">
   <app-dashboard-header [header]="view().header" />
-  <app-stats-cards [cards]="view().stats" />
 
-  <section class="dashboard-grid">
-    <app-expirations-panel
-      [rows]="view().expirations"
-      [overflowCount]="view().expirationsOverflowCount"
-      (rowSelected)="openCredentialDetail($event)"
-      (overflowSelected)="openCredentialList('expiring')"
-    />
-    <app-ce-progress-panel
-      [rows]="view().progress"
-      [overflowCount]="view().progressOverflowCount"
-      (rowSelected)="openCredentialDetail($event)"
-      (overflowSelected)="openCredentialList('needs-ce')"
-    />
-  </section>
+  @if (isLoading()) {
+    <section class="loading-shell" aria-label="Loading dashboard">
+      <div class="loading-stats">
+        @for (placeholder of [1, 2, 3, 4]; track placeholder) {
+          <div class="loading-card"></div>
+        }
+      </div>
 
-  <app-recent-activity-panel [rows]="view().recentActivity" />
+      <div class="loading-grid">
+        <div class="loading-panel"></div>
+        <div class="loading-panel"></div>
+      </div>
+
+      <div class="loading-activity"></div>
+    </section>
+  } @else {
+    @if (errorMessage()) {
+      <section class="dashboard-message dashboard-message-error" role="alert">
+        <div>
+          <strong>Dashboard unavailable</strong>
+          <p>{{ errorMessage() }}</p>
+        </div>
+        <button pButton type="button" label="Retry" severity="contrast" (click)="retryLoad()"></button>
+      </section>
+    }
+
+    @if (!errorMessage()) {
+      @if (!hasCredentials()) {
+        <section class="dashboard-message dashboard-message-empty">
+          <strong>No credentials yet</strong>
+          <p>Add your first credential to start tracking expirations, CE progress, and renewal activity here.</p>
+        </section>
+      }
+
+      <app-stats-cards [cards]="view().stats" />
+
+      <section class="dashboard-grid">
+        <app-expirations-panel
+          [rows]="view().expirations"
+          [overflowCount]="view().expirationsOverflowCount"
+          (rowSelected)="openCredentialDetail($event)"
+          (overflowSelected)="openCredentialList('expiring')"
+        />
+        <app-ce-progress-panel
+          [rows]="view().progress"
+          [overflowCount]="view().progressOverflowCount"
+          (rowSelected)="openCredentialDetail($event)"
+          (overflowSelected)="openCredentialList('needs-ce')"
+        />
+      </section>
+
+      <app-recent-activity-panel [rows]="view().recentActivity" />
+    }
+  }
 </section>
 
 <app-drawer-shell [open]="isDrawerOpen()" (close)="closeDrawer()">

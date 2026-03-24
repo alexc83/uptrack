@@ -352,17 +352,38 @@ export const MOCK_DASHBOARD: Dashboard = {
     expiredCount: 2,
     needsCEAttentionCount: 3, // cred-001 (not yet met), cred-002 (not yet met), cred-006 (not yet met)
   },
-  expirationBuckets: {
-    within30Days: [],
-    within60Days: [MOCK_CREDENTIALS[3]], // BLS — May 7
-    within90Days: [MOCK_CREDENTIALS[3], MOCK_CREDENTIALS[4], MOCK_CREDENTIALS[5]], // BLS, ACLS, DEA
-  },
-  credentialsNeedingCE: [
+  upcomingExpirations: [MOCK_CREDENTIALS[3], MOCK_CREDENTIALS[4], MOCK_CREDENTIALS[5]], // BLS, ACLS, DEA
+  ceAttention: [
     MOCK_CREDENTIALS[0], // RN License — 14/20 hrs
     MOCK_CREDENTIALS[1], // CCRN — 62/100 hrs
     MOCK_CREDENTIALS[5], // DEA — 2/8 hrs
   ],
-  recentCredentials: MOCK_CREDENTIALS.slice(0, 5),
+  recentActivity: [
+    {
+      id: 'ce-020',
+      credentialId: 'cred-008',
+      title: 'Uploaded certificate',
+      subtitle: 'Mass Casualty Incident Preparedness (PDF)',
+      icon: 'pi pi-file',
+      activityDate: '2025-08-15',
+    },
+    {
+      id: 'ce-018',
+      credentialId: 'cred-008',
+      title: 'Uploaded certificate',
+      subtitle: 'Advanced Trauma Care Review (PDF)',
+      icon: 'pi pi-file',
+      activityDate: '2025-03-09',
+    },
+    {
+      id: 'ce-017',
+      credentialId: 'cred-008',
+      title: 'Added CE record',
+      subtitle: 'CEN — Certified Emergency Nurse — 15 hrs',
+      icon: 'pi pi-plus',
+      activityDate: '2024-11-27',
+    },
+  ],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

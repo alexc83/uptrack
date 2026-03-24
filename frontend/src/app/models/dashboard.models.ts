@@ -1,5 +1,6 @@
 import { CeRecord } from './ce-record.models';
 import { Credential } from './credential.models';
+import { IsoDate } from './common.models';
 
 export interface DashboardStats {
   totalCredentials: number;
@@ -9,17 +10,20 @@ export interface DashboardStats {
   needsCEAttentionCount: number;
 }
 
-export interface ExpirationBuckets {
-  within30Days: Credential[];
-  within60Days: Credential[];
-  within90Days: Credential[];
+export interface DashboardActivity {
+  id: string;
+  credentialId: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  activityDate: IsoDate;
 }
 
 export interface Dashboard {
   stats: DashboardStats;
-  expirationBuckets: ExpirationBuckets;
-  credentialsNeedingCE: Credential[];
-  recentCredentials: Credential[];
+  upcomingExpirations: Credential[];
+  ceAttention: Credential[];
+  recentActivity: DashboardActivity[];
 }
 
 export interface DashboardData {

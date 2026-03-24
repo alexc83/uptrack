@@ -1,6 +1,6 @@
 export type {
+  DashboardActivity,
   Dashboard,
   DashboardData,
   DashboardStats,
-  ExpirationBuckets,
 } from './dashboard.models';
