@@ -44,6 +44,23 @@
   padding: 0;
 }
 
+.empty-state {
+  padding: 1.5rem;
+}
+
+.empty-state strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #7a889d;
+  font-size: 0.94rem;
+}
+
 .activity-row {
   display: flex;
   align-items: center;
@@ -107,7 +124,8 @@
 }
 
 :host-context(html.dark) .activity-copy p,
-:host-context(html.dark) .activity-time {
+:host-context(html.dark) .activity-time,
+:host-context(html.dark) .empty-state p {
   color: #98a1b2;
 }
 

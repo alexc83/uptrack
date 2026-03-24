@@ -9,19 +9,26 @@
   </ng-template>
 
   <div class="section-body">
-    @for (row of rows(); track row.id) {
-      <article class="activity-row">
-        <div class="activity-left">
-          <span class="activity-icon">
-            <i [class]="row.icon"></i>
-          </span>
-          <div class="activity-copy">
-            <h3>{{ row.title }}</h3>
-            <p>{{ row.subtitle }}</p>
+    @if (rows().length > 0) {
+      @for (row of rows(); track row.id) {
+        <article class="activity-row">
+          <div class="activity-left">
+            <span class="activity-icon">
+              <i [class]="row.icon"></i>
+            </span>
+            <div class="activity-copy">
+              <h3>{{ row.title }}</h3>
+              <p>{{ row.subtitle }}</p>
+            </div>
           </div>
-        </div>
-        <span class="activity-time">{{ row.relativeTime }}</span>
-      </article>
+          <span class="activity-time">{{ row.relativeTime }}</span>
+        </article>
+      }
+    } @else {
+      <div class="empty-state">
+        <strong>No recent activity</strong>
+        <p>New CE completions and certificate uploads will appear here.</p>
+      </div>
     }
   </div>
 </p-card>

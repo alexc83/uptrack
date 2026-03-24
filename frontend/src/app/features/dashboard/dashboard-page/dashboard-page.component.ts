@@ -1,10 +1,12 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ButtonModule } from 'primeng/button';
 
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Dashboard } from '../../../models/dashboard.model';
 import { CeRecord } from '../../../models/ce-record.model';
 import { Credential } from '../../../models/credential.model';
+import { DashboardData } from '../../../models/dashboard.models';
 import { CeProgressPanelComponent } from '../components/ce-progress-panel/ce-progress-panel.component';
 import { DashboardHeaderComponent } from '../components/dashboard-header/dashboard-header.component';
 import { ExpirationsPanelComponent } from '../components/expirations-panel/expirations-panel.component';
@@ -35,6 +37,7 @@ import {
     CredentialDetailDrawerComponent,
     CeRecordDetailDrawerComponent,
     CredentialListDrawerComponent,
+    ButtonModule,
   ],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.scss',
@@ -50,6 +53,7 @@ export class DashboardPageComponent {
   private readonly currentUserId = computed(() => this.authStore.currentUser()?.id ?? null);
 
   readonly isLoading = signal(true);
+  readonly errorMessage = signal<string | null>(null);
   readonly drawerType = signal<DrawerType | null>(null);
   readonly credentialListMode = signal<CredentialListMode>('expiring');
   readonly selectedCredentialId = signal<string | null>(null);
@@ -65,12 +69,11 @@ export class DashboardPageComponent {
           createdAt: '',
         },
       dashboard: this.dashboard(),
-      credentials: this.credentials(),
-      ceRecords: this.ceRecords(),
       now: this.now,
-      credentialById: (id) => this.credentials().find((credential) => credential.id === id),
     }),
   );
+
+  readonly hasCredentials = computed(() => this.dashboard().stats.totalCredentials > 0);
 
   readonly isDrawerOpen = computed(() => this.drawerType() !== null);
 
@@ -118,8 +121,8 @@ export class DashboardPageComponent {
       mode: this.credentialListMode(),
       credentials:
         this.credentialListMode() === 'expiring'
-          ? dashboard.expirationBuckets.within90Days
-          : dashboard.credentialsNeedingCE,
+          ? dashboard.upcomingExpirations
+          : dashboard.ceAttention,
       now: this.now,
     });
   });
@@ -131,6 +134,7 @@ export class DashboardPageComponent {
       this.credentials.set([]);
       this.ceRecords.set([]);
       this.dashboard.set(this.buildEmptyDashboard());
+      this.errorMessage.set(null);
       this.isLoading.set(false);
       return;
     }
@@ -160,16 +164,25 @@ export class DashboardPageComponent {
     this.drawerType.set(null);
   }
 
+  retryLoad(): void {
+    if (!this.currentUserId()) {
+      return;
+    }
+
+    this.loadDashboardData();
+  }
+
   private readonly dashboard = signal<Dashboard>(this.buildEmptyDashboard());
 
   private loadDashboardData(): void {
     this.isLoading.set(true);
+    this.errorMessage.set(null);
 
     this.dashboardService
       .getDashboard()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ dashboard, credentials, ceRecords }) => {
+        next: ({ dashboard, credentials, ceRecords }: DashboardData) => {
           this.dashboard.set(dashboard);
           this.credentials.set(credentials);
           this.ceRecords.set(ceRecords);
@@ -179,6 +192,7 @@ export class DashboardPageComponent {
           this.dashboard.set(this.buildEmptyDashboard());
           this.credentials.set([]);
           this.ceRecords.set([]);
+          this.errorMessage.set('We could not load the dashboard right now. Please try again.');
           this.isLoading.set(false);
         },
       });
@@ -193,13 +207,9 @@ export class DashboardPageComponent {
         expiredCount: 0,
         needsCEAttentionCount: 0,
       },
-      expirationBuckets: {
-        within30Days: [],
-        within60Days: [],
-        within90Days: [],
-      },
-      credentialsNeedingCE: [],
-      recentCredentials: [],
+      upcomingExpirations: [],
+      ceAttention: [],
+      recentActivity: [],
     };
   }
 }

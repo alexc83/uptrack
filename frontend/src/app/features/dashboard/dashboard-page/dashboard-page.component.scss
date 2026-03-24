@@ -12,8 +12,98 @@
   gap: 1rem;
 }
 
+.dashboard-message {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--surface-border) 80%, white 20%);
+  background: color-mix(in srgb, var(--surface-card) 92%, white 8%);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.06);
+}
+
+.dashboard-message strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dashboard-message p {
+  margin: 0;
+  color: var(--text-color-secondary);
+}
+
+.dashboard-message-error {
+  border-color: color-mix(in srgb, #f97316 30%, var(--surface-border) 70%);
+  background: color-mix(in srgb, #fff7ed 75%, var(--surface-card) 25%);
+}
+
+.dashboard-message-empty {
+  justify-content: flex-start;
+}
+
+.loading-shell,
+.loading-grid,
+.loading-stats {
+  display: grid;
+  gap: 1rem;
+}
+
+.loading-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.loading-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.loading-card,
+.loading-panel,
+.loading-activity {
+  border-radius: 1.5rem;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface-card) 82%, white 18%) 0%,
+    color-mix(in srgb, var(--surface-card) 65%, white 35%) 50%,
+    color-mix(in srgb, var(--surface-card) 82%, white 18%) 100%
+  );
+  background-size: 200% 100%;
+  animation: dashboard-loading 1.4s ease-in-out infinite;
+  border: 1px solid color-mix(in srgb, var(--surface-border) 80%, white 20%);
+}
+
+.loading-card {
+  min-height: 8.25rem;
+}
+
+.loading-panel {
+  min-height: 24rem;
+}
+
+.loading-activity {
+  min-height: 18rem;
+}
+
+@keyframes dashboard-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @media (max-width: 1200px) {
   .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .loading-grid,
+  .loading-stats {
     grid-template-columns: 1fr;
   }
 }
@@ -21,5 +111,10 @@
 @media (max-width: 768px) {
   .dashboard-page {
     padding: 1rem 1rem 1.5rem;
+  }
+
+  .dashboard-message {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
