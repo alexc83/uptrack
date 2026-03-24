@@ -615,10 +615,207 @@
   .summary-cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .ce-table-wrap {
+    overflow: visible;
+    border: none;
+    background: transparent;
+  }
+
+  .ce-table,
+  .ce-table tbody {
+    display: block;
+  }
+
+  .ce-table thead {
+    display: none;
+  }
+
+  .ce-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+    gap: 0.65rem 0.9rem;
+  }
+
+  .ce-row {
+    margin-bottom: 0.85rem;
+    padding: 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--surface-border) 84%, var(--text-color) 16%);
+    border-radius: 1rem;
+    background: #fff;
+  }
+
+  .ce-table tbody .ce-row:not(:last-child) td {
+    box-shadow: none;
+  }
+
+  .ce-table td {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    min-width: 0;
+    padding: 0;
+    white-space: normal;
+  }
+
+  .ce-table td::before {
+    content: attr(data-label);
+    color: var(--text-color-secondary);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+
+  .col-course,
+  .col-actions {
+    grid-row: 1;
+  }
+
+  .col-course {
+    grid-column: 1 / 3;
+    padding-bottom: 0.2rem;
+  }
+
+  .col-actions {
+    grid-column: 3;
+    align-items: flex-end;
+    justify-self: end;
+    padding-bottom: 0.2rem;
+  }
+
+  .col-actions::before {
+    display: none;
+  }
+
+  .row-action-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    background: color-mix(in srgb, var(--surface-border) 26%, transparent 74%);
+  }
+
+  .col-org,
+  .col-date,
+  .col-hours,
+  .col-credential,
+  .col-cert {
+    grid-column: span 1;
+  }
+
+  .col-org,
+  .col-date,
+  .col-hours {
+    margin-top: 0.8rem;
+    padding-inline: 0.2rem;
+  }
+
+  .col-hours {
+    justify-self: start;
+    align-self: end;
+    margin-right: 1.15rem;
+  }
+
+  .course-name,
+  .credential-name,
+  .cell-secondary {
+    font-size: 0.94rem;
+    line-height: 1.3;
+  }
+
+  .hours-badge,
+  .cert-badge {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .hours-badge {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.76rem;
+  }
+
+  .cert-badge {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.74rem;
+  }
+
+  .row-action-btn {
+    width: 2rem;
+    height: 2rem;
+    background: color-mix(in srgb, var(--surface-border) 22%, transparent 78%);
+  }
+
+  .col-org,
+  .col-date,
+  .col-hours,
+  .col-credential,
+  .col-cert {
+    min-width: 0;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+  }
+
+  .page-numbers {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  :host-context(html.dark) .ce-row {
+    background: #1b2029;
+    border-color: #323949;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  }
+
+  :host-context(html.dark) .ce-table tbody .ce-row:not(:last-child) td,
+  :host-context(html.dark) .ce-table tbody .ce-row td {
+    box-shadow: none !important;
+    border: none;
+  }
+
+  :host-context(html.dark) .row-action-btn {
+    background: rgba(42, 48, 59, 0.9);
+  }
 }
 
 @media (max-width: 480px) {
   .summary-cards {
     grid-template-columns: 1fr;
+  }
+
+  .ce-records-page {
+    padding-inline: 0.85rem;
+  }
+
+  .ce-row {
+    gap: 0.55rem 0.75rem;
+    padding: 0.8rem;
+  }
+
+  .ce-table tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .col-course {
+    grid-column: 1;
+  }
+
+  .col-org,
+  .col-date,
+  .col-hours,
+  .col-credential,
+  .col-cert {
+    grid-column: 1 / -1;
+  }
+
+  .course-head-mobile {
+    align-items: flex-start;
+  }
+
+  .showing-label {
+    font-size: 0.8rem;
   }
 }
