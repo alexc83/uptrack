@@ -98,7 +98,7 @@ export function buildCeRecordDetailDrawerView(params: {
     credentialName: credential.name,
     credentialOrganization: credential.issuingOrganization,
     certificateLabel: record.certificateUrl ? 'View certificate' : 'No certificate uploaded',
-    certificateUrl: record.certificateUrl,
+    certificateUrl: record.certificateUrl ?? undefined,
     actions: [
       { label: 'Edit CE Record', variant: 'primary' },
       { label: 'Upload / Replace Certificate', variant: 'secondary' },

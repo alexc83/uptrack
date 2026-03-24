@@ -3,17 +3,19 @@ import { inject } from '@angular/core';
 import { throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { API_BASE_URL } from '../api/api.config';
+import { isApiRequest, isPublicApiRequest } from '../api/api.helpers';
 import { AuthStore } from './auth.store';
-
-const PUBLIC_ENDPOINTS = ['/api/auth/login', '/api/auth/register', '/api/health'];
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const authStore = inject(AuthStore);
+  const apiBaseUrl = inject(API_BASE_URL);
   const token = authStore.token();
-  const isPublicEndpoint = PUBLIC_ENDPOINTS.some((endpoint) => request.url.startsWith(endpoint));
+  const isPublicEndpoint = isPublicApiRequest(request.url);
+  const shouldAttachToken = token && isApiRequest(request.url, apiBaseUrl) && !isPublicEndpoint;
 
   const authenticatedRequest =
-    token && !isPublicEndpoint
+    shouldAttachToken
       ? request.clone({
           setHeaders: {
             Authorization: `Bearer ${token}`,
