@@ -1,47 +1,181 @@
 # UpTrack
 
-UpTrack is a full-stack web application for healthcare professionals to manage licenses, certifications, and continuing education in one place.
+Track credentials. Stay compliant. Own your career.
 
-The project is built as a portfolio-style SaaS app with an Angular frontend and a Spring Boot backend, focused on clean architecture, realistic healthcare domain modeling, and a polished dashboard-style user experience.
+UpTrack is a healthcare-focused web application for keeping licenses, certifications, and continuing education in one organized place. It is designed for local use right now and works well as a realistic demo of a credential-tracking product: you can sign in, manage credentials, log CE records, and monitor compliance status from a live dashboard.
 
-## What The App Does
+It is also a portfolio project, but the goal is for someone opening the app locally to immediately understand how to use it like a real product.
 
-UpTrack helps users:
+## Why UpTrack
 
-- track professional credentials such as RN licenses, ACLS, BLS, PALS, CCRN, and similar certifications
-- monitor credential status using derived `ACTIVE`, `EXPIRING_SOON`, and `EXPIRED` states
-- log and review continuing education records tied to specific credentials
-- view credential details and CE details through contextual drawers
-- stay on top of renewal risk through a live dashboard with expirations, CE attention, and recent activity
-- sign up, log in, restore sessions, and keep all data scoped to the authenticated user
+Healthcare professionals often have to keep track of:
 
-## Current Product Status
+- licenses that expire on different schedules
+- certifications with separate renewal rules
+- CE hours that belong to specific credentials
+- certificate links or documentation needed during audits or renewals
 
-The application is now running as a real authenticated app against the backend rather than a frontend-only prototype.
+UpTrack brings those pieces together into one dashboard so you can quickly see what is active, what is expiring, and what still needs CE attention.
 
-Implemented right now:
+## What You Can Do Today
 
-- public landing page with light/dark mode and auth modals
-- JWT-based authentication with session restore and route protection
-- live dashboard backed by `GET /api/dashboard`
-- live credentials page with search and filters
-- live CE records page
-- live credential and CE record detail drawers
-- real credential create, edit, and delete flows from the frontend
-- Spring Boot REST API for auth, users, credentials, CE records, and dashboard aggregation
+- Create an account or sign in through the landing page
+- Switch between light and dark mode
+- Use a live dashboard with credential status, CE attention, and recent activity
+- Add, edit, and delete credentials
+- Add, edit, and delete CE records
+- Open credential and CE details in contextual drawers
+- Search and filter credentials
+- Review CE history from the dedicated CE Records page
+- Use the app on desktop or mobile layouts
 
-Still planned or incomplete:
+## Try It Locally
 
-- CE record create/edit/delete flows from the frontend
-- certificate upload flow
-- CE summary/export flow
-- production deployment/config hardening
+### 1. Start the backend
 
-## Tech Stack
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+### 2. Start the frontend
+
+```bash
+cd frontend
+npm start
+```
+
+### 3. Open the app
+
+Visit:
+
+```text
+http://localhost:4200
+```
+
+### 4. Sign up or use seed data
+
+The easiest way to try the app is to create a new account through the real sign-up flow on the landing page.
+
+If you already loaded local seed SQL into MySQL, you can also use those users. Optional seed files currently in the repo root:
+
+- `test_data.sql`
+- `test_data_v2.sql`
+
+Seeded example users may include:
+
+- `alex@example.com`
+- `jordan@example.com`
+
+with password:
+
+- `password123`
+
+Important:
+
+- seeded passwords must be stored as BCrypt hashes in the database
+- raw plaintext passwords will not work with Spring Security login
+- if seed login is not working, using the real sign-up flow is the recommended path
+
+## How To Use UpTrack
+
+### Start with the dashboard
+
+After logging in, go to [`/dashboard`](/Users/alexc/Documents/UpTrack/frontend/src/app/features/dashboard/dashboard-page/dashboard-page.component.ts). This is the main at-a-glance view for:
+
+- credential counts
+- upcoming expirations
+- CE progress that still needs attention
+- recent activity
+
+### Add your first credential
+
+Use the `Add Credential` action from the dashboard or go to [`/credentials`](/Users/alexc/Documents/UpTrack/frontend/src/app/features/credentials/credentials.component.ts).
+
+Each credential includes:
+
+- name
+- type
+- issuing organization
+- expiration date
+- renewal cycle
+- required CE hours
+
+UpTrack automatically derives whether a credential is active, expiring soon, or expired.
+
+### Add CE records tied to a credential
+
+Once a credential exists, add CE records either:
+
+- from the credential drawer
+- from the CE Records page at [`/ce-records`](/Users/alexc/Documents/UpTrack/frontend/src/app/features/ce-records/ce-records.component.ts)
+
+Each CE record tracks:
+
+- title
+- provider
+- hours earned
+- completion date
+- optional certificate URL
+- linked credential
+
+### Use drawers to review and update details
+
+Credential cards, dashboard lists, and CE items open drawers so you can:
+
+- review full credential details
+- review CE records linked to a credential
+- edit or delete credentials
+- edit or delete CE records
+
+### Search and filter credentials
+
+The credentials page supports:
+
+- text search
+- filtering by status
+- filtering by type
+
+That makes it easier to find expiring items or narrow the list to licenses versus certifications.
+
+### Review CE history
+
+The CE Records page gives you a dedicated view of your CE activity across credentials. From there you can:
+
+- browse all CE completions
+- see which credential each CE record counts toward
+- open record details
+- add a new CE record with credential selection
+
+## Current Status
+
+UpTrack is already a working authenticated local app with live frontend/backend integration.
+
+### Implemented now
+
+- public landing page with light/dark mode toggle
+- login and sign-up modals
+- JWT authentication with session restore
+- live dashboard data
+- live credentials page with add/edit/delete
+- live CE records page with add/edit/delete
+- live credential and CE detail drawers
+- responsive shell, navigation, and theme support
+
+### Still not implemented
+
+- real certificate file upload to Cloudinary or S3
+- CE summary export or printable download flow
+- Sentry monitoring integration
+- explicit dashboard 30/60/90 expiration bucket views
+
+## Technical Details
+
+UpTrack is a full-stack Angular + Spring Boot application with a typed frontend service layer and a JWT-secured REST API. The current architecture keeps business logic in the backend while the frontend focuses on presentation, typed forms, and live data interactions.
 
 ### Frontend
 
-- Angular 21 with standalone components
+- Angular 21
 - TypeScript
 - PrimeNG
 - Angular Signals
@@ -52,56 +186,18 @@ Still planned or incomplete:
 
 - Spring Boot 3.5
 - Java 21
-- Spring Security + JWT
+- Spring Security with JWT
 - Spring Data JPA
 - MySQL
-- JUnit 5 / Spring Boot Test
+- JUnit 5 and Spring Boot Test
 
 ## Project Structure
 
 ```text
 frontend/   Angular application
 backend/    Spring Boot REST API
-context/    feature specs, screenshots, and project working docs
+context/    feature specs, screenshots, and working docs
 ```
-
-## Core Features Implemented
-
-### Authentication
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- JWT-based session persistence in the Angular app
-- protected dashboard, credentials, and CE routes
-
-### Dashboard
-
-- aggregated live stats
-- upcoming expirations preview
-- CE attention preview
-- recent activity
-- overflow drawers and detail-drawer integration
-
-### Credentials
-
-- `GET /api/credentials`
-- `GET /api/credentials/{id}`
-- `GET /api/credentials/{id}/ce-records`
-- `POST /api/credentials`
-- `PUT /api/credentials/{id}`
-- `DELETE /api/credentials/{id}`
-- frontend search/filter UI
-- frontend add/edit/delete flows with validation and confirmation
-
-### Continuing Education
-
-- `GET /api/ce-records`
-- `GET /api/ce-records/{id}`
-- `POST /api/ce-records`
-- `PUT /api/ce-records/{id}`
-- `DELETE /api/ce-records/{id}`
-- live CE list page and live CE detail drawer
 
 ## Local Development
 
@@ -119,16 +215,16 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
-### Tests
+## Testing
 
-Frontend:
+### Frontend tests
 
 ```bash
 cd frontend
 npm test -- --watch=false
 ```
 
-Backend:
+### Backend tests
 
 ```bash
 cd backend
@@ -137,14 +233,14 @@ cd backend
 
 ## Build Notes
 
-Frontend production build:
+### Frontend production build
 
 ```bash
 cd frontend
 npm run build
 ```
 
-Backend package build:
+### Backend package build
 
 ```bash
 cd backend
@@ -155,48 +251,16 @@ Current note:
 
 - frontend tests pass
 - backend tests pass
-- the frontend production build is still sensitive to existing Angular style/bundle budget thresholds, especially around the landing page stylesheet
+- the frontend production build is still sensitive to Angular bundle/style budget thresholds, especially around the landing page stylesheet
 
-## Seed Data
+## Live Data and Seed Notes
 
-The app is expected to run locally against MySQL with realistic seed data already loaded or imported manually.
+- the app no longer depends on frontend mock data for dashboard, credentials, or CE reads
+- backend tests run against an isolated H2 profile and do not require your local MySQL database
+- local app usage expects MySQL data if you want persistent users and records between runs
+- backend configuration now uses `application.yml`
 
-Reference SQL files currently in the repo root:
-
-- `test_data.sql`
-- `test_data_v2.sql`
-
-The runtime app no longer depends on frontend mock data for dashboard, credentials, or CE reads.
-
-### Seeded Login Expectations
-
-The local seed set is intended to support users such as:
-
-- `alex@example.com`
-- `jordan@example.com`
-
-with password:
-
-- `password123`
-
-Important:
-
-- Spring Security login expects BCrypt-hashed passwords in the database.
-- If you import SQL manually, do not leave `users.password` as raw plaintext.
-- If needed, either store BCrypt hashes or recreate users through the real sign-up flow.
-
-### Helpful Verification
-
-After seeding, useful manual checks include:
-
-- log in with a seeded user
-- verify dashboard stats and previews
-- verify `/credentials`
-- verify `/ce-records`
-- verify credential add/edit/delete flows
-- verify credential and CE drawers load live data
-
-Useful SQL checks:
+Helpful SQL checks:
 
 ```sql
 SELECT BIN_TO_UUID(id) AS id, name, email FROM users;
@@ -204,8 +268,9 @@ SELECT BIN_TO_UUID(id) AS id, name, BIN_TO_UUID(user_id) AS user_id FROM credent
 SELECT BIN_TO_UUID(id) AS id, title, BIN_TO_UUID(credential_id) AS credential_id FROM ce_records;
 ```
 
-## Notes
+## Engineering Notes
 
-- Backend configuration uses `application.yml`.
-- Backend tests use an isolated H2 profile and do not require a live MySQL instance.
-- Credential writes are now JWT-scoped on the backend rather than relying on a frontend-supplied `userId`.
+- credential and CE write operations are scoped to the authenticated JWT user
+- credential status, CE hours earned, and CE progress are derived rather than stored
+- `DELETE /api/credentials/{id}` cascades to linked CE records
+- certificate handling is currently URL-based only; there is no real upload pipeline yet
