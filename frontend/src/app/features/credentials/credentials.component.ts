@@ -132,8 +132,16 @@ export class CredentialsComponent {
     this.statusFilter.set((event.target as HTMLSelectElement).value as CredentialStatus | '');
   }
 
+  updateStatusDirect(value: CredentialStatus | ''): void {
+    this.statusFilter.set(value);
+  }
+
   updateType(event: Event): void {
     this.typeFilter.set((event.target as HTMLSelectElement).value as CredentialType | '');
+  }
+
+  updateTypeDirect(value: CredentialType | ''): void {
+    this.typeFilter.set(value);
   }
 
   clearFilters(): void {

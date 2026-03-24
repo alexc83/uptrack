@@ -26,6 +26,14 @@
   line-height: 1.6;
 }
 
+.drawer-state-error {
+  min-height: 16rem;
+}
+
+.drawer-state-edit {
+  gap: 1.25rem;
+}
+
 .loading-stack,
 .loading-grid {
   display: grid;

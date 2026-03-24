@@ -50,23 +50,43 @@
     <button pButton type="button" label="Retry" (click)="retryLoad()"></button>
   </section>
 } @else if (view(); as ceRecordView) {
-  <app-ce-record-detail-drawer
-    [view]="ceRecordView"
-    (close)="close.emit()"
-    (credentialSelected)="credentialSelected.emit($event)"
-    (actionSelected)="handleActionSelected($event)"
-  />
-}
+  @if (isEditing()) {
+    <section class="drawer-state drawer-state-edit">
+      <header class="drawer-state__header">
+        <div>
+          <strong>Edit CE record</strong>
+          <p>Update completion details without leaving this drawer.</p>
+        </div>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-times"
+          severity="secondary"
+          text
+          rounded
+          aria-label="Close CE record drawer"
+          (click)="close.emit()"
+        ></button>
+      </header>
 
-@if (record(); as ceRecord) {
-  <app-ce-record-form-dialog
-    [open]="isEditing()"
-    mode="edit"
-    [context]="context()"
-    [record]="ceRecord"
-    (close)="closeEdit()"
-    (saved)="handleEditSaved()"
-  />
+      <app-ce-record-form
+        [form]="form"
+        submitLabel="Save Changes"
+        cancelLabel="Cancel Edit"
+        [isSubmitting]="isSaving()"
+        [submitError]="mutationError()"
+        (submitted)="submitEdit()"
+        (cancelled)="cancelEdit()"
+      />
+    </section>
+  } @else {
+    <app-ce-record-detail-drawer
+      [view]="ceRecordView"
+      (close)="close.emit()"
+      (credentialSelected)="credentialSelected.emit($event)"
+      (actionSelected)="handleActionSelected($event)"
+    />
+  }
 }
 
 <p-dialog
