@@ -30,6 +30,9 @@ describe('ce record form utils', () => {
         hours: 4.5,
         dateCompleted: '2026-03-01',
         certificateUrl: 'https://example.com/cert.pdf',
+        certificatePublicId: 'uptrack/users/user-1/certificates/trauma-update',
+        certificateResourceType: 'raw',
+        certificateOriginalFilename: 'trauma-update.pdf',
       }, 'cred-1'),
     ).toEqual({
       credentialId: 'cred-1',
@@ -38,6 +41,9 @@ describe('ce record form utils', () => {
       hours: 4.5,
       dateCompleted: '2026-03-01',
       certificateUrl: 'https://example.com/cert.pdf',
+      certificatePublicId: 'uptrack/users/user-1/certificates/trauma-update',
+      certificateResourceType: 'raw',
+      certificateOriginalFilename: 'trauma-update.pdf',
     });
   });
 
@@ -50,6 +56,9 @@ describe('ce record form utils', () => {
         hours: 4.5,
         dateCompleted: '2026-03-01',
         certificateUrl: '',
+        certificatePublicId: '',
+        certificateResourceType: '',
+        certificateOriginalFilename: '',
       }),
     ).toEqual({
       title: 'Trauma Update',
@@ -58,6 +67,9 @@ describe('ce record form utils', () => {
       dateCompleted: '2026-03-01',
       credentialId: 'cred-1',
       certificateUrl: null,
+      certificatePublicId: null,
+      certificateResourceType: null,
+      certificateOriginalFilename: null,
     });
   });
 

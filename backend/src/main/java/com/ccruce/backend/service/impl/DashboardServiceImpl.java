@@ -189,7 +189,10 @@ public class DashboardServiceImpl implements DashboardService {
                 ceRecord.getProvider(),
                 ceRecord.getHours(),
                 ceRecord.getDateCompleted(),
-                ceRecord.getCertificateUrl()
+                ceRecord.getCertificateUrl(),
+                ceRecord.getCertificatePublicId(),
+                ceRecord.getCertificateResourceType(),
+                ceRecord.getCertificateOriginalFilename()
         );
     }
 

@@ -103,7 +103,6 @@ export function buildCeRecordDetailDrawerView(params: {
     certificateUrl: record.certificateUrl ?? undefined,
     actions: [
       { id: 'edit-ce-record', label: 'Edit CE Record', variant: 'primary' },
-      { id: 'replace-certificate', label: 'Upload / Replace Certificate', variant: 'secondary' },
       { id: 'delete-ce-record', label: 'Delete CE Record', variant: 'danger' },
     ],
   };

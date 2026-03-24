@@ -10,6 +10,9 @@ public record CERecordResponseDto(
         String provider,
         BigDecimal hours,
         LocalDate dateCompleted,
-        String certificateUrl
+        String certificateUrl,
+        String certificatePublicId,
+        String certificateResourceType,
+        String certificateOriginalFilename
 ) {
 }

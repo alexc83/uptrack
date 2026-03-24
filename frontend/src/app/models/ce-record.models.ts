@@ -7,6 +7,9 @@ export interface CeRecordResponse {
   hours: number;
   dateCompleted: IsoDate;
   certificateUrl?: string | null;
+  certificatePublicId?: string | null;
+  certificateResourceType?: string | null;
+  certificateOriginalFilename?: string | null;
 }
 
 export interface CeRecordRequest {
@@ -15,6 +18,9 @@ export interface CeRecordRequest {
   hours: number;
   dateCompleted: IsoDate;
   certificateUrl?: string | null;
+  certificatePublicId?: string | null;
+  certificateResourceType?: string | null;
+  certificateOriginalFilename?: string | null;
   credentialId: ApiId;
 }
 

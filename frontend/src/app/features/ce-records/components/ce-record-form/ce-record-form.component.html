@@ -49,10 +49,55 @@
       }
     </label>
 
-    <label class="field field-full">
-      <span>Certificate URL</span>
-      <input type="url" formControlName="certificateUrl" placeholder="https://example.com/certificate.pdf" />
-    </label>
+    <div class="field field-full">
+      <span>Certificate</span>
+      <div class="certificate-upload">
+        <input
+          [id]="uploadInputId()"
+          class="upload-input-native"
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,application/pdf,image/jpeg,image/png,image/webp,image/gif"
+          [disabled]="isUploading() || isSubmitting()"
+          (change)="fileSelected.emit($event)"
+        />
+
+        <small class="field-help">Accepted file types: PDF, JPG, JPEG, PNG, WEBP, GIF.</small>
+
+        @if (uploadedFileName(); as fileName) {
+          <div class="upload-state upload-state-success">
+            <strong>Uploaded:</strong> {{ fileName }}
+            @if (form().controls.certificateUrl.value) {
+              <a [href]="form().controls.certificateUrl.value" target="_blank" rel="noreferrer">
+                Open uploaded file
+              </a>
+            }
+            <button type="button" class="upload-action-button" (click)="certificateRemoved.emit()">
+              Remove certificate
+            </button>
+          </div>
+        } @else if (existingCertificateUrl() && form().controls.certificateUrl.value) {
+          <div class="upload-state">
+            <strong>Certificate attached.</strong>
+            <a [href]="existingCertificateUrl()!" target="_blank" rel="noreferrer">Open current file</a>
+            <button type="button" class="upload-action-button" (click)="certificateRemoved.emit()">
+              Remove certificate
+            </button>
+          </div>
+        } @else {
+          <div class="upload-state upload-state-muted">No certificate uploaded yet.</div>
+        }
+
+        @if (uploadStatus(); as statusMessage) {
+          <div class="upload-state" [class.upload-state-uploading]="isUploading()">
+            {{ statusMessage }}
+          </div>
+        }
+
+        @if (uploadError(); as uploadErrorMessage) {
+          <div class="field-error" role="alert">{{ uploadErrorMessage }}</div>
+        }
+      </div>
+    </div>
   </div>
 
   @if (submitError(); as errorMessage) {
@@ -74,7 +119,7 @@
       type="submit"
       [label]="submitLabel()"
       [loading]="isSubmitting()"
-      [disabled]="form().invalid || isSubmitting()"
+      [disabled]="form().invalid || isSubmitting() || isUploading()"
     ></button>
   </div>
 </form>

@@ -74,17 +74,27 @@
         submitLabel="Save Changes"
         cancelLabel="Cancel Edit"
         [isSubmitting]="isSaving()"
+        [isUploading]="isUploading()"
+        [uploadError]="uploadError()"
+        [uploadStatus]="uploadStatus()"
+        [uploadedFileName]="uploadedFileName()"
+        [existingCertificateUrl]="record()?.certificateUrl ?? null"
+        uploadInputId="ce-record-drawer-certificate-upload"
         [submitError]="mutationError()"
         (submitted)="submitEdit()"
+        (fileSelected)="handleFileSelected($event)"
+        (certificateRemoved)="handleCertificateRemoved()"
         (cancelled)="cancelEdit()"
       />
     </section>
   } @else {
     <app-ce-record-detail-drawer
       [view]="ceRecordView"
+      [isRemovingCertificate]="isRemovingCertificate()"
       (close)="close.emit()"
       (credentialSelected)="credentialSelected.emit($event)"
       (actionSelected)="handleActionSelected($event)"
+      (certificateRemoveSelected)="removeCertificate()"
     />
   }
 }

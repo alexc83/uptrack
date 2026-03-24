@@ -35,6 +35,15 @@ public class CERecord {
     @Column(length = 500)
     private String certificateUrl;
 
+    @Column(length = 255)
+    private String certificatePublicId;
+
+    @Column(length = 40)
+    private String certificateResourceType;
+
+    @Column(length = 255)
+    private String certificateOriginalFilename;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "credential_id", nullable = false)
     private Credential credential;
@@ -96,6 +105,30 @@ public class CERecord {
 
     public void setCertificateUrl(String certificateUrl) {
         this.certificateUrl = certificateUrl;
+    }
+
+    public String getCertificatePublicId() {
+        return certificatePublicId;
+    }
+
+    public void setCertificatePublicId(String certificatePublicId) {
+        this.certificatePublicId = certificatePublicId;
+    }
+
+    public String getCertificateResourceType() {
+        return certificateResourceType;
+    }
+
+    public void setCertificateResourceType(String certificateResourceType) {
+        this.certificateResourceType = certificateResourceType;
+    }
+
+    public String getCertificateOriginalFilename() {
+        return certificateOriginalFilename;
+    }
+
+    public void setCertificateOriginalFilename(String certificateOriginalFilename) {
+        this.certificateOriginalFilename = certificateOriginalFilename;
     }
 
     public Credential getCredential() {

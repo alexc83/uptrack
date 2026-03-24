@@ -22,10 +22,18 @@
     [form]="form"
     [submitLabel]="submitLabel()"
     [isSubmitting]="isSubmitting()"
+    [isUploading]="isUploading()"
+    [uploadError]="uploadError()"
+    [uploadStatus]="uploadStatus()"
+    [uploadedFileName]="uploadedFileName()"
+    [existingCertificateUrl]="record()?.certificateUrl ?? null"
+    uploadInputId="ce-record-dialog-certificate-upload"
     [submitError]="submitError()"
     [credentialOptions]="credentialOptions()"
     [showCredentialField]="shouldSelectCredential()"
     (submitted)="submit()"
+    (fileSelected)="handleFileSelected($event)"
+    (certificateRemoved)="handleCertificateRemoved()"
     (cancelled)="handleClose()"
   />
 </p-dialog>

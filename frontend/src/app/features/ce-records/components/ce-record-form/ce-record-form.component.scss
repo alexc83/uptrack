@@ -56,6 +56,120 @@
   background: #151b25;
 }
 
+.field-help {
+  color: var(--text-color-secondary);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.certificate-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.upload-input-native {
+  min-height: 3rem;
+  padding: 0.7rem 0.85rem;
+  border: 1.5px dashed #c7d2e0;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--surface-card) 92%, white 8%);
+  color: var(--text-color);
+  font: inherit;
+}
+
+.upload-input-native::file-selector-button {
+  margin-right: 0.85rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--surface-border) 74%, transparent 26%);
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--surface-card) 84%, white 16%);
+  color: var(--text-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upload-input-native:hover {
+  border-color: var(--ut-primary);
+  background: color-mix(in srgb, var(--ut-primary) 6%, var(--surface-card) 94%);
+}
+
+.upload-input-native:disabled {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.upload-input-native:focus {
+  outline: 2px solid color-mix(in srgb, var(--ut-primary) 18%, transparent 82%);
+  border-color: var(--ut-primary);
+}
+
+.upload-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  color: var(--text-color-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.upload-state a {
+  color: var(--ut-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.upload-state a:hover {
+  text-decoration: underline;
+}
+
+.upload-action-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-color-secondary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upload-action-button:hover {
+  color: var(--text-color);
+  text-decoration: underline;
+}
+
+.upload-state-success {
+  color: #166534;
+}
+
+.upload-state-uploading {
+  color: var(--ut-primary);
+}
+
+.upload-state-muted {
+  color: var(--text-color-secondary);
+}
+
+:host-context(html.dark) .upload-input-native {
+  border-color: #445066;
+  background: #151b25;
+}
+
+:host-context(html.dark) .upload-input-native:hover {
+  border-color: var(--ut-primary);
+  background: color-mix(in srgb, var(--ut-primary) 8%, #151b25 92%);
+}
+
+:host-context(html.dark) .upload-input-native::file-selector-button {
+  border-color: #445066;
+  background: #1d2531;
+}
+
+:host-context(html.dark) .upload-state-success {
+  color: #86efac;
+}
+
 .field-error,
 .submit-error {
   color: #c2410c;

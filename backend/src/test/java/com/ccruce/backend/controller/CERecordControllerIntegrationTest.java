@@ -1,15 +1,19 @@
 package com.ccruce.backend.controller;
 
+import com.ccruce.backend.service.CertificateUploadService;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -21,6 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTest {
+
+    @MockBean
+    private CertificateUploadService certificateUploadService;
 
     @Test
     void shouldPerformFullCERecordCrudFlow() throws Exception {
@@ -34,9 +41,12 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
                   "hours": 4.5,
                   "dateCompleted": "2026-03-01",
                   "certificateUrl": "https://example.com/certificates/trauma-update.pdf",
+                  "certificatePublicId": "uptrack/users/%s/certificates/trauma-update",
+                  "certificateResourceType": "raw",
+                  "certificateOriginalFilename": "trauma-update.pdf",
                   "credentialId": "%s"
                 }
-                """.formatted(credentialId);
+                """.formatted(session.userId(), credentialId);
 
         String createResponse = mockMvc.perform(post("/api/ce-records")
                         .header("Authorization", bearerToken(session))
@@ -61,7 +71,10 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
         mockMvc.perform(get("/api/ce-records/{id}", ceRecordId)
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.certificateUrl").value("https://example.com/certificates/trauma-update.pdf"));
+                .andExpect(jsonPath("$.certificateUrl").value("https://example.com/certificates/trauma-update.pdf"))
+                .andExpect(jsonPath("$.certificatePublicId").value("uptrack/users/%s/certificates/trauma-update".formatted(session.userId())))
+                .andExpect(jsonPath("$.certificateResourceType").value("raw"))
+                .andExpect(jsonPath("$.certificateOriginalFilename").value("trauma-update.pdf"));
 
         String updatePayload = """
                 {
@@ -84,6 +97,9 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
                 .andExpect(jsonPath("$.hours").value(6.0))
                 .andExpect(jsonPath("$.certificateUrl").doesNotExist());
 
+        verify(certificateUploadService)
+                .deleteCertificate("uptrack/users/%s/certificates/trauma-update".formatted(session.userId()), "raw");
+
         mockMvc.perform(delete("/api/ce-records/{id}", ceRecordId)
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNoContent());
@@ -92,6 +108,57 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("CE record not found for id: " + ceRecordId));
+    }
+
+    @Test
+    void shouldDeleteStoredCertificateAssetWhenDeletingCeRecord() throws Exception {
+        AuthSession session = registerUser("Cora James", "cora.james@example.com");
+        String credentialId = createCredential(session, "ACLS");
+        String ceRecordId = createCERecordWithCertificate(
+                session,
+                credentialId,
+                "Advanced Cardiac Review",
+                "https://example.com/certificates/acls-review.pdf",
+                "uptrack/users/%s/certificates/acls-review".formatted(session.userId()),
+                "raw",
+                "acls-review.pdf"
+        );
+
+        mockMvc.perform(delete("/api/ce-records/{id}", ceRecordId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isNoContent());
+
+        verify(certificateUploadService)
+                .deleteCertificate("uptrack/users/%s/certificates/acls-review".formatted(session.userId()), "raw");
+    }
+
+    @Test
+    void shouldRejectCertificateMetadataForAnotherUser() throws Exception {
+        AuthSession session = registerUser("Lena Burke", "lena.burke@example.com");
+        String credentialId = createCredential(session, "NRP");
+
+        String payload = """
+                {
+                  "title": "Neonatal Review",
+                  "provider": "AAP",
+                  "hours": 2.0,
+                  "dateCompleted": "2026-03-15",
+                  "certificateUrl": "https://example.com/certificates/neonatal-review.pdf",
+                  "certificatePublicId": "uptrack/users/00000000-0000-0000-0000-000000000999/certificates/neonatal-review",
+                  "certificateResourceType": "raw",
+                  "certificateOriginalFilename": "neonatal-review.pdf",
+                  "credentialId": "%s"
+                }
+                """.formatted(credentialId);
+
+        mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Certificate asset does not belong to the authenticated user."));
+
+        verify(certificateUploadService, never()).deleteCertificate(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test
@@ -234,6 +301,48 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
                   "credentialId": "%s"
                 }
                 """.formatted(title, credentialId);
+
+        String response = mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return objectMapper.readTree(response).get("id").asText();
+    }
+
+    private String createCERecordWithCertificate(
+            AuthSession session,
+            String credentialId,
+            String title,
+            String certificateUrl,
+            String certificatePublicId,
+            String certificateResourceType,
+            String certificateOriginalFilename
+    ) throws Exception {
+        String payload = """
+                {
+                  "title": "%s",
+                  "provider": "AHA",
+                  "hours": 2.5,
+                  "dateCompleted": "2026-03-12",
+                  "certificateUrl": "%s",
+                  "certificatePublicId": "%s",
+                  "certificateResourceType": "%s",
+                  "certificateOriginalFilename": "%s",
+                  "credentialId": "%s"
+                }
+                """.formatted(
+                title,
+                certificateUrl,
+                certificatePublicId,
+                certificateResourceType,
+                certificateOriginalFilename,
+                credentialId
+        );
 
         String response = mockMvc.perform(post("/api/ce-records")
                         .header("Authorization", bearerToken(session))
