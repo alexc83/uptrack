@@ -9,6 +9,9 @@ export interface CeRecordFormValue {
   hours: number | null;
   dateCompleted: string;
   certificateUrl: string;
+  certificatePublicId: string;
+  certificateResourceType: string;
+  certificateOriginalFilename: string;
 }
 
 export type CeRecordFormGroup = FormGroup<{
@@ -18,6 +21,9 @@ export type CeRecordFormGroup = FormGroup<{
   hours: FormControl<number | null>;
   dateCompleted: FormControl<string>;
   certificateUrl: FormControl<string>;
+  certificatePublicId: FormControl<string>;
+  certificateResourceType: FormControl<string>;
+  certificateOriginalFilename: FormControl<string>;
 }>;
 
 export function createCeRecordForm(
@@ -38,6 +44,11 @@ export function createCeRecordForm(
       Validators.required,
     ]),
     certificateUrl: formBuilder.nonNullable.control(initialValue?.certificateUrl ?? ''),
+    certificatePublicId: formBuilder.nonNullable.control(initialValue?.certificatePublicId ?? ''),
+    certificateResourceType: formBuilder.nonNullable.control(initialValue?.certificateResourceType ?? ''),
+    certificateOriginalFilename: formBuilder.nonNullable.control(
+      initialValue?.certificateOriginalFilename ?? '',
+    ),
   });
 }
 
@@ -52,6 +63,9 @@ export function buildCeRecordFormValue(
     hours: record.hours,
     dateCompleted: record.dateCompleted,
     certificateUrl: record.certificateUrl ?? '',
+    certificatePublicId: record.certificatePublicId ?? '',
+    certificateResourceType: record.certificateResourceType ?? '',
+    certificateOriginalFilename: record.certificateOriginalFilename ?? '',
   };
 }
 
@@ -63,6 +77,9 @@ export function toCeRecordRequest(value: CeRecordFormValue): CeRecordRequest {
     dateCompleted: value.dateCompleted,
     credentialId: value.credentialId,
     certificateUrl: value.certificateUrl.trim() || null,
+    certificatePublicId: value.certificatePublicId.trim() || null,
+    certificateResourceType: value.certificateResourceType.trim() || null,
+    certificateOriginalFilename: value.certificateOriginalFilename.trim() || null,
   };
 }
 

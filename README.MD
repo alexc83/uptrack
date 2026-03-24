@@ -24,10 +24,33 @@ UpTrack brings those pieces together into one dashboard so you can quickly see w
 - Use a live dashboard with credential status, CE attention, summary stats, and recent activity
 - Add, edit, and delete credentials from the dashboard and credentials page
 - Add, edit, and delete CE records from the dashboard, credential details, and CE Records page
+- Upload certificate PDFs or images while creating or editing CE records
+- Replace or remove a certificate and have the old Cloudinary asset cleaned up automatically
 - Open credential and CE details in contextual drawers
 - Search and filter credentials by text, status, and type
 - Review CE history from the dedicated CE Records page with summary cards, chip filters, pagination, and a scalable table layout
+- Use the CE Records page on mobile with stacked card layouts instead of a wide scrolling table
 - Use the app on desktop or mobile layouts
+
+## If You're Trying The App As A User
+
+You do not need to understand Angular, Spring Boot, JWT, or databases to try UpTrack. If you are opening this locally just to see what the product does, the simplest way to think about it is:
+
+- the dashboard tells you what needs attention
+- credentials are the licenses/certifications you need to keep active
+- CE records are the classes or learning activities that count toward renewal
+- certificates are optional proof files you can attach to a CE record
+
+If you want a quick walkthrough, try this order:
+
+1. Create an account from the landing page.
+2. Add one credential, like `RN License - Texas` or `BLS Certification`.
+3. Add a CE record tied to that credential.
+4. Upload a PDF certificate for that CE record.
+5. Go to the CE Records page and confirm the certificate shows as `On file`.
+6. Open the CE drawer and use the certificate link or remove action to see how the record is managed.
+
+If all you want is a product feel test, that flow will show you the main value of the app in just a couple minutes.
 
 ## Try It Locally
 
@@ -116,7 +139,7 @@ Each CE record tracks:
 - provider
 - hours earned
 - completion date
-- optional certificate URL
+- optional uploaded certificate file
 - linked credential
 
 ### Use drawers to review and update details
@@ -147,6 +170,27 @@ The CE Records page gives you a dedicated view of your CE activity across creden
 - filter by credential and certificate presence
 - open record details from the row or action icon
 - add a new CE record with credential selection
+- use the mobile card layout on smaller screens
+
+### Attach proof documents when needed
+
+When adding or editing a CE record, you can upload a certificate file through the app.
+
+Supported file types include:
+
+- PDF
+- JPG / JPEG
+- PNG
+- WEBP
+- GIF
+
+You can also:
+
+- open the uploaded file from the form or drawer
+- replace it with a new file
+- remove it from the record
+
+UpTrack stores the hosted file information with the CE record and cleans up replaced or removed files through the backend integration.
 
 ## Current Status
 
@@ -159,14 +203,14 @@ UpTrack is already a working authenticated local app with live frontend/backend 
 - JWT authentication with session restore
 - live dashboard data from the backend `/api/dashboard` endpoint
 - live credentials page with backend search/filtering plus add/edit/delete flows
-- live CE records page with add/edit/delete flows, filters, summary cards, pagination, and a table-based layout
+- live CE records page with add/edit/delete flows, filters, summary cards, pagination, responsive mobile cards, and a table-based desktop layout
 - live credential and CE detail drawers
+- CE certificate upload, replace, remove, and view flows backed by Cloudinary-hosted files
 - credential detail responses with linked CE records and computed CE progress
 - responsive shell, navigation, and theme support
 
 ### Still not implemented
 
-- real certificate file upload to Cloudinary or S3
 - CE summary export or printable download flow
 - Sentry monitoring integration
 - explicit dashboard 30/60/90 expiration bucket views
@@ -201,6 +245,9 @@ UpTrack is a full-stack Angular + Spring Boot application with a typed frontend 
 - Aggregated credential detail responses with CE hour and CE progress calculations
 - Credential filtering by search, status, and type
 - Authenticated dashboard aggregation endpoint
+- Authenticated certificate upload endpoint backed by Cloudinary
+- CE record certificate metadata persistence for hosted file management
+- Cleanup of replaced, removed, or deleted CE certificate assets from Cloudinary
 
 ## Project Structure
 
@@ -271,6 +318,7 @@ Current note:
 - backend tests run against an isolated H2 profile and do not require your local MySQL database
 - local app usage expects MySQL data if you want persistent users and records between runs
 - backend configuration now uses `application.yml`
+- Cloudinary PDF delivery must be enabled in your Cloudinary environment security settings if you want uploaded PDFs to open directly in the browser
 
 Helpful SQL checks:
 
@@ -285,4 +333,5 @@ SELECT BIN_TO_UUID(id) AS id, title, BIN_TO_UUID(credential_id) AS credential_id
 - credential and CE write operations are scoped to the authenticated JWT user
 - credential status, CE hours earned, and CE progress are derived rather than stored
 - `DELETE /api/credentials/{id}` cascades to linked CE records
-- certificate handling is currently URL-based only; there is no real upload pipeline yet
+- certificate uploads are handled through the backend and stored in Cloudinary
+- CE records now persist certificate URL plus asset metadata so replace/remove/delete flows can clean up old hosted files

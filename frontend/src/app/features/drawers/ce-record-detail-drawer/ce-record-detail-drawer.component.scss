@@ -109,6 +109,18 @@
   text-decoration: none;
 }
 
+.certificate-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.certificate-actions .certificate-link {
+  margin-top: 0;
+}
+
 .credential-link {
   cursor: pointer;
 }

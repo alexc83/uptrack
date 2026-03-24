@@ -54,10 +54,22 @@
     </div>
 
     @if (view().certificateUrl) {
-      <a class="certificate-link" [href]="view().certificateUrl" target="_blank" rel="noreferrer">
-        <span>{{ view().certificateLabel }}</span>
-        <i class="pi pi-external-link"></i>
-      </a>
+      <div class="certificate-actions">
+        <a class="certificate-link" [href]="view().certificateUrl" target="_blank" rel="noreferrer">
+          <span>{{ view().certificateLabel }}</span>
+          <i class="pi pi-external-link"></i>
+        </a>
+        <button
+          pButton
+          type="button"
+          label="Remove Certificate"
+          severity="danger"
+          text
+          [loading]="isRemovingCertificate()"
+          [disabled]="isRemovingCertificate()"
+          (click)="certificateRemoveSelected.emit()"
+        ></button>
+      </div>
     } @else {
       <div class="empty-state">
         <strong>No certificate uploaded</strong>

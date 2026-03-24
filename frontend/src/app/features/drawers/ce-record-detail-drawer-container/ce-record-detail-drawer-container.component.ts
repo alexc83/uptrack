@@ -8,6 +8,7 @@ import { getApiErrorMessage } from '../../../core/api/api.helpers';
 import { CeRecordDetail } from '../../../models/ce-record.models';
 import { CredentialWriteEventsService } from '../../../services/credential-write-events.service';
 import { CeRecordService } from '../../../services/ce-record.service';
+import { UploadService } from '../../../services/upload.service';
 import { CeRecordFormComponent } from '../../ce-records/components/ce-record-form/ce-record-form.component';
 import {
   buildCeRecordFormValue,
@@ -34,6 +35,7 @@ export class CeRecordDetailDrawerContainerComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly ceRecordService = inject(CeRecordService);
   private readonly credentialWriteEvents = inject(CredentialWriteEventsService);
+  private readonly uploadService = inject(UploadService);
   private readonly destroyRef = inject(DestroyRef);
 
   private requestSequence = 0;
@@ -51,6 +53,11 @@ export class CeRecordDetailDrawerContainerComponent {
   readonly isEditing = signal(false);
   readonly isSaving = signal(false);
   readonly mutationError = signal<string | null>(null);
+  readonly isUploading = signal(false);
+  readonly uploadError = signal<string | null>(null);
+  readonly uploadStatus = signal<string | null>(null);
+  readonly uploadedFileName = signal<string | null>(null);
+  readonly isRemovingCertificate = signal(false);
   readonly deleteConfirmOpen = signal(false);
   readonly isDeleting = signal(false);
   readonly deleteError = signal<string | null>(null);
@@ -100,13 +107,114 @@ export class CeRecordDetailDrawerContainerComponent {
     }
   }
 
+  removeCertificate(): void {
+    const record = this.record();
+    if (!record || !record.certificateUrl || this.isRemovingCertificate()) {
+      return;
+    }
+
+    this.isRemovingCertificate.set(true);
+    this.errorMessage.set(null);
+
+    this.ceRecordService
+      .updateCeRecord(record.id, {
+        title: record.title,
+        provider: record.provider,
+        hours: record.hours,
+        dateCompleted: record.dateCompleted,
+        credentialId: this.context().credentialId,
+        certificateUrl: null,
+        certificatePublicId: null,
+        certificateResourceType: null,
+        certificateOriginalFilename: null,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updatedRecord) => {
+          this.record.set(updatedRecord);
+          this.isRemovingCertificate.set(false);
+          this.credentialWriteEvents.notifyChanged();
+        },
+        error: (error) => {
+          this.isRemovingCertificate.set(false);
+          this.errorMessage.set(
+            getApiErrorMessage(error, 'We could not remove this certificate right now.'),
+          );
+        },
+      });
+  }
+
   cancelEdit(): void {
     this.isEditing.set(false);
     this.mutationError.set(null);
+    this.resetUploadState();
     const record = this.record();
     if (record) {
       this.form.reset(buildCeRecordFormValue(record, this.context().credentialId));
     }
+  }
+
+  handleFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    const filename = file.name.toLowerCase();
+    const isSupported =
+      file.type === 'application/pdf' ||
+      file.type === 'image/jpeg' ||
+      file.type === 'image/png' ||
+      file.type === 'image/webp' ||
+      file.type === 'image/gif' ||
+      /\.(pdf|jpe?g|png|webp|gif)$/.test(filename);
+
+    if (!isSupported) {
+      this.uploadError.set('Unsupported file type. Please choose a PDF or common image file.');
+      this.uploadStatus.set(null);
+      this.uploadedFileName.set(null);
+      return;
+    }
+
+    this.isUploading.set(true);
+    this.uploadError.set(null);
+    this.uploadStatus.set(`Uploading ${file.name}...`);
+
+    this.uploadService
+      .uploadCertificate(file)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.form.controls.certificateUrl.setValue(response.url);
+          this.form.controls.certificatePublicId.setValue(response.publicId);
+          this.form.controls.certificateResourceType.setValue(response.resourceType);
+          this.form.controls.certificateOriginalFilename.setValue(response.originalFilename);
+          this.isUploading.set(false);
+          this.uploadStatus.set('Certificate uploaded successfully.');
+          this.uploadedFileName.set(response.originalFilename);
+        },
+        error: (error) => {
+          this.isUploading.set(false);
+          this.uploadStatus.set(null);
+          this.uploadedFileName.set(null);
+          this.uploadError.set(
+            getApiErrorMessage(error, 'We could not upload that certificate right now.'),
+          );
+        },
+      });
+  }
+
+  handleCertificateRemoved(): void {
+    this.form.controls.certificateUrl.setValue('');
+    this.form.controls.certificatePublicId.setValue('');
+    this.form.controls.certificateResourceType.setValue('');
+    this.form.controls.certificateOriginalFilename.setValue('');
+    this.uploadError.set(null);
+    this.uploadedFileName.set(null);
+    this.uploadStatus.set('Certificate removed.');
   }
 
   submitEdit(): void {
@@ -132,6 +240,7 @@ export class CeRecordDetailDrawerContainerComponent {
           this.record.set(updatedRecord);
           this.isSaving.set(false);
           this.isEditing.set(false);
+          this.resetUploadState();
           this.credentialWriteEvents.notifyChanged();
         },
         error: (error) => {
@@ -186,6 +295,7 @@ export class CeRecordDetailDrawerContainerComponent {
 
     this.form.reset(buildCeRecordFormValue(record, this.context().credentialId));
     this.mutationError.set(null);
+    this.resetUploadState();
     this.isEditing.set(true);
   }
 
@@ -197,6 +307,8 @@ export class CeRecordDetailDrawerContainerComponent {
     this.record.set(null);
     this.isEditing.set(false);
     this.mutationError.set(null);
+    this.resetUploadState();
+    this.isRemovingCertificate.set(false);
     this.deleteConfirmOpen.set(false);
     this.deleteError.set(null);
 
@@ -224,5 +336,12 @@ export class CeRecordDetailDrawerContainerComponent {
           this.isLoading.set(false);
         },
       });
+  }
+
+  private resetUploadState(): void {
+    this.isUploading.set(false);
+    this.uploadError.set(null);
+    this.uploadStatus.set(null);
+    this.uploadedFileName.set(null);
   }
 }

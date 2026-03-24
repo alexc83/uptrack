@@ -15,6 +15,9 @@ public record CERecordRequestDto(
         @NotNull @DecimalMin(value = "0.0", inclusive = false) BigDecimal hours,
         @NotNull LocalDate dateCompleted,
         @Size(max = 500) String certificateUrl,
+        @Size(max = 255) String certificatePublicId,
+        @Size(max = 40) String certificateResourceType,
+        @Size(max = 255) String certificateOriginalFilename,
         @NotNull UUID credentialId
 ) {
 }

@@ -11,8 +11,10 @@ import { CeRecordDetailDrawerView, DrawerActionId } from '../models/drawer.model
 })
 export class CeRecordDetailDrawerComponent {
   readonly view = input.required<CeRecordDetailDrawerView>();
+  readonly isRemovingCertificate = input(false);
 
   readonly close = output<void>();
   readonly credentialSelected = output<string>();
   readonly actionSelected = output<DrawerActionId>();
+  readonly certificateRemoveSelected = output<void>();
 }

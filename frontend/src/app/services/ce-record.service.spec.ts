@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { API_BASE_URL } from '../core/api/api.config';
 import { CeRecordService } from './ce-record.service';
+import { UploadService } from './upload.service';
 
 describe('CeRecordService', () => {
   let service: CeRecordService;
@@ -39,6 +40,9 @@ describe('CeRecordService', () => {
       hours: 4,
       dateCompleted: '2026-03-10',
       certificateUrl: null,
+      certificatePublicId: null,
+      certificateResourceType: null,
+      certificateOriginalFilename: null,
     });
   });
 
@@ -50,6 +54,9 @@ describe('CeRecordService', () => {
         hours: 4.5,
         dateCompleted: '2026-03-01',
         certificateUrl: null,
+        certificatePublicId: null,
+        certificateResourceType: null,
+        certificateOriginalFilename: null,
       })
       .subscribe();
 
@@ -61,9 +68,52 @@ describe('CeRecordService', () => {
       hours: 4.5,
       dateCompleted: '2026-03-01',
       certificateUrl: null,
+      certificatePublicId: null,
+      certificateResourceType: null,
+      certificateOriginalFilename: null,
       credentialId: 'cred-123',
     });
     expect('userId' in request.request.body).toBe(false);
     request.flush({});
+  });
+});
+
+describe('UploadService', () => {
+  let service: UploadService;
+  let httpTesting: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        UploadService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: API_BASE_URL, useValue: 'http://localhost:8080/api' },
+      ],
+    });
+
+    service = TestBed.inject(UploadService);
+    httpTesting = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpTesting.verify();
+  });
+
+  it('uploads a certificate through the upload endpoint', () => {
+    const file = new File(['certificate'], 'acls-cert.pdf', { type: 'application/pdf' });
+
+    service.uploadCertificate(file).subscribe();
+
+    const request = httpTesting.expectOne('http://localhost:8080/api/uploads/certificates');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body instanceof FormData).toBe(true);
+    expect(request.request.body.get('file')).toBe(file);
+    request.flush({
+      url: 'https://example.com/cert.pdf',
+      publicId: 'uptrack/certificates/cert',
+      originalFilename: 'acls-cert.pdf',
+      resourceType: 'raw',
+    });
   });
 });

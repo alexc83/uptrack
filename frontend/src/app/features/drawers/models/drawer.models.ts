@@ -7,7 +7,6 @@ export type DrawerActionId =
   | 'delete-credential'
   | 'export-ce-summary'
   | 'edit-ce-record'
-  | 'replace-certificate'
   | 'delete-ce-record';
 
 export interface DrawerMetaFieldView {

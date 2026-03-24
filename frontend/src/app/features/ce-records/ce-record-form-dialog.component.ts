@@ -6,6 +6,7 @@ import { getApiErrorMessage } from '../../core/api/api.helpers';
 import { CeRecordDetail } from '../../models/ce-record.models';
 import { CredentialWriteEventsService } from '../../services/credential-write-events.service';
 import { CeRecordService } from '../../services/ce-record.service';
+import { UploadService } from '../../services/upload.service';
 import { CeRecordSelectionContext } from '../drawers/ce-record-detail-drawer-container/ce-record-detail-drawer-container.component';
 import {
   CeRecordCredentialOption,
@@ -29,6 +30,7 @@ export class CeRecordFormDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly ceRecordService = inject(CeRecordService);
   private readonly credentialWriteEvents = inject(CredentialWriteEventsService);
+  private readonly uploadService = inject(UploadService);
 
   readonly open = input(false);
   readonly mode = input<CeRecordFormMode>('create');
@@ -42,6 +44,10 @@ export class CeRecordFormDialogComponent {
   readonly form = createCeRecordForm(this.formBuilder);
   readonly isSubmitting = signal(false);
   readonly submitError = signal<string | null>(null);
+  readonly isUploading = signal(false);
+  readonly uploadError = signal<string | null>(null);
+  readonly uploadStatus = signal<string | null>(null);
+  readonly uploadedFileName = signal<string | null>(null);
 
   readonly syncFormEffect = effect(() => {
     if (!this.open()) {
@@ -56,6 +62,9 @@ export class CeRecordFormDialogComponent {
     if (mode === 'edit' && record) {
       this.form.reset(buildCeRecordFormValue(record, context?.credentialId ?? ''));
       this.submitError.set(null);
+      this.uploadError.set(null);
+      this.uploadStatus.set(null);
+      this.uploadedFileName.set(null);
       return;
     }
 
@@ -66,8 +75,14 @@ export class CeRecordFormDialogComponent {
       hours: null,
       dateCompleted: '',
       certificateUrl: '',
+      certificatePublicId: '',
+      certificateResourceType: '',
+      certificateOriginalFilename: '',
     });
     this.submitError.set(null);
+    this.uploadError.set(null);
+    this.uploadStatus.set(null);
+    this.uploadedFileName.set(null);
   });
 
   readonly title = () => (this.mode() === 'edit' ? 'Edit CE record' : 'Add CE record');
@@ -108,6 +123,66 @@ export class CeRecordFormDialogComponent {
     this.close.emit();
   }
 
+  handleFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    const filename = file.name.toLowerCase();
+    const isSupported =
+      file.type === 'application/pdf' ||
+      file.type === 'image/jpeg' ||
+      file.type === 'image/png' ||
+      file.type === 'image/webp' ||
+      file.type === 'image/gif' ||
+      /\.(pdf|jpe?g|png|webp|gif)$/.test(filename);
+
+    if (!isSupported) {
+      this.uploadError.set('Unsupported file type. Please choose a PDF or common image file.');
+      this.uploadStatus.set(null);
+      this.uploadedFileName.set(null);
+      return;
+    }
+
+    this.isUploading.set(true);
+    this.uploadError.set(null);
+    this.uploadStatus.set(`Uploading ${file.name}...`);
+
+    this.uploadService.uploadCertificate(file).subscribe({
+      next: (response) => {
+        this.form.controls.certificateUrl.setValue(response.url);
+        this.form.controls.certificatePublicId.setValue(response.publicId);
+        this.form.controls.certificateResourceType.setValue(response.resourceType);
+        this.form.controls.certificateOriginalFilename.setValue(response.originalFilename);
+        this.isUploading.set(false);
+        this.uploadStatus.set('Certificate uploaded successfully.');
+        this.uploadedFileName.set(response.originalFilename);
+      },
+      error: (error) => {
+        this.isUploading.set(false);
+        this.uploadedFileName.set(null);
+        this.uploadStatus.set(null);
+        this.uploadError.set(
+          getApiErrorMessage(error, 'We could not upload that certificate right now.'),
+        );
+      },
+    });
+  }
+
+  handleCertificateRemoved(): void {
+    this.form.controls.certificateUrl.setValue('');
+    this.form.controls.certificatePublicId.setValue('');
+    this.form.controls.certificateResourceType.setValue('');
+    this.form.controls.certificateOriginalFilename.setValue('');
+    this.uploadError.set(null);
+    this.uploadedFileName.set(null);
+    this.uploadStatus.set('Certificate removed.');
+  }
+
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -128,6 +203,9 @@ export class CeRecordFormDialogComponent {
             hours: request.hours,
             dateCompleted: request.dateCompleted,
             certificateUrl: request.certificateUrl,
+            certificatePublicId: request.certificatePublicId,
+            certificateResourceType: request.certificateResourceType,
+            certificateOriginalFilename: request.certificateOriginalFilename,
           });
 
     submission.subscribe({
@@ -148,5 +226,9 @@ export class CeRecordFormDialogComponent {
   private resetState(): void {
     this.isSubmitting.set(false);
     this.submitError.set(null);
+    this.isUploading.set(false);
+    this.uploadError.set(null);
+    this.uploadStatus.set(null);
+    this.uploadedFileName.set(null);
   }
 }
