@@ -231,6 +231,64 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
     }
 
     @Test
+    void shouldReturnCredentialCeReportWithOrderedRecordsAndSummary() throws Exception {
+        AuthSession session = registerUser("Shay Cooper", "shay.cooper@example.com");
+        String credentialId = createCredential(session, "ACLS", LocalDate.now().plusDays(120), 8.0);
+
+        createCERecord(session, credentialId, "Older Course", 2.5, "2026-01-10", null);
+        createCERecord(
+                session,
+                credentialId,
+                "Newest Course",
+                4.0,
+                "2026-03-14",
+                "https://example.com/acls-renewal.pdf"
+        );
+
+        mockMvc.perform(get("/api/credentials/{id}/ce-report", credentialId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credential.id").value(credentialId))
+                .andExpect(jsonPath("$.credential.name").value("ACLS"))
+                .andExpect(jsonPath("$.credential.type").value("CERTIFICATION"))
+                .andExpect(jsonPath("$.credential.issuingOrganization").value("AHA"))
+                .andExpect(jsonPath("$.credential.requiredCEHours").value(8.0))
+                .andExpect(jsonPath("$.credential.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.summary.totalHoursEarned").value(6.5))
+                .andExpect(jsonPath("$.summary.remainingHours").value(1.5))
+                .andExpect(jsonPath("$.summary.recordCount").value(2))
+                .andExpect(jsonPath("$.summary.progress").value(closeTo(0.8125, 0.0001)))
+                .andExpect(jsonPath("$.records", hasSize(2)))
+                .andExpect(jsonPath("$.records[0].title").value("Newest Course"))
+                .andExpect(jsonPath("$.records[0].dateCompleted").value("2026-03-14"))
+                .andExpect(jsonPath("$.records[0].certificateUrl").value("https://example.com/acls-renewal.pdf"))
+                .andExpect(jsonPath("$.records[1].title").value("Older Course"))
+                .andExpect(jsonPath("$.records[1].dateCompleted").value("2026-01-10"));
+    }
+
+    @Test
+    void shouldReturnNotFoundForMissingCredentialCeReport() throws Exception {
+        AuthSession session = registerUser("Noel Marsh", "noel.marsh@example.com");
+
+        mockMvc.perform(get("/api/credentials/{id}/ce-report", "00000000-0000-0000-0000-000000000099")
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Credential not found for id: 00000000-0000-0000-0000-000000000099"));
+    }
+
+    @Test
+    void shouldNotAllowAccessingAnotherUsersCredentialCeReport() throws Exception {
+        AuthSession ownerSession = registerUser("Blair Frost", "blair.frost@example.com");
+        AuthSession attackerSession = registerUser("Lane Frost", "lane.frost@example.com");
+        String credentialId = createCredential(ownerSession, "TNCC", LocalDate.now().plusDays(75), 6.0);
+
+        mockMvc.perform(get("/api/credentials/{id}/ce-report", credentialId)
+                        .header("Authorization", bearerToken(attackerSession)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Credential not found for id: " + credentialId));
+    }
+
+    @Test
     void shouldFilterCredentialsByStatusTypeAndSearch() throws Exception {
         AuthSession session = registerUser("Avery Stone", "avery.stone@example.com");
         String userId = session.userId();
@@ -311,15 +369,33 @@ class CredentialControllerIntegrationTest extends AbstractControllerIntegrationT
             String title,
             double hours
     ) throws Exception {
+        return createCERecord(session, credentialId, title, hours, "2026-03-23", null);
+    }
+
+    private String createCERecord(
+            AuthSession session,
+            String credentialId,
+            String title,
+            double hours,
+            String dateCompleted,
+            String certificateUrl
+    ) throws Exception {
         String payload = """
                 {
                   "title": "%s",
                   "provider": "AHA",
                   "hours": %s,
-                  "dateCompleted": "2026-03-23",
+                  "dateCompleted": "%s",
+                  "certificateUrl": %s,
                   "credentialId": "%s"
                 }
-                """.formatted(title, hours, credentialId);
+                """.formatted(
+                title,
+                hours,
+                dateCompleted,
+                certificateUrl == null ? "null" : "\"%s\"".formatted(certificateUrl),
+                credentialId
+        );
 
         String response = mockMvc.perform(post("/api/ce-records")
                         .header("Authorization", bearerToken(session))

@@ -1,6 +1,10 @@
 package com.ccruce.backend.service.impl;
 
 import com.ccruce.backend.dto.request.CredentialRequestDto;
+import com.ccruce.backend.dto.response.CEReportCredentialDto;
+import com.ccruce.backend.dto.response.CEReportRecordDto;
+import com.ccruce.backend.dto.response.CEReportResponseDto;
+import com.ccruce.backend.dto.response.CEReportSummaryDto;
 import com.ccruce.backend.dto.response.CERecordResponseDto;
 import com.ccruce.backend.dto.response.CredentialResponseDto;
 import com.ccruce.backend.entity.CERecord;
@@ -22,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -81,6 +86,40 @@ public class CredentialServiceImpl implements CredentialService {
                 .stream()
                 .map(this::toCERecordResponse)
                 .toList();
+    }
+
+    @Override
+    public CEReportResponseDto getCredentialCEReport(UUID id) {
+        Credential credential = getExistingCredential(id);
+        ensureCredentialBelongsToAuthenticatedUser(credential);
+
+        List<CERecord> orderedRecords = getCERecordsForCredential(credential)
+                .stream()
+                .sorted(Comparator.comparing(CERecord::getDateCompleted).reversed())
+                .toList();
+        BigDecimal ceHoursEarned = calculateCEHoursEarned(orderedRecords);
+        BigDecimal progress = calculateCEProgress(ceHoursEarned, credential.getRequiredCEHours());
+
+        return new CEReportResponseDto(
+                new CEReportCredentialDto(
+                        credential.getId(),
+                        credential.getName(),
+                        credential.getType(),
+                        credential.getIssuingOrganization(),
+                        credential.getExpirationDate(),
+                        credential.getRequiredCEHours(),
+                        deriveStatus(credential.getExpirationDate())
+                ),
+                new CEReportSummaryDto(
+                        ceHoursEarned,
+                        calculateRemainingHours(ceHoursEarned, credential.getRequiredCEHours()),
+                        orderedRecords.size(),
+                        progress
+                ),
+                orderedRecords.stream()
+                        .map(this::toCEReportRecord)
+                        .toList()
+        );
     }
 
     @Override
@@ -201,6 +240,15 @@ public class CredentialServiceImpl implements CredentialService {
         return ceHoursEarned.divide(requiredCEHours, 4, RoundingMode.HALF_UP);
     }
 
+    private BigDecimal calculateRemainingHours(BigDecimal ceHoursEarned, BigDecimal requiredCEHours) {
+        if (requiredCEHours == null || requiredCEHours.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal remainingHours = requiredCEHours.subtract(ceHoursEarned);
+        return remainingHours.max(BigDecimal.ZERO);
+    }
+
     private CERecordResponseDto toCERecordResponse(CERecord ceRecord) {
         return new CERecordResponseDto(
                 ceRecord.getId(),
@@ -212,6 +260,16 @@ public class CredentialServiceImpl implements CredentialService {
                 ceRecord.getCertificatePublicId(),
                 ceRecord.getCertificateResourceType(),
                 ceRecord.getCertificateOriginalFilename()
+        );
+    }
+
+    private CEReportRecordDto toCEReportRecord(CERecord ceRecord) {
+        return new CEReportRecordDto(
+                ceRecord.getTitle(),
+                ceRecord.getProvider(),
+                ceRecord.getHours(),
+                ceRecord.getDateCompleted(),
+                ceRecord.getCertificateUrl()
         );
     }
 

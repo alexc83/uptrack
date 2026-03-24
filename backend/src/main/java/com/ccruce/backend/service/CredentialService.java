@@ -1,6 +1,7 @@
 package com.ccruce.backend.service;
 
 import com.ccruce.backend.dto.request.CredentialRequestDto;
+import com.ccruce.backend.dto.response.CEReportResponseDto;
 import com.ccruce.backend.dto.response.CERecordResponseDto;
 import com.ccruce.backend.dto.response.CredentialResponseDto;
 import com.ccruce.backend.enums.CredentialStatus;
@@ -18,6 +19,8 @@ public interface CredentialService {
     CredentialResponseDto getCredentialById(UUID id);
 
     List<CERecordResponseDto> getCredentialCERecords(UUID id);
+
+    CEReportResponseDto getCredentialCEReport(UUID id);
 
     CredentialResponseDto updateCredential(UUID id, CredentialRequestDto requestDto);
 

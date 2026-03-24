@@ -1,6 +1,7 @@
 package com.ccruce.backend.controller;
 
 import com.ccruce.backend.dto.request.CredentialRequestDto;
+import com.ccruce.backend.dto.response.CEReportResponseDto;
 import com.ccruce.backend.dto.response.CERecordResponseDto;
 import com.ccruce.backend.dto.response.CredentialResponseDto;
 import com.ccruce.backend.enums.CredentialStatus;
@@ -57,6 +58,11 @@ public class CredentialController {
     @GetMapping("/{id}/ce-records")
     public ResponseEntity<List<CERecordResponseDto>> getCredentialCERecords(@PathVariable UUID id) {
         return ResponseEntity.ok(credentialService.getCredentialCERecords(id));
+    }
+
+    @GetMapping("/{id}/ce-report")
+    public ResponseEntity<CEReportResponseDto> getCredentialCEReport(@PathVariable UUID id) {
+        return ResponseEntity.ok(credentialService.getCredentialCEReport(id));
     }
 
     @PutMapping("/{id}")
