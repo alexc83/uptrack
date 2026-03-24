@@ -60,9 +60,9 @@
 <app-drawer-shell [open]="isDrawerOpen()" (close)="closeDrawer()">
   @switch (drawerType()) {
     @case ('credential-detail') {
-      @if (selectedCredentialDrawer(); as credentialDrawer) {
-        <app-credential-detail-drawer
-          [view]="credentialDrawer"
+      @if (selectedCredentialId(); as credentialId) {
+        <app-credential-detail-drawer-container
+          [credentialId]="credentialId"
           (close)="closeDrawer()"
           (ceRecordSelected)="openCeRecordDetail($event)"
         />

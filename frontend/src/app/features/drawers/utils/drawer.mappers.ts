@@ -17,6 +17,7 @@ export function buildCredentialDetailDrawerView(params: {
   const { credential, ceRecords, now } = params;
   const remainingDays = daysUntil(credential.expirationDate, now);
   const cePercent = Math.round(Math.min(1, credential.ceProgress) * 100);
+  const displayPercent = credential.requiredCEHours > 0 ? cePercent : 100;
   const totalHours = ceRecords.reduce((sum, record) => sum + record.hours, 0);
 
   return {
@@ -49,9 +50,9 @@ export function buildCredentialDetailDrawerView(params: {
       credential.requiredCEHours > 0
         ? `${formatHours(credential.ceHoursEarned)} / ${formatHours(credential.requiredCEHours)} hours`
         : 'No CE required',
-    cePercentLabel: credential.requiredCEHours > 0 ? `${cePercent}% complete` : 'Complete',
-    cePercent: credential.requiredCEHours > 0 ? cePercent : 100,
-    ceProgressTone: ceProgressTone(credential, cePercent),
+    cePercentLabel: credential.requiredCEHours > 0 ? `${displayPercent}% complete` : 'Complete',
+    cePercent: displayPercent,
+    ceProgressTone: ceProgressTone(credential, displayPercent),
     ceRecordsTitle: `CE Records (${ceRecords.length})`,
     ceRecordsDescription:
       credential.requiredCEHours > 0
