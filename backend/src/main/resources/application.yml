@@ -2,9 +2,9 @@ spring:
   application:
     name: uptrack-backend
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/uptrack_db}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:Abcd@1234}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -21,5 +21,10 @@ logging:
 
 auth:
   jwt:
-    secret: ${AUTH_JWT_SECRET:uptrack-dev-secret-key-uptrack-dev-secret-key-1234567890}
-    expiration-seconds: ${AUTH_JWT_EXPIRATION_SECONDS:86400}
+    secret: ${AUTH_JWT_SECRET}
+    expiration-seconds: ${AUTH_JWT_EXPIRATION_SECONDS}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
