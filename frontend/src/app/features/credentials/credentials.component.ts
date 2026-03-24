@@ -1,19 +1,22 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
+import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 import { getApiErrorMessage } from '../../core/api/api.helpers';
 import { AuthStore } from '../../core/auth/auth.store';
 import { CredentialStatus, CredentialType } from '../../models/credential.models';
 import { CredentialService } from '../../services/credential.service';
-import { CeRecordDetailDrawerComponent } from '../drawers/ce-record-detail-drawer/ce-record-detail-drawer.component';
+import {
+  CeRecordDetailDrawerContainerComponent,
+  CeRecordSelectionContext,
+} from '../drawers/ce-record-detail-drawer-container/ce-record-detail-drawer-container.component';
 import {
   CredentialDetailDrawerContainerComponent,
   CredentialDetailSelectionEvent,
 } from '../drawers/credential-detail-drawer-container/credential-detail-drawer-container.component';
 import { DrawerShellComponent } from '../drawers/drawer-shell/drawer-shell.component';
-import { buildCeRecordDetailDrawerView } from '../drawers/utils/drawer.mappers';
 import {
   buildCredentialListCardViews,
   CredentialListCardView,
@@ -25,7 +28,7 @@ import {
     ButtonModule,
     DrawerShellComponent,
     CredentialDetailDrawerContainerComponent,
-    CeRecordDetailDrawerComponent,
+    CeRecordDetailDrawerContainerComponent,
   ],
   templateUrl: './credentials.component.html',
   styleUrl: './credentials.component.scss',
@@ -34,13 +37,16 @@ export class CredentialsComponent {
   private readonly authStore = inject(AuthStore);
   private readonly credentialService = inject(CredentialService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly now = new Date();
   private readonly searchChanges = new Subject<string>();
 
   private requestSequence = 0;
 
   private readonly currentUserId = computed(() => this.authStore.currentUser()?.id ?? null);
-  readonly selectedCeRecordDrawer = signal<ReturnType<typeof buildCeRecordDetailDrawerView> | null>(null);
+  readonly selectedCeRecordId = signal<string | null>(null);
+  readonly selectedCeRecordContext = signal<CeRecordSelectionContext | null>(null);
 
   readonly credentials = signal<CredentialListCardView[]>([]);
   readonly isLoading = signal(true);
@@ -90,6 +96,24 @@ export class CredentialsComponent {
     this.searchChanges
       .pipe(debounceTime(250), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => this.search.set(value.trim()));
+
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const credentialId = params.get('credentialId');
+
+        if (!credentialId || this.selectedCredentialId() === credentialId) {
+          return;
+        }
+
+        this.openCredentialDetail(credentialId);
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { credentialId: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      });
   }
 
   updateSearch(event: Event): void {
@@ -115,24 +139,26 @@ export class CredentialsComponent {
 
   openCredentialDetail(credentialId: string): void {
     this.selectedCredentialId.set(credentialId);
-    this.selectedCeRecordDrawer.set(null);
+    this.selectedCeRecordId.set(null);
+    this.selectedCeRecordContext.set(null);
     this.drawerType.set('credential-detail');
   }
 
   openCeRecordDetail(selection: CredentialDetailSelectionEvent): void {
-    this.selectedCeRecordDrawer.set(
-      buildCeRecordDetailDrawerView({
-        record: selection.record,
-        credential: selection.credential,
-      }),
-    );
+    this.selectedCeRecordId.set(selection.record.id);
+    this.selectedCeRecordContext.set({
+      credentialId: selection.credential.id,
+      credentialName: selection.credential.name,
+      credentialOrganization: selection.credential.issuingOrganization,
+    });
     this.drawerType.set('ce-record-detail');
   }
 
   closeDrawer(): void {
     this.drawerType.set(null);
     this.selectedCredentialId.set(null);
-    this.selectedCeRecordDrawer.set(null);
+    this.selectedCeRecordId.set(null);
+    this.selectedCeRecordContext.set(null);
   }
 
   retryLoad(): void {

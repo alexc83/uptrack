@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 
 import { API_BASE_URL } from '../core/api/api.config';
 import { buildApiUrl } from '../core/api/api.helpers';
-import { CeRecordRequest, CeRecordResponse } from '../models/ce-record.models';
+import { CeRecordDetail, CeRecordRequest, CeRecordResponse } from '../models/ce-record.models';
 
 type CreateCeRecordPayload = Omit<CeRecordRequest, 'credentialId'>;
 
@@ -12,6 +12,10 @@ export class CeRecordService {
   private readonly http = inject(HttpClient);
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly ceRecordsUrl = buildApiUrl(this.apiBaseUrl, '/ce-records');
+
+  getCeRecordById(id: string) {
+    return this.http.get<CeRecordDetail>(buildApiUrl(this.ceRecordsUrl, `/${id}`));
+  }
 
   createCeRecord(credentialId: string, payload: CreateCeRecordPayload) {
     return this.http.post<CeRecordResponse>(this.ceRecordsUrl, {

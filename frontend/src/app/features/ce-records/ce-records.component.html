@@ -1,0 +1,71 @@
+<section class="ce-records-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Continuing Education</span>
+      <h1>Live CE records</h1>
+      <p>
+        Review your real completion history, certificate availability, and linked credential
+        context from the backend.
+      </p>
+    </div>
+    <span class="summary-pill">{{ resultSummary() }}</span>
+  </header>
+
+  @if (isLoading()) {
+    <section class="loading-grid" aria-label="Loading CE records">
+      @for (placeholder of [1, 2, 3, 4]; track placeholder) {
+        <div class="loading-card"></div>
+      }
+    </section>
+  } @else if (errorMessage()) {
+    <section class="page-message page-message-error" role="alert">
+      <div>
+        <strong>CE records unavailable</strong>
+        <p>{{ errorMessage() }}</p>
+      </div>
+      <button pButton type="button" label="Retry" severity="contrast" (click)="retryLoad()"></button>
+    </section>
+  } @else if (!hasRecords()) {
+    <section class="page-message page-message-empty">
+      <div>
+        <strong>No CE records yet</strong>
+        <p>Your live CE history will appear here once CE completions are linked to your credentials.</p>
+      </div>
+    </section>
+  } @else {
+    <section class="record-grid">
+      @for (record of records(); track record.id) {
+        <button class="record-card" type="button" (click)="openRecordDetail(record)">
+          <div class="card-topline">
+            <div class="card-copy">
+              <h2>{{ record.title }}</h2>
+              <p>{{ record.provider }} · {{ record.completedDateLabel }}</p>
+            </div>
+            <span class="hours-chip">{{ record.hoursLabel }}</span>
+          </div>
+
+          <section class="linked-credential">
+            <span>Counts toward</span>
+            <strong>{{ record.credentialName }}</strong>
+            <p>{{ record.credentialOrganization }}</p>
+          </section>
+
+          <span class="certificate-pill">{{ record.certificateLabel }}</span>
+        </button>
+      }
+    </section>
+  }
+</section>
+
+<app-drawer-shell [open]="isDrawerOpen()" (close)="closeDrawer()">
+  @if (selectedRecordId(); as recordId) {
+    @if (selectedRecordContext(); as recordContext) {
+      <app-ce-record-detail-drawer-container
+        [recordId]="recordId"
+        [context]="recordContext"
+        (close)="closeDrawer()"
+        (credentialSelected)="openCredentialDetail($event)"
+      />
+    }
+  }
+</app-drawer-shell>

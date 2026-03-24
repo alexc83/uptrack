@@ -17,6 +17,7 @@ export interface CredentialCeRecordListItemView {
   title: string;
   subtitle: string;
   hoursLabel: string;
+  certificateLabel?: string;
 }
 
 export interface CredentialDetailDrawerView {

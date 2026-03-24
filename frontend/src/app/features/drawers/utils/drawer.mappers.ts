@@ -65,6 +65,7 @@ export function buildCredentialDetailDrawerView(params: {
         title: record.title,
         subtitle: `${record.provider} · ${formatShortDate(record.dateCompleted)}`,
         hoursLabel: `${formatHours(record.hours)} hrs`,
+        certificateLabel: record.certificateUrl ? 'Certificate on file' : 'No certificate',
       })),
     ceRecordsEmptyTitle:
       credential.requiredCEHours > 0 ? 'No CE records yet' : 'No CE records required',
@@ -80,7 +81,7 @@ export function buildCredentialDetailDrawerView(params: {
 
 export function buildCeRecordDetailDrawerView(params: {
   record: CeRecord;
-  credential: Credential;
+  credential: Pick<Credential, 'id' | 'name' | 'issuingOrganization'>;
 }): CeRecordDetailDrawerView {
   const { record, credential } = params;
 

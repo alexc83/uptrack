@@ -11,7 +11,10 @@ import { RecentActivityPanelComponent } from '../components/recent-activity-pane
 import { StatsCardsComponent } from '../components/stats-cards/stats-cards.component';
 import { DashboardService } from '../../../services/dashboard.service';
 import { buildDashboardPageView } from '../utils/dashboard.mappers';
-import { CeRecordDetailDrawerComponent } from '../../drawers/ce-record-detail-drawer/ce-record-detail-drawer.component';
+import {
+  CeRecordDetailDrawerContainerComponent,
+  CeRecordSelectionContext,
+} from '../../drawers/ce-record-detail-drawer-container/ce-record-detail-drawer-container.component';
 import {
   CredentialDetailDrawerContainerComponent,
   CredentialDetailSelectionEvent,
@@ -19,10 +22,7 @@ import {
 import { CredentialListDrawerComponent } from '../../drawers/credential-list-drawer/credential-list-drawer.component';
 import { DrawerShellComponent } from '../../drawers/drawer-shell/drawer-shell.component';
 import { CredentialListMode, DrawerType } from '../../drawers/models/drawer.models';
-import {
-  buildCeRecordDetailDrawerView,
-  buildCredentialListDrawerView,
-} from '../../drawers/utils/drawer.mappers';
+import { buildCredentialListDrawerView } from '../../drawers/utils/drawer.mappers';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -34,7 +34,7 @@ import {
     RecentActivityPanelComponent,
     DrawerShellComponent,
     CredentialDetailDrawerContainerComponent,
-    CeRecordDetailDrawerComponent,
+    CeRecordDetailDrawerContainerComponent,
     CredentialListDrawerComponent,
     ButtonModule,
   ],
@@ -47,7 +47,8 @@ export class DashboardPageComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly now = new Date();
   private readonly currentUserId = computed(() => this.authStore.currentUser()?.id ?? null);
-  readonly selectedCeRecordDrawer = signal<ReturnType<typeof buildCeRecordDetailDrawerView> | null>(null);
+  readonly selectedCeRecordId = signal<string | null>(null);
+  readonly selectedCeRecordContext = signal<CeRecordSelectionContext | null>(null);
 
   readonly isLoading = signal(true);
   readonly errorMessage = signal<string | null>(null);
@@ -101,31 +102,34 @@ export class DashboardPageComponent {
 
   openCredentialDetail(credentialId: string): void {
     this.selectedCredentialId.set(credentialId);
-    this.selectedCeRecordDrawer.set(null);
+    this.selectedCeRecordId.set(null);
+    this.selectedCeRecordContext.set(null);
     this.drawerType.set('credential-detail');
   }
 
   openCeRecordDetail(selection: CredentialDetailSelectionEvent): void {
-    this.selectedCeRecordDrawer.set(
-      buildCeRecordDetailDrawerView({
-        record: selection.record,
-        credential: selection.credential,
-      }),
-    );
+    this.selectedCeRecordId.set(selection.record.id);
+    this.selectedCeRecordContext.set({
+      credentialId: selection.credential.id,
+      credentialName: selection.credential.name,
+      credentialOrganization: selection.credential.issuingOrganization,
+    });
     this.drawerType.set('ce-record-detail');
   }
 
   openCredentialList(mode: CredentialListMode): void {
     this.credentialListMode.set(mode);
     this.selectedCredentialId.set(null);
-    this.selectedCeRecordDrawer.set(null);
+    this.selectedCeRecordId.set(null);
+    this.selectedCeRecordContext.set(null);
     this.drawerType.set('credential-list');
   }
 
   closeDrawer(): void {
     this.drawerType.set(null);
     this.selectedCredentialId.set(null);
-    this.selectedCeRecordDrawer.set(null);
+    this.selectedCeRecordId.set(null);
+    this.selectedCeRecordContext.set(null);
   }
 
   retryLoad(): void {
