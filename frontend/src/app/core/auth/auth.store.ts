@@ -1,10 +1,9 @@
 import { inject, Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
-import { User } from '../../models/user.model';
-import { ApiErrorResponse, AuthLoginRequest, AuthRegisterRequest } from './auth.models';
+import { getApiErrorMessage } from '../api/api.helpers';
+import { User, AuthLoginRequest, AuthRegisterRequest } from '../../models/auth.models';
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
@@ -90,15 +89,6 @@ export class AuthStore {
   }
 
   private getFriendlyErrorMessage(error: unknown): string {
-    if (!(error instanceof HttpErrorResponse)) {
-      return 'Something went wrong. Please try again.';
-    }
-
-    if (error.status === 0) {
-      return 'Unable to reach the server right now. Please try again.';
-    }
-
-    const message = (error.error as ApiErrorResponse | undefined)?.message;
-    return message ?? 'Something went wrong. Please try again.';
+    return getApiErrorMessage(error);
   }
 }

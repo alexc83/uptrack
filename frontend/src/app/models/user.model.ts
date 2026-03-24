@@ -1,6 +1,1 @@
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: string;
-}
+export type { User } from './auth.models';

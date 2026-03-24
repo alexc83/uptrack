@@ -1,6 +1,5 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
 
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Dashboard } from '../../../models/dashboard.model';
@@ -11,8 +10,7 @@ import { DashboardHeaderComponent } from '../components/dashboard-header/dashboa
 import { ExpirationsPanelComponent } from '../components/expirations-panel/expirations-panel.component';
 import { RecentActivityPanelComponent } from '../components/recent-activity-panel/recent-activity-panel.component';
 import { StatsCardsComponent } from '../components/stats-cards/stats-cards.component';
-import { DashboardDataService } from '../dashboard-data.service';
-import { daysUntil } from '../utils/dashboard.helpers';
+import { DashboardService } from '../../../services/dashboard.service';
 import { buildDashboardPageView } from '../utils/dashboard.mappers';
 import { CeRecordDetailDrawerComponent } from '../../drawers/ce-record-detail-drawer/ce-record-detail-drawer.component';
 import { CredentialDetailDrawerComponent } from '../../drawers/credential-detail-drawer/credential-detail-drawer.component';
@@ -43,7 +41,7 @@ import {
 })
 export class DashboardPageComponent {
   private readonly authStore = inject(AuthStore);
-  private readonly dashboardDataService = inject(DashboardDataService);
+  private readonly dashboardService = inject(DashboardService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly now = new Date();
 
@@ -66,7 +64,7 @@ export class DashboardPageComponent {
           email: '',
           createdAt: '',
         },
-      dashboard: this.buildDashboard(this.credentials()),
+      dashboard: this.dashboard(),
       credentials: this.credentials(),
       ceRecords: this.ceRecords(),
       now: this.now,
@@ -114,7 +112,7 @@ export class DashboardPageComponent {
   });
 
   readonly credentialListDrawer = computed(() => {
-    const dashboard = this.buildDashboard(this.credentials());
+    const dashboard = this.dashboard();
 
     return buildCredentialListDrawerView({
       mode: this.credentialListMode(),
@@ -132,11 +130,12 @@ export class DashboardPageComponent {
     if (!userId) {
       this.credentials.set([]);
       this.ceRecords.set([]);
+      this.dashboard.set(this.buildEmptyDashboard());
       this.isLoading.set(false);
       return;
     }
 
-    this.loadDashboardData(userId);
+    this.loadDashboardData();
   });
 
   openCredentialDetail(credentialId: string): void {
@@ -161,21 +160,23 @@ export class DashboardPageComponent {
     this.drawerType.set(null);
   }
 
-  private loadDashboardData(userId: string): void {
+  private readonly dashboard = signal<Dashboard>(this.buildEmptyDashboard());
+
+  private loadDashboardData(): void {
     this.isLoading.set(true);
 
-    forkJoin({
-      credentials: this.dashboardDataService.getCredentials(userId),
-      ceRecords: this.dashboardDataService.getCeRecords(),
-    })
+    this.dashboardService
+      .getDashboard()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ credentials, ceRecords }) => {
+        next: ({ dashboard, credentials, ceRecords }) => {
+          this.dashboard.set(dashboard);
           this.credentials.set(credentials);
-          this.ceRecords.set(ceRecords.filter((record) => record.userId === userId));
+          this.ceRecords.set(ceRecords);
           this.isLoading.set(false);
         },
         error: () => {
+          this.dashboard.set(this.buildEmptyDashboard());
           this.credentials.set([]);
           this.ceRecords.set([]);
           this.isLoading.set(false);
@@ -183,40 +184,22 @@ export class DashboardPageComponent {
       });
   }
 
-  private buildDashboard(credentials: Credential[]): Dashboard {
-    const credentialsNeedingCE = credentials.filter(
-      (credential) =>
-        credential.requiredCEHours > 0 && credential.ceHoursEarned < credential.requiredCEHours,
-    );
-
-    const within90Days = credentials
-      .filter((credential) => daysUntil(credential.expirationDate, this.now) <= 90)
-      .sort((left, right) => left.expirationDate.localeCompare(right.expirationDate));
-
+  private buildEmptyDashboard(): Dashboard {
     return {
       stats: {
-        totalCredentials: credentials.length,
-        activeCount: credentials.filter((credential) => credential.status === 'ACTIVE').length,
-        expiringSoonCount: credentials.filter((credential) => credential.status === 'EXPIRING_SOON')
-          .length,
-        expiredCount: credentials.filter((credential) => credential.status === 'EXPIRED').length,
-        needsCEAttentionCount: credentialsNeedingCE.length,
+        totalCredentials: 0,
+        activeCount: 0,
+        expiringSoonCount: 0,
+        expiredCount: 0,
+        needsCEAttentionCount: 0,
       },
       expirationBuckets: {
-        within30Days: within90Days.filter(
-          (credential) => daysUntil(credential.expirationDate, this.now) <= 30,
-        ),
-        within60Days: within90Days.filter(
-          (credential) => daysUntil(credential.expirationDate, this.now) <= 60,
-        ),
-        within90Days,
+        within30Days: [],
+        within60Days: [],
+        within90Days: [],
       },
-      credentialsNeedingCE: credentialsNeedingCE.sort(
-        (left, right) => left.expirationDate.localeCompare(right.expirationDate),
-      ),
-      recentCredentials: [...credentials]
-        .sort((left, right) => right.expirationDate.localeCompare(left.expirationDate))
-        .slice(0, 5),
+      credentialsNeedingCE: [],
+      recentCredentials: [],
     };
   }
 }
