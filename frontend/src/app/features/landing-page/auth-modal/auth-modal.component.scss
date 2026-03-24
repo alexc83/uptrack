@@ -46,8 +46,10 @@
 }
 
 .auth-modal-copy {
+  width: 100%;
   max-width: 24rem;
-  padding-right: 2.75rem;
+  box-sizing: border-box;
+  padding-inline: 2.75rem;
   margin-inline: auto;
   text-align: center;
 }
@@ -222,7 +224,7 @@
   }
 
   .auth-modal-copy {
-    padding-right: 2.3rem;
+    padding-inline: 2.3rem;
   }
 
   .close-button {
