@@ -8,6 +8,8 @@ type AuthModalMode = 'login' | 'signup' | null;
 
 type LandingFeatureCard = {
   icon: string;
+  iconBg: string;
+  iconColor: string;
   title: string;
   description: string;
 };
@@ -24,31 +26,42 @@ type LandingBenefit = {
   styleUrl: './landing-page.component.scss',
 })
 export class LandingPageComponent implements OnInit {
+  private static readonly THEME_STORAGE_KEY = 'uptrack-landing-theme';
+
   private readonly renderer = inject(Renderer2);
 
   readonly authModal = signal<AuthModalMode>(null);
+  readonly isDark = signal(false);
 
   readonly featureCards: LandingFeatureCard[] = [
     {
       icon: 'pi pi-shield',
+      iconBg: '#e8f0ff',
+      iconColor: '#3f6fbe',
       title: 'Credential Tracking',
       description:
         'Track all your licenses and certifications in one place. Monitor expiration dates and renewal cycles for RN, NP, MD, DO, RT, and PA credentials.',
     },
     {
       icon: 'pi pi-book',
+      iconBg: '#eefaf0',
+      iconColor: '#4ca55b',
       title: 'CE Progress Monitoring',
       description:
         "Automatically calculate CE hours earned toward each credential's renewal requirements. See your progress at a glance with visual progress bars.",
     },
     {
       icon: 'pi pi-file',
+      iconBg: '#f4eaff',
+      iconColor: '#8b3ff8',
       title: 'Certificate Storage',
       description:
         'Upload and store CE certificates, course documentation, and completion records. Keep everything organized and accessible for audits or credentialing.',
     },
     {
       icon: 'pi pi-bell',
+      iconBg: '#fff6e8',
+      iconColor: '#d48817',
       title: 'Expiration Alerts',
       description:
         'Get clear visibility into upcoming expirations. Credentials expiring within 90 days are automatically flagged so you can renew before deadlines.',
@@ -78,7 +91,12 @@ export class LandingPageComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.renderer.removeClass(document.documentElement, 'dark');
+    const storedTheme = localStorage.getItem(LandingPageComponent.THEME_STORAGE_KEY);
+    this.applyTheme(storedTheme === 'dark');
+  }
+
+  toggleTheme(): void {
+    this.applyTheme(!this.isDark());
   }
 
   openLogin(): void {
@@ -95,5 +113,17 @@ export class LandingPageComponent implements OnInit {
 
   handleModalSwitch(mode: Exclude<AuthModalMode, null>): void {
     this.authModal.set(mode);
+  }
+
+  private applyTheme(dark: boolean): void {
+    this.isDark.set(dark);
+    localStorage.setItem(LandingPageComponent.THEME_STORAGE_KEY, dark ? 'dark' : 'light');
+
+    if (dark) {
+      this.renderer.addClass(document.documentElement, 'dark');
+      return;
+    }
+
+    this.renderer.removeClass(document.documentElement, 'dark');
   }
 }

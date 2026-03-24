@@ -1,4 +1,4 @@
-<div class="landing-page">
+<div class="landing-page" [class.landing-page--dark]="isDark()">
   <header class="landing-header">
     <div class="landing-header__inner">
       <a class="brand" routerLink="/" aria-label="UpTrack home">
@@ -9,13 +9,22 @@
       </a>
 
       <nav class="landing-nav" aria-label="Authentication">
+        <button
+          class="theme-toggle"
+          type="button"
+          [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+          [attr.aria-pressed]="isDark()"
+          (click)="toggleTheme()"
+        >
+          <i [class]="isDark() ? 'pi pi-sun' : 'pi pi-moon'"></i>
+        </button>
         <button class="login-link" type="button" (click)="openLogin()">Log In</button>
         <button
           pButton
           type="button"
           label="Sign Up"
-          styleClass="landing-primary-button landing-primary-button--header"
-          [style]="{ 'background-color': '#3766ad', 'border-color': '#3766ad', color: '#ffffff' }"
+          styleClass="landing-primary-button"
+          style="background:#3766ad;border-color:#3766ad;color:#fff"
           (click)="openSignup()"
         ></button>
       </nav>
@@ -34,8 +43,8 @@
         <button
           pButton
           type="button"
-          styleClass="landing-primary-button landing-primary-button--hero"
-          [style]="{ 'background-color': '#3766ad', 'border-color': '#3766ad', color: '#ffffff' }"
+          styleClass="landing-primary-button"
+          style="background:#3766ad;border-color:#3766ad;color:#fff"
           (click)="openSignup()"
         >
           <span>Get Started</span>
@@ -48,7 +57,11 @@
       <div class="section-shell">
         <div class="dashboard-preview__frame">
           <img
-            src="/landing/dashboard-for-landing-page.png"
+            [src]="
+              isDark()
+                ? '/landing/dark-mode-dashboard.png'
+                : '/landing/light-mode-dashboard.png'
+            "
             alt="UpTrack dashboard preview"
           />
         </div>
@@ -65,10 +78,14 @@
       </div>
 
       <div class="section-shell feature-grid">
-        @for (card of featureCards; track card.title; let i = $index) {
-          <article class="feature-card" [class]="'feature-card feature-card--' + i">
+        @for (card of featureCards; track card.title) {
+          <article class="feature-card">
             <span class="feature-card__icon">
-              <i [class]="card.icon"></i>
+              <i
+                [class]="card.icon"
+                [style.background]="card.iconBg"
+                [style.color]="card.iconColor"
+              ></i>
             </span>
             <h3>{{ card.title }}</h3>
             <p>{{ card.description }}</p>
@@ -105,7 +122,11 @@
         <div class="compliance-visual">
           <div class="compliance-visual__frame">
             <img
-              src="/landing/certificate-for-landing-page.png"
+              [src]="
+                isDark()
+                  ? '/landing/dark-mode-drawer.png'
+                  : '/landing/light-mode-drawer.png'
+              "
               alt="UpTrack credential drawer preview"
             />
           </div>
@@ -122,13 +143,12 @@
             UpTrack.
           </p>
           <button
-            pButton
-            type="button"
-            severity="secondary"
-            styleClass="landing-primary-button landing-primary-button--cta"
-            [style]="{ 'background-color': '#ffffff', 'border-color': '#ffffff', color: '#3766ad' }"
-            (click)="openSignup()"
-          >
+          pButton
+          type="button"
+          severity="secondary"
+          styleClass="landing-primary-button landing-primary-button--cta"
+          (click)="openSignup()"
+        >
             <span>Get Started for Free</span>
             <i class="pi pi-arrow-right"></i>
           </button>

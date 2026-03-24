@@ -160,6 +160,61 @@
   cursor: pointer;
 }
 
+:host-context(html.dark) ::ng-deep .auth-modal-dialog {
+  border-color: rgb(112 140 177 / 0.24);
+  background:
+    radial-gradient(circle at top right, rgb(96 151 226 / 0.18), transparent 44%),
+    linear-gradient(180deg, rgb(12 22 38 / 0.98), rgb(7 14 27 / 0.98));
+  box-shadow: 0 28px 70px rgb(2 6 23 / 0.48);
+}
+
+:host-context(html.dark) .auth-modal {
+  color: #d8e4f4;
+}
+
+:host-context(html.dark) .close-button {
+  background: rgb(20 32 52 / 0.92);
+  color: #9ab0cb;
+}
+
+:host-context(html.dark) .eyebrow {
+  color: #78a7ea;
+}
+
+:host-context(html.dark) .auth-modal-copy p,
+:host-context(html.dark) .switch-copy {
+  color: #98adc8;
+}
+
+:host-context(html.dark) .auth-error {
+  border-color: rgb(168 73 59 / 0.45);
+  background: rgb(71 28 24 / 0.55);
+  color: #ffb8ad;
+}
+
+:host-context(html.dark) .field span {
+  color: #bccde2;
+}
+
+:host-context(html.dark) .field input {
+  border-color: rgb(112 140 177 / 0.24);
+  background: rgb(15 27 44 / 0.92);
+  color: #e3edf9;
+}
+
+:host-context(html.dark) .field input:focus {
+  border-color: #78a7ea;
+  outline-color: rgb(120 167 234 / 0.22);
+}
+
+:host-context(html.dark) .field-error {
+  color: #f6aa9e;
+}
+
+:host-context(html.dark) .switch-copy button {
+  color: #8ab3ee;
+}
+
 @media (max-width: 640px) {
   .auth-modal {
     gap: 1.2rem;
