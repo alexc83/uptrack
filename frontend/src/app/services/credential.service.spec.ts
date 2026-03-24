@@ -56,6 +56,14 @@ describe('CredentialService', () => {
     request.flush([]);
   });
 
+  it('calls the credential CE report endpoint', () => {
+    service.getCredentialCeReport('cred-123').subscribe();
+
+    const request = httpTesting.expectOne('http://localhost:8080/api/credentials/cred-123/ce-report');
+    expect(request.request.method).toBe('GET');
+    request.flush({});
+  });
+
   it('creates credentials without a userId payload field', () => {
     service
       .createCredential({

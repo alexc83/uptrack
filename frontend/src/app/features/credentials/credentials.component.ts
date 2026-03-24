@@ -151,6 +151,14 @@ export class CredentialsComponent {
     this.typeFilter.set('');
   }
 
+  openCredentialReport(credentialId: string): void {
+    void this.router.navigate(['/credentials', credentialId, 'ce-report'], {
+      queryParams: {
+        returnTo: '/credentials',
+      },
+    });
+  }
+
   openCredentialDetail(credentialId: string): void {
     this.selectedCredentialId.set(credentialId);
     this.selectedCeRecordId.set(null);

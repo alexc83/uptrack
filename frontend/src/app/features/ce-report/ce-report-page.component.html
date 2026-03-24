@@ -1,0 +1,136 @@
+<section class="ce-report-page" [class.ce-report-page-printing]="isPrinting()">
+  <header class="report-header screen-only">
+    <button pButton type="button" label="Back" severity="secondary" icon="pi pi-arrow-left" (click)="goBack()"></button>
+    <button pButton type="button" label="Print Report" icon="pi pi-print" (click)="printReport()"></button>
+  </header>
+
+  @if (isLoading()) {
+    <section class="report-state" aria-label="Loading CE report">
+      <div class="loading-block loading-block-lg"></div>
+      <div class="loading-grid">
+        @for (placeholder of [1, 2, 3, 4]; track placeholder) {
+          <div class="loading-block loading-block-card"></div>
+        }
+      </div>
+      <div class="loading-block loading-block-table"></div>
+    </section>
+  } @else if (errorMessage()) {
+    <section class="report-state report-state-error" role="alert">
+      <div>
+        <strong>CE report unavailable</strong>
+        <p>{{ errorMessage() }}</p>
+      </div>
+      <div class="state-actions screen-only">
+        <button pButton type="button" label="Back" severity="secondary" (click)="goBack()"></button>
+        <button pButton type="button" label="Retry" (click)="retryLoad()"></button>
+      </div>
+    </section>
+  } @else if (report(); as report) {
+    <article class="report-sheet">
+      <header class="sheet-header">
+        <div class="sheet-header__identity">
+          <span class="sheet-kicker">UpTrack CE Report</span>
+          <h2>{{ report.credential.name }}</h2>
+          <div class="sheet-subtitle">
+            <span>{{ report.credential.issuingOrganization }}</span>
+            <span class="sheet-divider">•</span>
+            <span
+              class="status-chip"
+              [class]="'status-chip status-chip-' + statusTone(report.credential.status)"
+            >
+              {{ formatStatus(report.credential.status) }}
+            </span>
+          </div>
+        </div>
+        <div class="sheet-meta">
+          <p class="sheet-meta-user"><span>Name:</span> {{ currentUserName() }}</p>
+          <p><span>Generated:</span> {{ generatedDateLabel }}</p>
+        </div>
+      </header>
+
+      <section class="progress-card">
+        <div class="progress-card__copy">
+          <h3>CE Progress</h3>
+          <strong>{{ formatHours(report.summary.totalHoursEarned) }} / {{ formatHours(report.credential.requiredCEHours) }} hours</strong>
+          <p>{{ progressPercent() }}% Complete</p>
+        </div>
+        <div class="progress-card__meter">
+          <div class="progress-track progress-track-hero" aria-label="CE progress">
+            <span class="progress-fill" [style.width.%]="progressPercent()"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="summary-card">
+        <h3>Credential Summary</h3>
+        <div class="summary-grid" role="list">
+          @for (field of summaryFields(); track field.label) {
+            <div class="summary-row" role="listitem">
+              <span class="summary-row__label">{{ field.label }}</span>
+              <strong class="summary-row__value">{{ field.value }}</strong>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="records-card">
+        <h3>CE Records</h3>
+
+        @if (report.records.length > 0) {
+          <div class="table-wrap">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="records-table__title-heading">Title</th>
+                  <th scope="col" class="records-table__provider-heading">Provider</th>
+                  <th scope="col" class="records-table__date-heading">Completed Date</th>
+                  <th scope="col" class="records-table__hours-heading">Hours</th>
+                  <th scope="col" class="records-table__certificate-heading">Certificate</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (record of report.records; track record.title + record.dateCompleted) {
+                  <tr>
+                    <td data-label="Title" class="records-table__title-cell">
+                      <strong>{{ record.title }}</strong>
+                    </td>
+                    <td data-label="Provider" class="records-table__provider-cell">{{ record.provider }}</td>
+                    <td data-label="Completed Date" class="records-table__date-cell">{{ formatRecordDate(record.dateCompleted) }}</td>
+                    <td data-label="Hours" class="records-table__hours-cell">{{ formatHours(record.hours) }}</td>
+                    <td data-label="Certificate" class="records-table__certificate-cell">
+                      {{ certificateLabel(record) }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <section class="empty-state">
+            <strong>No CE records on file</strong>
+            <p>This credential report is ready, but there are no continuing education records attached yet.</p>
+          </section>
+        }
+      </section>
+
+      <section class="totals-card">
+        <h3>Summary</h3>
+        <div class="totals-grid">
+          <article class="totals-item">
+            <span>Total CE Hours</span>
+            <strong>{{ formatHours(report.summary.totalHoursEarned) }}</strong>
+          </article>
+          <article class="totals-item">
+            <span>Total Records</span>
+            <strong>{{ report.summary.recordCount }}</strong>
+          </article>
+        </div>
+      </section>
+
+      <footer class="sheet-footer">
+        <span>Generated from UpTrack</span>
+        <span>{{ generatedTimestampLabel }}</span>
+      </footer>
+    </article>
+  }
+</section>

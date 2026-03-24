@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 
@@ -39,6 +40,7 @@ export interface CredentialDetailSelectionEvent {
 })
 export class CredentialDetailDrawerContainerComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly router = inject(Router);
   private readonly credentialService = inject(CredentialService);
   private readonly credentialWriteEvents = inject(CredentialWriteEventsService);
   private readonly destroyRef = inject(DestroyRef);
@@ -47,6 +49,7 @@ export class CredentialDetailDrawerContainerComponent {
   private requestSequence = 0;
 
   readonly credentialId = input.required<string>();
+  readonly reportReturnTo = input('/credentials');
 
   readonly close = output<void>();
   readonly ceRecordSelected = output<CredentialDetailSelectionEvent>();
@@ -119,6 +122,15 @@ export class CredentialDetailDrawerContainerComponent {
     if (actionId === 'delete-credential') {
       this.deleteError.set(null);
       this.deleteConfirmOpen.set(true);
+      return;
+    }
+
+    if (actionId === 'open-ce-report') {
+      void this.router.navigate(['/credentials', this.credentialId(), 'ce-report'], {
+        queryParams: {
+          returnTo: this.reportReturnTo(),
+        },
+      });
     }
   }
 
