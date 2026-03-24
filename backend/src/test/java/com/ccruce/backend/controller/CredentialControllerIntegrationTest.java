@@ -1,14 +1,11 @@
 package com.ccruce.backend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 
@@ -25,17 +22,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class CredentialControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class CredentialControllerIntegrationTest extends AbstractControllerIntegrationTest {
 
     @Test
     void shouldPerformFullCredentialCrudFlow() throws Exception {
-        String userId = createUser("Taylor Brooks", "taylor.brooks@example.com");
+        AuthSession session = registerUser("Taylor Brooks", "taylor.brooks@example.com");
+        String userId = session.userId();
 
         String createPayload = """
                 {
@@ -50,6 +42,7 @@ class CredentialControllerIntegrationTest {
                 """.formatted(LocalDate.now().plusDays(120), userId);
 
         String createResponse = mockMvc.perform(post("/api/credentials")
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createPayload))
                 .andExpect(status().isCreated())
@@ -66,11 +59,13 @@ class CredentialControllerIntegrationTest {
         JsonNode createdCredential = objectMapper.readTree(createResponse);
         String credentialId = createdCredential.get("id").asText();
 
-        mockMvc.perform(get("/api/credentials"))
+        mockMvc.perform(get("/api/credentials")
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].id", hasItem(credentialId)));
 
-        mockMvc.perform(get("/api/credentials/{id}", credentialId))
+        mockMvc.perform(get("/api/credentials/{id}", credentialId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.issuingOrganization").value("Texas Board of Nursing"))
                 .andExpect(jsonPath("$.ceRecords", hasSize(0)));
@@ -88,6 +83,7 @@ class CredentialControllerIntegrationTest {
                 """.formatted(LocalDate.now().plusDays(30), userId);
 
         mockMvc.perform(put("/api/credentials/{id}", credentialId)
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatePayload))
                 .andExpect(status().isOk())
@@ -98,15 +94,18 @@ class CredentialControllerIntegrationTest {
                 .andExpect(jsonPath("$.ceHoursEarned").value(0))
                 .andExpect(jsonPath("$.ceProgress").value(0));
 
-        mockMvc.perform(delete("/api/credentials/{id}", credentialId))
+        mockMvc.perform(delete("/api/credentials/{id}", credentialId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/credentials/{id}", credentialId))
+        mockMvc.perform(get("/api/credentials/{id}", credentialId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldRejectMissingUserOnCreate() throws Exception {
+        AuthSession session = registerUser("Rory Hale", "rory.hale@example.com");
         String payload = """
                 {
                   "name": "BLS",
@@ -120,6 +119,7 @@ class CredentialControllerIntegrationTest {
                 """.formatted(LocalDate.now().plusDays(45));
 
         mockMvc.perform(post("/api/credentials")
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isNotFound())
@@ -128,36 +128,44 @@ class CredentialControllerIntegrationTest {
 
     @Test
     void shouldReturnDerivedStatuses() throws Exception {
-        String userId = createUser("Morgan Lee", "morgan.lee@example.com");
+        AuthSession session = registerUser("Morgan Lee", "morgan.lee@example.com");
+        String userId = session.userId();
 
-        String expiredCredentialId = createCredential(userId, "Expired Cert", LocalDate.now().minusDays(1));
-        String expiringSoonCredentialId = createCredential(userId, "Soon Cert", LocalDate.now().plusDays(15));
+        String expiredCredentialId = createCredential(session, userId, "Expired Cert", LocalDate.now().minusDays(1));
+        String expiringSoonCredentialId = createCredential(session, userId, "Soon Cert", LocalDate.now().plusDays(15));
 
-        mockMvc.perform(get("/api/credentials/{id}", expiredCredentialId))
+        mockMvc.perform(get("/api/credentials/{id}", expiredCredentialId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("EXPIRED"));
 
-        mockMvc.perform(get("/api/credentials/{id}", expiringSoonCredentialId))
+        mockMvc.perform(get("/api/credentials/{id}", expiringSoonCredentialId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("EXPIRING_SOON"));
     }
 
     @Test
     void shouldReturnNotFoundForMissingCredential() throws Exception {
-        mockMvc.perform(get("/api/credentials/{id}", "00000000-0000-0000-0000-000000000099"))
+        AuthSession session = registerUser("Jordan Snow", "jordan.snow@example.com");
+
+        mockMvc.perform(get("/api/credentials/{id}", "00000000-0000-0000-0000-000000000099")
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Credential not found for id: 00000000-0000-0000-0000-000000000099"));
     }
 
     @Test
     void shouldReturnCredentialDetailWithAggregatedCEData() throws Exception {
-        String userId = createUser("Jamie Brooks", "jamie.brooks@example.com");
-        String credentialId = createCredential(userId, "Telemetry Cert", LocalDate.now().plusDays(20), 10.0);
+        AuthSession session = registerUser("Jamie Brooks", "jamie.brooks@example.com");
+        String userId = session.userId();
+        String credentialId = createCredential(session, userId, "Telemetry Cert", LocalDate.now().plusDays(20), 10.0);
 
-        createCERecord(userId, credentialId, "Telemetry Basics", 3.5);
-        createCERecord(userId, credentialId, "Arrhythmia Review", 2.0);
+        createCERecord(session, userId, credentialId, "Telemetry Basics", 3.5);
+        createCERecord(session, userId, credentialId, "Arrhythmia Review", 2.0);
 
-        mockMvc.perform(get("/api/credentials/{id}", credentialId))
+        mockMvc.perform(get("/api/credentials/{id}", credentialId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("EXPIRING_SOON"))
                 .andExpect(jsonPath("$.ceHoursEarned").value(5.5))
@@ -167,13 +175,15 @@ class CredentialControllerIntegrationTest {
 
     @Test
     void shouldReturnCERecordsForCredentialRelationshipEndpoint() throws Exception {
-        String userId = createUser("Riley Hart", "riley.hart@example.com");
-        String credentialId = createCredential(userId, "Stroke Cert", LocalDate.now().plusDays(100), 8.0);
+        AuthSession session = registerUser("Riley Hart", "riley.hart@example.com");
+        String userId = session.userId();
+        String credentialId = createCredential(session, userId, "Stroke Cert", LocalDate.now().plusDays(100), 8.0);
 
-        createCERecord(userId, credentialId, "Stroke Update", 2.0);
-        createCERecord(userId, credentialId, "Neuro Assessment", 1.5);
+        createCERecord(session, userId, credentialId, "Stroke Update", 2.0);
+        createCERecord(session, userId, credentialId, "Neuro Assessment", 1.5);
 
-        mockMvc.perform(get("/api/credentials/{id}/ce-records", credentialId))
+        mockMvc.perform(get("/api/credentials/{id}/ce-records", credentialId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[*].title", hasItem("Stroke Update")))
@@ -182,13 +192,15 @@ class CredentialControllerIntegrationTest {
 
     @Test
     void shouldFilterCredentialsByStatusTypeAndSearch() throws Exception {
-        String userId = createUser("Avery Stone", "avery.stone@example.com");
+        AuthSession session = registerUser("Avery Stone", "avery.stone@example.com");
+        String userId = session.userId();
 
-        createCredential(userId, "RN License", "LICENSE", LocalDate.now().plusDays(180), 20.0);
-        createCredential(userId, "BLS", "CERTIFICATION", LocalDate.now().plusDays(15), 0.0);
-        createCredential(userId, "Pharmacy License", "LICENSE", LocalDate.now().minusDays(1), 0.0);
+        createCredential(session, userId, "RN License", "LICENSE", LocalDate.now().plusDays(180), 20.0);
+        createCredential(session, userId, "BLS", "CERTIFICATION", LocalDate.now().plusDays(15), 0.0);
+        createCredential(session, userId, "Pharmacy License", "LICENSE", LocalDate.now().minusDays(1), 0.0);
 
         mockMvc.perform(get("/api/credentials")
+                        .header("Authorization", bearerToken(session))
                         .param("userId", userId)
                         .param("status", "ACTIVE"))
                 .andExpect(status().isOk())
@@ -196,12 +208,14 @@ class CredentialControllerIntegrationTest {
                 .andExpect(jsonPath("$[0].name").value("RN License"));
 
         mockMvc.perform(get("/api/credentials")
+                        .header("Authorization", bearerToken(session))
                         .param("userId", userId)
                         .param("type", "LICENSE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
 
         mockMvc.perform(get("/api/credentials")
+                        .header("Authorization", bearerToken(session))
                         .param("userId", userId)
                         .param("search", "RN"))
                 .andExpect(status().isOk())
@@ -209,35 +223,22 @@ class CredentialControllerIntegrationTest {
                 .andExpect(jsonPath("$[0].name").value("RN License"));
     }
 
-    private String createUser(String name, String email) throws Exception {
-        String createUserPayload = """
-                {
-                  "name": "%s",
-                  "email": "%s",
-                  "password": "secret123"
-                }
-                """.formatted(name, email);
-
-        String createUserResponse = mockMvc.perform(post("/api/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(createUserPayload))
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        return objectMapper.readTree(createUserResponse).get("id").asText();
-    }
-
-    private String createCredential(String userId, String name, LocalDate expirationDate) throws Exception {
-        return createCredential(userId, name, "CERTIFICATION", expirationDate, 0.0);
-    }
-
-    private String createCredential(String userId, String name, LocalDate expirationDate, double requiredCEHours) throws Exception {
-        return createCredential(userId, name, "CERTIFICATION", expirationDate, requiredCEHours);
+    private String createCredential(AuthSession session, String userId, String name, LocalDate expirationDate) throws Exception {
+        return createCredential(session, userId, name, "CERTIFICATION", expirationDate, 0.0);
     }
 
     private String createCredential(
+            AuthSession session,
+            String userId,
+            String name,
+            LocalDate expirationDate,
+            double requiredCEHours
+    ) throws Exception {
+        return createCredential(session, userId, name, "CERTIFICATION", expirationDate, requiredCEHours);
+    }
+
+    private String createCredential(
+            AuthSession session,
             String userId,
             String name,
             String type,
@@ -257,6 +258,7 @@ class CredentialControllerIntegrationTest {
                 """.formatted(name, type, expirationDate, requiredCEHours, userId);
 
         String response = mockMvc.perform(post("/api/credentials")
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isCreated())
@@ -267,7 +269,13 @@ class CredentialControllerIntegrationTest {
         return objectMapper.readTree(response).get("id").asText();
     }
 
-    private String createCERecord(String userId, String credentialId, String title, double hours) throws Exception {
+    private String createCERecord(
+            AuthSession session,
+            String userId,
+            String credentialId,
+            String title,
+            double hours
+    ) throws Exception {
         String payload = """
                 {
                   "title": "%s",
@@ -280,6 +288,7 @@ class CredentialControllerIntegrationTest {
                 """.formatted(title, hours, credentialId, userId);
 
         String response = mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isCreated())

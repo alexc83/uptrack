@@ -1,14 +1,11 @@
 package com.ccruce.backend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 
@@ -23,18 +20,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class CERecordControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTest {
 
     @Test
     void shouldPerformFullCERecordCrudFlow() throws Exception {
-        String userId = createUser("Jamie Carter", "jamie.carter@example.com");
-        String credentialId = createCredential(userId, "RN License - Texas");
+        AuthSession session = registerUser("Jamie Carter", "jamie.carter@example.com");
+        String userId = session.userId();
+        String credentialId = createCredential(session, userId, "RN License - Texas");
 
         String createPayload = """
                 {
@@ -49,6 +41,7 @@ class CERecordControllerIntegrationTest {
                 """.formatted(credentialId, userId);
 
         String createResponse = mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createPayload))
                 .andExpect(status().isCreated())
@@ -62,11 +55,13 @@ class CERecordControllerIntegrationTest {
         JsonNode createdRecord = objectMapper.readTree(createResponse);
         String ceRecordId = createdRecord.get("id").asText();
 
-        mockMvc.perform(get("/api/ce-records"))
+        mockMvc.perform(get("/api/ce-records")
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].id", hasItem(ceRecordId)));
 
-        mockMvc.perform(get("/api/ce-records/{id}", ceRecordId))
+        mockMvc.perform(get("/api/ce-records/{id}", ceRecordId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.certificateUrl").value("https://example.com/certificates/trauma-update.pdf"));
 
@@ -83,6 +78,7 @@ class CERecordControllerIntegrationTest {
                 """.formatted(credentialId, userId);
 
         mockMvc.perform(put("/api/ce-records/{id}", ceRecordId)
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatePayload))
                 .andExpect(status().isOk())
@@ -91,17 +87,20 @@ class CERecordControllerIntegrationTest {
                 .andExpect(jsonPath("$.hours").value(6.0))
                 .andExpect(jsonPath("$.certificateUrl").doesNotExist());
 
-        mockMvc.perform(delete("/api/ce-records/{id}", ceRecordId))
+        mockMvc.perform(delete("/api/ce-records/{id}", ceRecordId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/ce-records/{id}", ceRecordId))
+        mockMvc.perform(get("/api/ce-records/{id}", ceRecordId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("CE record not found for id: " + ceRecordId));
     }
 
     @Test
     void shouldRejectMissingCredentialOnCreate() throws Exception {
-        String userId = createUser("Robin Sloan", "robin.sloan@example.com");
+        AuthSession session = registerUser("Robin Sloan", "robin.sloan@example.com");
+        String userId = session.userId();
 
         String payload = """
                 {
@@ -115,6 +114,7 @@ class CERecordControllerIntegrationTest {
                 """.formatted(userId);
 
         mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isNotFound())
@@ -123,8 +123,9 @@ class CERecordControllerIntegrationTest {
 
     @Test
     void shouldRejectMissingUserOnCreate() throws Exception {
-        String userId = createUser("Casey Hart", "casey.hart@example.com");
-        String credentialId = createCredential(userId, "BLS");
+        AuthSession session = registerUser("Casey Hart", "casey.hart@example.com");
+        String userId = session.userId();
+        String credentialId = createCredential(session, userId, "BLS");
 
         String payload = """
                 {
@@ -138,6 +139,7 @@ class CERecordControllerIntegrationTest {
                 """.formatted(credentialId);
 
         mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isNotFound())
@@ -146,9 +148,9 @@ class CERecordControllerIntegrationTest {
 
     @Test
     void shouldRejectCredentialOwnedByDifferentUser() throws Exception {
-        String credentialOwnerId = createUser("Dana Price", "dana.price@example.com");
-        String anotherUserId = createUser("Jordan Vale", "jordan.vale@example.com");
-        String credentialId = createCredential(credentialOwnerId, "CCRN");
+        AuthSession credentialOwner = registerUser("Dana Price", "dana.price@example.com");
+        AuthSession anotherUser = registerUser("Jordan Vale", "jordan.vale@example.com");
+        String credentialId = createCredential(credentialOwner, credentialOwner.userId(), "CCRN");
 
         String payload = """
                 {
@@ -159,36 +161,17 @@ class CERecordControllerIntegrationTest {
                   "credentialId": "%s",
                   "userId": "%s"
                 }
-                """.formatted(credentialId, anotherUserId);
+                """.formatted(credentialId, anotherUser.userId());
 
         mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(anotherUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Credential does not belong to the specified user."));
     }
 
-    private String createUser(String name, String email) throws Exception {
-        String payload = """
-                {
-                  "name": "%s",
-                  "email": "%s",
-                  "password": "secret123"
-                }
-                """.formatted(name, email);
-
-        String response = mockMvc.perform(post("/api/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload))
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        return objectMapper.readTree(response).get("id").asText();
-    }
-
-    private String createCredential(String userId, String name) throws Exception {
+    private String createCredential(AuthSession session, String userId, String name) throws Exception {
         String payload = """
                 {
                   "name": "%s",
@@ -202,6 +185,7 @@ class CERecordControllerIntegrationTest {
                 """.formatted(name, LocalDate.now().plusDays(180), userId);
 
         String response = mockMvc.perform(post("/api/credentials")
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isCreated())

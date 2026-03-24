@@ -35,39 +35,79 @@
       </p>
     </div>
 
-    <form class="auth-form">
+    @if (authError(); as errorMessage) {
+      <p class="auth-error" role="alert">{{ errorMessage }}</p>
+    }
+
+    <form
+      class="auth-form"
+      [formGroup]="mode() === 'login' ? loginForm : signupForm"
+      (ngSubmit)="submit()"
+    >
       @if (mode() === 'signup') {
         <label class="field">
           <span>Name</span>
-          <input #firstInput type="text" name="name" autocomplete="name" />
+          <input
+            #firstInput
+            pInputText
+            type="text"
+            formControlName="name"
+            autocomplete="name"
+          />
+          @if (getFieldError('name'); as errorMessage) {
+            <small class="field-error">{{ errorMessage }}</small>
+          }
         </label>
       } @else {
         <label class="field">
           <span>Email</span>
-          <input #firstInput type="email" name="email" autocomplete="email" />
+          <input
+            #firstInput
+            pInputText
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+          />
+          @if (getFieldError('email'); as errorMessage) {
+            <small class="field-error">{{ errorMessage }}</small>
+          }
         </label>
       }
 
       @if (mode() === 'signup') {
         <label class="field">
           <span>Email</span>
-          <input type="email" name="email" autocomplete="email" />
+          <input
+            pInputText
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+          />
+          @if (getFieldError('email'); as errorMessage) {
+            <small class="field-error">{{ errorMessage }}</small>
+          }
         </label>
       }
 
       <label class="field">
         <span>Password</span>
         <input
+          pInputText
           type="password"
-          name="password"
+          formControlName="password"
           [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'"
         />
+        @if (getFieldError('password'); as errorMessage) {
+          <small class="field-error">{{ errorMessage }}</small>
+        }
       </label>
 
       <button
         pButton
-        type="button"
+        type="submit"
         class="primary-button"
+        [loading]="isSubmitting()"
+        [disabled]="isSubmitting()"
         [label]="mode() === 'login' ? 'Log In' : 'Create Account'"
       ></button>
     </form>

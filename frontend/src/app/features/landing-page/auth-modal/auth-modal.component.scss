@@ -79,6 +79,17 @@
   gap: 0.95rem;
 }
 
+.auth-error {
+  margin: -0.35rem 0 0;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid #f2c7c2;
+  border-radius: 0.9rem;
+  background: #fff4f2;
+  color: #a03a30;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -105,6 +116,12 @@
 .field input:focus {
   outline: 2px solid rgb(24 95 165 / 0.18);
   border-color: #2b68b0;
+}
+
+.field-error {
+  color: #b5473a;
+  font-size: 0.84rem;
+  line-height: 1.4;
 }
 
 .primary-button {
