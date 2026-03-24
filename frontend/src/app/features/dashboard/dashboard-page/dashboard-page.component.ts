@@ -4,9 +4,6 @@ import { ButtonModule } from 'primeng/button';
 
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Dashboard } from '../../../models/dashboard.model';
-import { CeRecord } from '../../../models/ce-record.model';
-import { Credential } from '../../../models/credential.model';
-import { DashboardData } from '../../../models/dashboard.models';
 import { CeProgressPanelComponent } from '../components/ce-progress-panel/ce-progress-panel.component';
 import { DashboardHeaderComponent } from '../components/dashboard-header/dashboard-header.component';
 import { ExpirationsPanelComponent } from '../components/expirations-panel/expirations-panel.component';
@@ -15,13 +12,15 @@ import { StatsCardsComponent } from '../components/stats-cards/stats-cards.compo
 import { DashboardService } from '../../../services/dashboard.service';
 import { buildDashboardPageView } from '../utils/dashboard.mappers';
 import { CeRecordDetailDrawerComponent } from '../../drawers/ce-record-detail-drawer/ce-record-detail-drawer.component';
-import { CredentialDetailDrawerComponent } from '../../drawers/credential-detail-drawer/credential-detail-drawer.component';
+import {
+  CredentialDetailDrawerContainerComponent,
+  CredentialDetailSelectionEvent,
+} from '../../drawers/credential-detail-drawer-container/credential-detail-drawer-container.component';
 import { CredentialListDrawerComponent } from '../../drawers/credential-list-drawer/credential-list-drawer.component';
 import { DrawerShellComponent } from '../../drawers/drawer-shell/drawer-shell.component';
 import { CredentialListMode, DrawerType } from '../../drawers/models/drawer.models';
 import {
   buildCeRecordDetailDrawerView,
-  buildCredentialDetailDrawerView,
   buildCredentialListDrawerView,
 } from '../../drawers/utils/drawer.mappers';
 
@@ -34,7 +33,7 @@ import {
     CeProgressPanelComponent,
     RecentActivityPanelComponent,
     DrawerShellComponent,
-    CredentialDetailDrawerComponent,
+    CredentialDetailDrawerContainerComponent,
     CeRecordDetailDrawerComponent,
     CredentialListDrawerComponent,
     ButtonModule,
@@ -47,17 +46,14 @@ export class DashboardPageComponent {
   private readonly dashboardService = inject(DashboardService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly now = new Date();
-
-  private readonly credentials = signal<Credential[]>([]);
-  private readonly ceRecords = signal<CeRecord[]>([]);
   private readonly currentUserId = computed(() => this.authStore.currentUser()?.id ?? null);
+  readonly selectedCeRecordDrawer = signal<ReturnType<typeof buildCeRecordDetailDrawerView> | null>(null);
 
   readonly isLoading = signal(true);
   readonly errorMessage = signal<string | null>(null);
   readonly drawerType = signal<DrawerType | null>(null);
   readonly credentialListMode = signal<CredentialListMode>('expiring');
   readonly selectedCredentialId = signal<string | null>(null);
-  readonly selectedCeRecordId = signal<string | null>(null);
 
   readonly view = computed(() =>
     buildDashboardPageView({
@@ -77,43 +73,6 @@ export class DashboardPageComponent {
 
   readonly isDrawerOpen = computed(() => this.drawerType() !== null);
 
-  readonly selectedCredential = computed<Credential | undefined>(() => {
-    const credentialId = this.selectedCredentialId();
-    return credentialId
-      ? this.credentials().find((credential) => credential.id === credentialId)
-      : undefined;
-  });
-
-  readonly selectedCeRecord = computed<CeRecord | undefined>(() => {
-    const recordId = this.selectedCeRecordId();
-    return recordId ? this.ceRecords().find((record) => record.id === recordId) : undefined;
-  });
-
-  readonly selectedCredentialDrawer = computed(() => {
-    const credential = this.selectedCredential();
-
-    if (!credential) {
-      return undefined;
-    }
-
-    return buildCredentialDetailDrawerView({
-      credential,
-      ceRecords: this.ceRecords().filter((record) => record.credentialId === credential.id),
-      now: this.now,
-    });
-  });
-
-  readonly selectedCeRecordDrawer = computed(() => {
-    const record = this.selectedCeRecord();
-
-    if (!record) {
-      return undefined;
-    }
-
-    const credential = this.credentials().find((item) => item.id === record.credentialId);
-    return credential ? buildCeRecordDetailDrawerView({ record, credential }) : undefined;
-  });
-
   readonly credentialListDrawer = computed(() => {
     const dashboard = this.dashboard();
 
@@ -131,8 +90,6 @@ export class DashboardPageComponent {
     const userId = this.currentUserId();
 
     if (!userId) {
-      this.credentials.set([]);
-      this.ceRecords.set([]);
       this.dashboard.set(this.buildEmptyDashboard());
       this.errorMessage.set(null);
       this.isLoading.set(false);
@@ -144,24 +101,31 @@ export class DashboardPageComponent {
 
   openCredentialDetail(credentialId: string): void {
     this.selectedCredentialId.set(credentialId);
-    this.selectedCeRecordId.set(null);
+    this.selectedCeRecordDrawer.set(null);
     this.drawerType.set('credential-detail');
   }
 
-  openCeRecordDetail(recordId: string): void {
-    this.selectedCeRecordId.set(recordId);
+  openCeRecordDetail(selection: CredentialDetailSelectionEvent): void {
+    this.selectedCeRecordDrawer.set(
+      buildCeRecordDetailDrawerView({
+        record: selection.record,
+        credential: selection.credential,
+      }),
+    );
     this.drawerType.set('ce-record-detail');
   }
 
   openCredentialList(mode: CredentialListMode): void {
     this.credentialListMode.set(mode);
     this.selectedCredentialId.set(null);
-    this.selectedCeRecordId.set(null);
+    this.selectedCeRecordDrawer.set(null);
     this.drawerType.set('credential-list');
   }
 
   closeDrawer(): void {
     this.drawerType.set(null);
+    this.selectedCredentialId.set(null);
+    this.selectedCeRecordDrawer.set(null);
   }
 
   retryLoad(): void {
@@ -182,16 +146,12 @@ export class DashboardPageComponent {
       .getDashboard()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ dashboard, credentials, ceRecords }: DashboardData) => {
+        next: (dashboard: Dashboard) => {
           this.dashboard.set(dashboard);
-          this.credentials.set(credentials);
-          this.ceRecords.set(ceRecords);
           this.isLoading.set(false);
         },
         error: () => {
           this.dashboard.set(this.buildEmptyDashboard());
-          this.credentials.set([]);
-          this.ceRecords.set([]);
           this.errorMessage.set('We could not load the dashboard right now. Please try again.');
           this.isLoading.set(false);
         },

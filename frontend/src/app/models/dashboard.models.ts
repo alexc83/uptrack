@@ -1,4 +1,3 @@
-import { CeRecord } from './ce-record.models';
 import { Credential } from './credential.models';
 import { IsoDate } from './common.models';
 
@@ -24,10 +23,4 @@ export interface Dashboard {
   upcomingExpirations: Credential[];
   ceAttention: Credential[];
   recentActivity: DashboardActivity[];
-}
-
-export interface DashboardData {
-  dashboard: Dashboard;
-  credentials: Credential[];
-  ceRecords: CeRecord[];
 }
