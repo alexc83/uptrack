@@ -2,31 +2,114 @@
   <header class="page-header">
     <div>
       <span class="eyebrow">Continuing Education</span>
-      <h1>Live CE records</h1>
-      <p>
-        Review your real completion history, certificate availability, and linked credential
-        context from the backend.
-      </p>
+      <h1>CE Records</h1>
+      <p>Track your completed CE courses, monitor hours earned, and manage certificate documentation.</p>
     </div>
     <div class="header-actions">
-      <span class="summary-pill">{{ resultSummary() }}</span>
+      <span class="summary-pill">{{ allRecords().length }} record{{ allRecords().length === 1 ? '' : 's' }}</span>
       <button
-        class="credential-primary-button"
+        class="ce-primary-button"
         pButton
         type="button"
         label="Add CE Record"
+        icon="pi pi-plus"
         [disabled]="credentialOptions().length === 0"
         (click)="openAddDialog()"
       ></button>
     </div>
   </header>
 
-  @if (isLoading()) {
-    <section class="loading-grid" aria-label="Loading CE records">
-      @for (placeholder of [1, 2, 3, 4]; track placeholder) {
-        <div class="loading-card"></div>
-      }
+  @if (!isLoading() && !errorMessage() && hasRecords()) {
+    <div class="summary-cards">
+      <div class="summary-card">
+        <span class="summary-card-label">Total CE Hours</span>
+        <strong class="summary-card-value">{{ summaryTotalHours() }}</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-card-label">Records</span>
+        <strong class="summary-card-value">{{ allRecords().length }}</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-card-label">Missing Certificates</span>
+        <strong class="summary-card-value" [class.summary-card-value-warn]="summaryMissingCerts() > 0">
+          {{ summaryMissingCerts() }}
+        </strong>
+      </div>
+    </div>
+  }
+
+  @if (!isLoading() && !errorMessage() && hasRecords()) {
+    <section class="filter-bar" aria-label="CE record filters">
+      <div class="search-row">
+        <div class="search-input-wrap">
+          <i class="pi pi-search search-icon"></i>
+          <input
+            class="search-input"
+            type="search"
+            [value]="rawSearch()"
+            placeholder="Search by course name or organization..."
+            (input)="updateSearch($event)"
+          />
+        </div>
+      </div>
+
+      <div class="chip-row">
+        <div class="chip-group">
+          <span class="chip-group-label">Credential:</span>
+          <select
+            class="credential-select"
+            [class.credential-select-active]="credentialFilter() !== ''"
+            [value]="credentialFilter()"
+            (change)="setCredentialFilterFromEvent($event)"
+          >
+            <option value="">All</option>
+            @for (option of credentialOptions(); track option.credentialId) {
+              <option [value]="option.credentialId">{{ option.credentialName }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="chip-divider" aria-hidden="true"></div>
+
+        <div class="chip-group">
+          <span class="chip-group-label">Certificate:</span>
+          <button
+            class="filter-chip"
+            [class.filter-chip-active]="certificateFilter() === 'all'"
+            type="button"
+            (click)="setCertificateFilter('all')"
+          >All</button>
+          <button
+            class="filter-chip"
+            [class.filter-chip-active]="certificateFilter() === 'on-file'"
+            type="button"
+            (click)="setCertificateFilter('on-file')"
+          >On file</button>
+          <button
+            class="filter-chip"
+            [class.filter-chip-active]="certificateFilter() === 'missing'"
+            type="button"
+            (click)="setCertificateFilter('missing')"
+          >Missing</button>
+        </div>
+
+        @if (hasActiveFilters()) {
+          <button class="chip-clear" type="button" (click)="clearFilters()">
+            <i class="pi pi-times"></i> Clear
+          </button>
+        }
+      </div>
     </section>
+  }
+
+  @if (isLoading()) {
+    <div class="table-shell">
+      <div class="table-loading" aria-label="Loading CE records">
+        @for (placeholder of [1, 2, 3, 4, 5]; track placeholder) {
+          <div class="loading-row"></div>
+        }
+      </div>
+    </div>
   } @else if (errorMessage()) {
     <section class="page-message page-message-error" role="alert">
       <div>
@@ -39,39 +122,119 @@
     <section class="page-message page-message-empty">
       <div>
         <strong>No CE records yet</strong>
-        <p>Your live CE history will appear here once CE completions are linked to your credentials.</p>
+        <p>Your CE history will appear here once completions are linked to your credentials.</p>
       </div>
       <button
-        class="credential-primary-button"
+        class="ce-primary-button"
         pButton
         type="button"
         label="Add CE Record"
         [disabled]="credentialOptions().length === 0"
         (click)="openAddDialog()"
       ></button>
-    </section>
-  } @else {
-    <section class="record-grid">
-      @for (record of records(); track record.id) {
-        <button class="record-card" type="button" (click)="openRecordDetail(record)">
-          <div class="card-topline">
-            <div class="card-copy">
-              <h2>{{ record.title }}</h2>
-              <p>{{ record.provider }} · {{ record.completedDateLabel }}</p>
-            </div>
-            <span class="hours-chip">{{ record.hoursLabel }}</span>
-          </div>
-
-          <section class="linked-credential">
-            <span>Counts toward</span>
-            <strong>{{ record.credentialName }}</strong>
-            <p>{{ record.credentialOrganization }}</p>
-          </section>
-
-          <span class="certificate-pill">{{ record.certificateLabel }}</span>
-        </button>
+      @if (credentialOptions().length === 0) {
+        <small class="empty-hint">Add a credential first before logging CE records.</small>
       }
     </section>
+  } @else if (!hasFilteredRecords()) {
+    <section class="page-message page-message-empty">
+      <div>
+        <strong>No records match these filters</strong>
+        <p>Try adjusting your search, credential, or certificate filters.</p>
+      </div>
+      <button pButton type="button" label="Clear Filters" severity="secondary" (click)="clearFilters()"></button>
+    </section>
+  } @else {
+    <div class="table-shell">
+      <p class="showing-label">{{ showingLabel() }}</p>
+
+      <div class="ce-table-wrap">
+        <table class="ce-table">
+          <thead>
+            <tr>
+              <th class="col-course">Course Name</th>
+              <th class="col-org">Organization</th>
+              <th class="col-date">Date</th>
+              <th class="col-hours">Hours</th>
+              <th class="col-credential">Credential</th>
+              <th class="col-cert">Certificate</th>
+              <th class="col-actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (record of pagedRecords(); track record.id) {
+              <tr class="ce-row" (click)="openRecordDetail(record)">
+                <td class="col-course">
+                  <span class="course-name">{{ record.title }}</span>
+                </td>
+                <td class="col-org">
+                  <span class="cell-secondary">{{ record.provider }}</span>
+                </td>
+                <td class="col-date">
+                  <span class="cell-secondary">{{ record.completedDateLabel }}</span>
+                </td>
+                <td class="col-hours">
+                  <span class="hours-badge">{{ record.hoursLabel }}</span>
+                </td>
+                <td class="col-credential">
+                  <span class="credential-name">{{ record.credentialName }}</span>
+                </td>
+                <td class="col-cert">
+                  <span
+                    class="cert-badge"
+                    [class.cert-badge-on-file]="record.hasCertificate"
+                    [class.cert-badge-missing]="!record.hasCertificate"
+                  >{{ record.certificateLabel }}</span>
+                </td>
+                <td class="col-actions">
+                  <button
+                    class="row-action-btn"
+                    type="button"
+                    aria-label="Open CE record details"
+                    (click)="$event.stopPropagation(); openRecordDetail(record)"
+                  >
+                    <i class="pi pi-chevron-right"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button
+            class="page-btn"
+            type="button"
+            [disabled]="currentPage() === 0"
+            (click)="prevPage()"
+          >
+            <i class="pi pi-chevron-left"></i> Prev
+          </button>
+
+          <div class="page-numbers">
+            @for (page of pageNumbers(); track page) {
+              <button
+                class="page-num"
+                [class.page-num-active]="currentPage() === page"
+                type="button"
+                (click)="goToPage(page)"
+              >{{ page + 1 }}</button>
+            }
+          </div>
+
+          <button
+            class="page-btn"
+            type="button"
+            [disabled]="currentPage() === totalPages() - 1"
+            (click)="nextPage()"
+          >
+            Next <i class="pi pi-chevron-right"></i>
+          </button>
+        </div>
+      }
+    </div>
   }
 </section>
 
