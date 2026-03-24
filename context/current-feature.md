@@ -1,10 +1,10 @@
 # Current Feature
 
-Idle
+No feature currently in progress.
 
 ## Status
 
-No active feature in progress.
+Idle
 
 ## History
 
@@ -35,3 +35,4 @@ No active feature in progress.
 - **2026-03-24** — Completed CE Records mobile responsiveness with stacked mobile card layouts, improved spacing for the mobile title/content sections, dark-mode card cleanup to remove table-like separators, and preserved desktop table behavior.
 - **2026-03-24** — Completed Cloudinary backend integration with secure server-side certificate upload configuration, authenticated upload endpoint, file validation, Cloudinary-hosted asset response DTOs, and backend verification for valid and invalid upload flows.
 - **2026-03-24** — Completed certificate upload UI integration with CE form file selection, authenticated backend upload wiring, Cloudinary-backed certificate metadata persistence, inline upload status and error handling, reliable PDF/image certificate viewing, direct remove actions in form and drawer flows, and cleanup of replaced or deleted certificate assets.
+- **2026-03-24** — Completed CE report backend support with an authenticated per-credential report endpoint, report-specific DTOs for credential and CE summary data, newest-first CE record ordering, reused aggregation logic, user-scoped validation, and backend verification for totals and access control.
