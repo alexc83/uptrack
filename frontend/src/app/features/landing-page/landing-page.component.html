@@ -1,0 +1,159 @@
+<div class="landing-page">
+  <header class="landing-header">
+    <div class="landing-header__inner">
+      <a class="brand" routerLink="/" aria-label="UpTrack home">
+        <span class="brand__icon">
+          <i class="pi pi-shield"></i>
+        </span>
+        <span class="brand__name">UpTrack</span>
+      </a>
+
+      <nav class="landing-nav" aria-label="Authentication">
+        <button class="login-link" type="button" (click)="openLogin()">Log In</button>
+        <button
+          pButton
+          type="button"
+          label="Sign Up"
+          styleClass="landing-primary-button landing-primary-button--header"
+          [style]="{ 'background-color': '#3766ad', 'border-color': '#3766ad', color: '#ffffff' }"
+          (click)="openSignup()"
+        ></button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero-section">
+      <div class="section-shell hero-section__inner">
+        <h1>Track credentials. Stay compliant. Own your career.</h1>
+        <p>
+          A centralized dashboard for healthcare professionals to manage licenses,
+          certifications, and continuing education requirements—audit-ready and always up to
+          date.
+        </p>
+        <button
+          pButton
+          type="button"
+          styleClass="landing-primary-button landing-primary-button--hero"
+          [style]="{ 'background-color': '#3766ad', 'border-color': '#3766ad', color: '#ffffff' }"
+          (click)="openSignup()"
+        >
+          <span>Get Started</span>
+          <i class="pi pi-arrow-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <section class="dashboard-preview">
+      <div class="section-shell">
+        <div class="dashboard-preview__frame">
+          <img
+            src="/landing/dashboard-for-landing-page.png"
+            alt="UpTrack dashboard preview"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section class="features-section">
+      <div class="section-shell section-heading">
+        <h2>Everything you need to stay compliant</h2>
+        <p>
+          Built specifically for healthcare professionals who need to track multiple licenses,
+          certifications, and CE requirements.
+        </p>
+      </div>
+
+      <div class="section-shell feature-grid">
+        @for (card of featureCards; track card.title; let i = $index) {
+          <article class="feature-card" [class]="'feature-card feature-card--' + i">
+            <span class="feature-card__icon">
+              <i [class]="card.icon"></i>
+            </span>
+            <h3>{{ card.title }}</h3>
+            <p>{{ card.description }}</p>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="compliance-section">
+      <div class="section-shell compliance-grid">
+        <div class="compliance-copy">
+          <h2>Your compliance status, at a glance</h2>
+          <p>
+            The UpTrack dashboard gives you instant visibility into your credential status. See
+            what's active, what's expiring soon, and what needs attention—all in one clean
+            interface.
+          </p>
+
+          <div class="benefit-list">
+            @for (benefit of complianceBenefits; track benefit.title) {
+              <article class="benefit-item">
+                <span class="benefit-item__icon">
+                  <i class="pi pi-check"></i>
+                </span>
+                <div>
+                  <h3>{{ benefit.title }}</h3>
+                  <p>{{ benefit.description }}</p>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+
+        <div class="compliance-visual">
+          <div class="compliance-visual__frame">
+            <img
+              src="/landing/certificate-for-landing-page.png"
+              alt="UpTrack credential drawer preview"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="section-shell">
+        <div class="cta-banner">
+          <h2>Start tracking your credentials today</h2>
+          <p>
+            Join healthcare professionals who have simplified their credential management with
+            UpTrack.
+          </p>
+          <button
+            pButton
+            type="button"
+            severity="secondary"
+            styleClass="landing-primary-button landing-primary-button--cta"
+            [style]="{ 'background-color': '#ffffff', 'border-color': '#ffffff', color: '#3766ad' }"
+            (click)="openSignup()"
+          >
+            <span>Get Started for Free</span>
+            <i class="pi pi-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="landing-footer">
+    <div class="section-shell landing-footer__inner">
+      <div class="brand brand--footer">
+        <span class="brand__icon">
+          <i class="pi pi-shield"></i>
+        </span>
+        <span class="brand__name">UpTrack</span>
+      </div>
+      <p>Designed for healthcare professionals, powered by Angular 21 and Spring Boot</p>
+      <small>&copy; 2026 UpTrack</small>
+    </div>
+  </footer>
+</div>
+
+<app-auth-modal
+  [mode]="authModal() === 'signup' ? 'signup' : 'login'"
+  [open]="authModal() !== null"
+  (close)="closeModal()"
+  (switchMode)="handleModalSwitch($event)"
+/>

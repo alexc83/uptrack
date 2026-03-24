@@ -4,6 +4,14 @@ import { ShellComponent } from './layout/shell.component';
 export const routes: Routes = [
   {
     path: '',
+    loadComponent: () =>
+      import('./features/landing-page/landing-page.component').then((m) => m.LandingPageComponent),
+  },
+  { path: 'dashboard', redirectTo: 'app/dashboard', pathMatch: 'full' },
+  { path: 'credentials', redirectTo: 'app/credentials', pathMatch: 'full' },
+  { path: 'ce-records', redirectTo: 'app/ce-records', pathMatch: 'full' },
+  {
+    path: 'app',
     component: ShellComponent,
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -28,4 +36,5 @@ export const routes: Routes = [
       },
     ],
   },
+  { path: '**', redirectTo: '' },
 ];

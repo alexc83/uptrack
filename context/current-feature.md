@@ -6,6 +6,10 @@ None
 
 Idle
 
+## Purpose
+
+No active feature is currently in progress.
+
 ## History
 
 <!-- Keep this updated, earliest to latest -->
@@ -20,3 +24,4 @@ Idle
 - **2026-03-23** — Completed Credential CRUD with credential request/response DTOs, derived status calculation in the service layer, `/api/credentials` REST endpoints, required user validation, and integration coverage for CRUD and status behavior.
 - **2026-03-23** — Completed CE Record CRUD with dedicated request/response DTOs, `/api/ce-records` REST endpoints, credential and user ownership validation, and integration coverage for CRUD plus missing-resource edge cases.
 - **2026-03-23** — Completed Relationship & Query Endpoints with aggregated credential detail responses, `/api/credentials/{id}/ce-records`, service-layer CE hour/progress calculations, and optional credential filters for user, status, type, and search.
+- **2026-03-23** — Completed the public landing page with screenshot-backed product previews, healthcare-focused marketing sections, responsive login and sign-up modals, public `/` routing, and frontend verification through build and tests.

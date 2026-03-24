@@ -1,0 +1,85 @@
+<p-dialog
+  [visible]="open()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [closeOnEscape]="true"
+  [showHeader]="false"
+  [blockScroll]="true"
+  [styleClass]="'auth-modal-dialog auth-modal-dialog-' + mode()"
+  (visibleChange)="handleVisibleChange($event)"
+>
+  <section
+    class="auth-modal"
+    [attr.aria-label]="mode() === 'login' ? 'Log In' : 'Sign Up'"
+  >
+    <button
+      class="close-button"
+      type="button"
+      aria-label="Close authentication modal"
+      (click)="handleClose()"
+    >
+      <i class="pi pi-times"></i>
+    </button>
+
+    <div class="auth-modal-copy">
+      <span class="eyebrow">Welcome to UpTrack</span>
+      <h2>{{ mode() === 'login' ? 'Log In' : 'Sign Up' }}</h2>
+      <p>
+        {{
+          mode() === 'login'
+            ? 'Access your dashboard and keep every credential within reach.'
+            : 'Create your account to start tracking licenses, certifications, and CE progress.'
+        }}
+      </p>
+    </div>
+
+    <form class="auth-form">
+      @if (mode() === 'signup') {
+        <label class="field">
+          <span>Name</span>
+          <input #firstInput type="text" name="name" autocomplete="name" />
+        </label>
+      } @else {
+        <label class="field">
+          <span>Email</span>
+          <input #firstInput type="email" name="email" autocomplete="email" />
+        </label>
+      }
+
+      @if (mode() === 'signup') {
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" autocomplete="email" />
+        </label>
+      }
+
+      <label class="field">
+        <span>Password</span>
+        <input
+          type="password"
+          name="password"
+          [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'"
+        />
+      </label>
+
+      <button
+        pButton
+        type="button"
+        class="primary-button"
+        [label]="mode() === 'login' ? 'Log In' : 'Create Account'"
+      ></button>
+    </form>
+
+    <p class="switch-copy">
+      @if (mode() === 'login') {
+        Don't have an account?
+        <button type="button" (click)="openSignup()">Sign up</button>
+      } @else {
+        Already have an account?
+        <button type="button" (click)="openLogin()">Log in</button>
+      }
+    </p>
+  </section>
+</p-dialog>

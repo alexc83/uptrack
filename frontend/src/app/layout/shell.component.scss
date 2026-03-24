@@ -284,6 +284,16 @@
   color: var(--text-color);
 }
 
+@media (min-width: 769px) {
+  .sidebar {
+    padding-top: 0.85rem;
+  }
+
+  .main-content {
+    padding-top: 0.85rem;
+  }
+}
+
 @media (max-width: 768px) {
   .app-shell {
     height: 100dvh;
