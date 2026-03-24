@@ -1,0 +1,199 @@
+.ce-records-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  color: var(--text-color);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  color: var(--ut-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.05;
+}
+
+.page-header p {
+  max-width: 40rem;
+  margin: 0.9rem 0 0;
+  color: var(--text-color-secondary);
+  line-height: 1.65;
+}
+
+.summary-pill,
+.hours-chip,
+.certificate-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.summary-pill {
+  min-width: 7rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--surface-border) 80%, white 20%);
+  background: color-mix(in srgb, var(--surface-card) 88%, white 12%);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.06);
+}
+
+.record-grid,
+.loading-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.record-card,
+.loading-card,
+.page-message {
+  border-radius: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--surface-border) 80%, white 20%);
+  background: color-mix(in srgb, var(--surface-card) 92%, white 8%);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.06);
+}
+
+.record-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  padding: 1.3rem;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.card-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.card-copy h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.card-copy p,
+.linked-credential p,
+.page-message p {
+  margin: 0.45rem 0 0;
+  color: var(--text-color-secondary);
+}
+
+.hours-chip {
+  min-height: 2rem;
+  padding: 0.2rem 0.8rem;
+  background: color-mix(in srgb, var(--ut-primary-subtle) 82%, white 18%);
+  color: var(--ut-primary);
+  font-size: 0.8rem;
+}
+
+.linked-credential {
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--surface-border) 78%, white 22%);
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, var(--surface-ground) 55%, var(--surface-card) 45%);
+}
+
+.linked-credential span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--text-color-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.linked-credential strong {
+  font-size: 1rem;
+}
+
+.certificate-pill {
+  align-self: flex-start;
+  min-height: 2rem;
+  padding: 0.2rem 0.8rem;
+  background: color-mix(in srgb, var(--surface-border) 44%, white 56%);
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+}
+
+.page-message {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.page-message strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+}
+
+.page-message-error {
+  border-color: color-mix(in srgb, #f97316 30%, var(--surface-border) 70%);
+  background: color-mix(in srgb, #fff7ed 75%, var(--surface-card) 25%);
+}
+
+.loading-card {
+  min-height: 15rem;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface-card) 82%, white 18%) 0%,
+    color-mix(in srgb, var(--surface-card) 65%, white 35%) 50%,
+    color-mix(in srgb, var(--surface-card) 82%, white 18%) 100%
+  );
+  background-size: 200% 100%;
+  animation: ce-loading 1.4s ease-in-out infinite;
+}
+
+@keyframes ce-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 1200px) {
+  .record-grid,
+  .loading-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .ce-records-page {
+    padding: 1rem 1rem 1.5rem;
+  }
+
+  .page-header,
+  .page-message,
+  .card-topline {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

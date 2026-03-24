@@ -1,0 +1,58 @@
+@if (isLoading()) {
+  <section class="drawer-state" aria-label="Loading CE record details">
+    <header class="drawer-state__header">
+      <div>
+        <strong>Loading CE record</strong>
+        <p>Fetching the latest completion details and certificate status.</p>
+      </div>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        rounded
+        aria-label="Close CE record drawer"
+        (click)="close.emit()"
+      ></button>
+    </header>
+
+    <div class="loading-stack">
+      <div class="loading-block loading-block-header"></div>
+      <div class="loading-grid">
+        @for (placeholder of [1, 2, 3, 4]; track placeholder) {
+          <div class="loading-block loading-block-meta"></div>
+        }
+      </div>
+      <div class="loading-block loading-block-section"></div>
+      <div class="loading-block loading-block-section"></div>
+    </div>
+  </section>
+} @else if (errorMessage()) {
+  <section class="drawer-state drawer-state-error" role="alert">
+    <header class="drawer-state__header">
+      <div>
+        <strong>CE record unavailable</strong>
+        <p>{{ errorMessage() }}</p>
+      </div>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        rounded
+        aria-label="Close CE record drawer"
+        (click)="close.emit()"
+      ></button>
+    </header>
+
+    <button pButton type="button" label="Retry" (click)="retryLoad()"></button>
+  </section>
+} @else if (view(); as ceRecordView) {
+  <app-ce-record-detail-drawer
+    [view]="ceRecordView"
+    (close)="close.emit()"
+    (credentialSelected)="credentialSelected.emit($event)"
+  />
+}

@@ -27,6 +27,8 @@ export interface CeRecordFilters {
 export interface CredentialCeRecord extends CeRecordResponse {
   credentialId: ApiId;
   userId?: ApiId;
+  credentialName?: string;
+  credentialOrganization?: string;
 }
 
 export type CeRecord = CredentialCeRecord;
