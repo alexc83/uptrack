@@ -8,11 +8,15 @@ Idle
 
 ## Purpose
 
-No active feature right now.
+No active feature. Refer to the history below for completed work and use the next feature spec to populate this file when work begins.
 
 ## Scope
 
-N/A
+- None.
+
+## Out of Scope
+
+- N/A.
 
 ## History
 
@@ -37,3 +41,4 @@ N/A
 - **2026-03-23** — Completed CE live data integration with real CE rows inside credential drawers, a dedicated live CE detail drawer fetch flow, a real CE records page with linked credential context, CE loading/error/empty states, and removal of mock CE read paths.
 - **2026-03-23** — Completed seed data integration and mock removal stabilization by verifying the app no longer depends on frontend runtime mocks, documenting local seed-data expectations and seeded login details, and aligning the project README with the current live-data application state.
 - **2026-03-24** — Completed credential write flows with JWT-scoped credential mutations, add/edit/delete UX across dashboard and credentials page, typed reactive form validation, live post-mutation refresh behavior, and dashboard/landing page UI polish for button consistency and header hierarchy.
+- **2026-03-24** — Completed CE write flows with JWT-scoped CE mutations, shared add/edit modal styling, dashboard and CE page entry points, delete confirmation handling, centered modal presentation from drawers, and live refresh of credential, dashboard, and CE record views after mutation.

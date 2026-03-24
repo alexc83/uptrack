@@ -1,0 +1,50 @@
+:host ::ng-deep .p-dialog-mask {
+  backdrop-filter: blur(10px);
+  background: rgb(15 23 42 / 0.3);
+}
+
+:host ::ng-deep .ce-record-form-dialog {
+  width: min(42rem, calc(100vw - 2rem));
+  border-radius: 1.5rem;
+}
+
+:host ::ng-deep .ce-record-form-dialog .p-dialog-header,
+:host ::ng-deep .ce-record-form-dialog .p-dialog-content {
+  padding-inline: 1.35rem;
+}
+
+:host ::ng-deep .ce-record-form-dialog .p-dialog-content {
+  padding-bottom: 1.35rem;
+}
+
+.dialog-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.eyebrow {
+  display: inline-block;
+  color: var(--ut-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.dialog-header p,
+.dialog-header small {
+  margin: 0;
+  color: var(--text-color-secondary);
+}
+
+.dialog-header small {
+  font-size: 0.84rem;
+  font-weight: 700;
+}

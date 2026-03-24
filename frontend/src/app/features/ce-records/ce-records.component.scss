@@ -13,6 +13,12 @@
   gap: 1.5rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
 .eyebrow {
   display: inline-block;
   margin-bottom: 0.6rem;
@@ -145,6 +151,18 @@
   padding: 1.1rem 1.25rem;
 }
 
+:host ::ng-deep button.credential-primary-button.p-button {
+  background: var(--ut-primary) !important;
+  border-color: var(--ut-primary) !important;
+  color: #fff !important;
+}
+
+:host ::ng-deep button.credential-primary-button.p-button:hover {
+  background: var(--ut-primary-dark) !important;
+  border-color: var(--ut-primary-dark) !important;
+  color: #fff !important;
+}
+
 .page-message strong {
   display: block;
   margin-bottom: 0.3rem;
@@ -195,5 +213,11 @@
   .card-topline {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
   }
 }

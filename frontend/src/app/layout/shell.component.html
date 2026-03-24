@@ -105,7 +105,7 @@
         pTooltip="Log out"
         tooltipPosition="right"
         aria-label="Log out"
-        (click)="logout()"
+        (click)="requestLogout()"
       >
         <i class="pi pi-sign-out"></i>
       </button>
@@ -127,3 +127,34 @@
     <router-outlet />
   </main>
 </div>
+
+<p-dialog
+  [visible]="logoutConfirmOpen()"
+  [modal]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="false"
+  styleClass="delete-confirm-dialog"
+  (visibleChange)="closeLogoutConfirm()"
+>
+  <ng-template pTemplate="header">
+    <div class="confirm-header">
+      <h3>Log out?</h3>
+      <p>You will need to sign in again to continue managing credentials and CE records.</p>
+    </div>
+  </ng-template>
+
+  <div class="confirm-body">
+    <div class="confirm-actions">
+      <button
+        pButton
+        type="button"
+        label="Cancel"
+        severity="secondary"
+        (click)="closeLogoutConfirm()"
+      ></button>
+      <button pButton type="button" label="Log Out" (click)="logout()"></button>
+    </div>
+  </div>
+</p-dialog>

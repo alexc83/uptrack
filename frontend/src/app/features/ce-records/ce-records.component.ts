@@ -7,11 +7,14 @@ import { getApiErrorMessage } from '../../core/api/api.helpers';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Credential } from '../../models/credential.models';
 import { CredentialService } from '../../services/credential.service';
+import { CredentialWriteEventsService } from '../../services/credential-write-events.service';
 import {
   CeRecordDetailDrawerContainerComponent,
   CeRecordSelectionContext,
 } from '../drawers/ce-record-detail-drawer-container/ce-record-detail-drawer-container.component';
 import { DrawerShellComponent } from '../drawers/drawer-shell/drawer-shell.component';
+import { CeRecordFormDialogComponent } from './ce-record-form-dialog.component';
+import { CeRecordCredentialOption } from './components/ce-record-form/ce-record-form.component';
 import {
   buildCeRecordListItemViews,
   CeRecordListItemView,
@@ -19,13 +22,19 @@ import {
 
 @Component({
   selector: 'app-ce-records',
-  imports: [ButtonModule, DrawerShellComponent, CeRecordDetailDrawerContainerComponent],
+  imports: [
+    ButtonModule,
+    DrawerShellComponent,
+    CeRecordDetailDrawerContainerComponent,
+    CeRecordFormDialogComponent,
+  ],
   templateUrl: './ce-records.component.html',
   styleUrl: './ce-records.component.scss',
 })
 export class CeRecordsComponent {
   private readonly authStore = inject(AuthStore);
   private readonly credentialService = inject(CredentialService);
+  private readonly credentialWriteEvents = inject(CredentialWriteEventsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
 
@@ -38,6 +47,8 @@ export class CeRecordsComponent {
   readonly errorMessage = signal<string | null>(null);
   readonly selectedRecordId = signal<string | null>(null);
   readonly selectedRecordContext = signal<CeRecordSelectionContext | null>(null);
+  readonly credentialOptions = signal<CeRecordCredentialOption[]>([]);
+  readonly addDialogOpen = signal(false);
 
   readonly hasRecords = computed(() => this.records().length > 0);
   readonly isDrawerOpen = computed(() => this.selectedRecordId() !== null);
@@ -48,6 +59,7 @@ export class CeRecordsComponent {
 
   readonly loadCeRecordsEffect = effect(() => {
     const userId = this.currentUserId();
+    this.credentialWriteEvents.revision();
 
     if (!userId) {
       this.records.set([]);
@@ -90,6 +102,26 @@ export class CeRecordsComponent {
     this.loadRecords(userId);
   }
 
+  handleRecordDeleted(): void {
+    this.closeDrawer();
+  }
+
+  openAddDialog(): void {
+    if (this.credentialOptions().length === 0) {
+      return;
+    }
+
+    this.addDialogOpen.set(true);
+  }
+
+  closeAddDialog(): void {
+    this.addDialogOpen.set(false);
+  }
+
+  handleRecordSaved(): void {
+    this.addDialogOpen.set(false);
+  }
+
   private loadRecords(userId: string): void {
     const requestId = ++this.requestSequence;
 
@@ -105,6 +137,13 @@ export class CeRecordsComponent {
             return;
           }
 
+          this.credentialOptions.set(
+            credentials.map((credential) => ({
+              credentialId: credential.id,
+              credentialName: credential.name,
+              credentialOrganization: credential.issuingOrganization,
+            })),
+          );
           this.records.set(buildCeRecordListItemViews(flattenCeRecords(credentials)));
           this.isLoading.set(false);
         },
@@ -114,6 +153,7 @@ export class CeRecordsComponent {
           }
 
           this.records.set([]);
+          this.credentialOptions.set([]);
           this.errorMessage.set(
             getApiErrorMessage(error, 'We could not load CE records right now.'),
           );

@@ -74,6 +74,7 @@
         [label]="action.label"
         [outlined]="action.variant === 'secondary'"
         [severity]="action.variant === 'danger' ? 'danger' : action.variant === 'secondary' ? 'secondary' : 'primary'"
+        (click)="actionSelected.emit(action.id)"
       ></button>
     }
   </footer>

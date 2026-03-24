@@ -54,5 +54,61 @@
     [view]="ceRecordView"
     (close)="close.emit()"
     (credentialSelected)="credentialSelected.emit($event)"
+    (actionSelected)="handleActionSelected($event)"
   />
 }
+
+@if (record(); as ceRecord) {
+  <app-ce-record-form-dialog
+    [open]="isEditing()"
+    mode="edit"
+    [context]="context()"
+    [record]="ceRecord"
+    (close)="closeEdit()"
+    (saved)="handleEditSaved()"
+  />
+}
+
+<p-dialog
+  [visible]="deleteConfirmOpen()"
+  [modal]="true"
+  [dismissableMask]="!isDeleting()"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="false"
+  styleClass="delete-confirm-dialog"
+  (visibleChange)="closeDeleteDialog()"
+>
+  <ng-template pTemplate="header">
+    <div class="confirm-header">
+      <h3>Delete CE record?</h3>
+      <p>This CE entry will be removed and the linked credential totals will refresh immediately.</p>
+    </div>
+  </ng-template>
+
+  <div class="confirm-body">
+    @if (deleteError(); as errorMessage) {
+      <div class="confirm-error" role="alert">{{ errorMessage }}</div>
+    }
+
+    <div class="confirm-actions">
+      <button
+        pButton
+        type="button"
+        label="Cancel"
+        severity="secondary"
+        [disabled]="isDeleting()"
+        (click)="closeDeleteDialog()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Delete CE Record"
+        severity="danger"
+        [loading]="isDeleting()"
+        [disabled]="isDeleting()"
+        (click)="confirmDelete()"
+      ></button>
+    </div>
+  </div>
+</p-dialog>

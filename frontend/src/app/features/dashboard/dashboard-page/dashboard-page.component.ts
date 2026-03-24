@@ -4,12 +4,14 @@ import { ButtonModule } from 'primeng/button';
 
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Dashboard } from '../../../models/dashboard.model';
+import { Credential } from '../../../models/credential.models';
 import { CeProgressPanelComponent } from '../components/ce-progress-panel/ce-progress-panel.component';
 import { DashboardHeaderComponent } from '../components/dashboard-header/dashboard-header.component';
 import { ExpirationsPanelComponent } from '../components/expirations-panel/expirations-panel.component';
 import { RecentActivityPanelComponent } from '../components/recent-activity-panel/recent-activity-panel.component';
 import { StatsCardsComponent } from '../components/stats-cards/stats-cards.component';
 import { DashboardService } from '../../../services/dashboard.service';
+import { CredentialService } from '../../../services/credential.service';
 import { CredentialWriteEventsService } from '../../../services/credential-write-events.service';
 import { buildDashboardPageView } from '../utils/dashboard.mappers';
 import {
@@ -24,6 +26,8 @@ import { CredentialListDrawerComponent } from '../../drawers/credential-list-dra
 import { DrawerShellComponent } from '../../drawers/drawer-shell/drawer-shell.component';
 import { CredentialListMode, DrawerType } from '../../drawers/models/drawer.models';
 import { buildCredentialListDrawerView } from '../../drawers/utils/drawer.mappers';
+import { CeRecordFormDialogComponent } from '../../ce-records/ce-record-form-dialog.component';
+import { CeRecordCredentialOption } from '../../ce-records/components/ce-record-form/ce-record-form.component';
 import { CredentialFormDialogComponent } from '../../credentials/credential-form-dialog.component';
 
 @Component({
@@ -39,6 +43,7 @@ import { CredentialFormDialogComponent } from '../../credentials/credential-form
     CeRecordDetailDrawerContainerComponent,
     CredentialListDrawerComponent,
     CredentialFormDialogComponent,
+    CeRecordFormDialogComponent,
     ButtonModule,
   ],
   templateUrl: './dashboard-page.component.html',
@@ -47,6 +52,7 @@ import { CredentialFormDialogComponent } from '../../credentials/credential-form
 export class DashboardPageComponent {
   private readonly authStore = inject(AuthStore);
   private readonly dashboardService = inject(DashboardService);
+  private readonly credentialService = inject(CredentialService);
   private readonly credentialWriteEvents = inject(CredentialWriteEventsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly now = new Date();
@@ -60,6 +66,8 @@ export class DashboardPageComponent {
   readonly credentialListMode = signal<CredentialListMode>('expiring');
   readonly selectedCredentialId = signal<string | null>(null);
   readonly addCredentialOpen = signal(false);
+  readonly addCeRecordOpen = signal(false);
+  readonly credentialOptions = signal<CeRecordCredentialOption[]>([]);
 
   readonly view = computed(() =>
     buildDashboardPageView({
@@ -98,12 +106,14 @@ export class DashboardPageComponent {
 
     if (!userId) {
       this.dashboard.set(this.buildEmptyDashboard());
+      this.credentialOptions.set([]);
       this.errorMessage.set(null);
       this.isLoading.set(false);
       return;
     }
 
     this.loadDashboardData();
+    this.loadCredentialOptions(userId);
   });
 
   openCredentialDetail(credentialId: string): void {
@@ -150,12 +160,32 @@ export class DashboardPageComponent {
     this.addCredentialOpen.set(true);
   }
 
+  openAddCeRecord(): void {
+    if (this.credentialOptions().length === 0) {
+      return;
+    }
+
+    this.addCeRecordOpen.set(true);
+  }
+
   closeAddCredential(): void {
     this.addCredentialOpen.set(false);
   }
 
+  closeAddCeRecord(): void {
+    this.addCeRecordOpen.set(false);
+  }
+
+  handleCeRecordSaved(): void {
+    this.addCeRecordOpen.set(false);
+  }
+
   handleCredentialDeleted(): void {
     this.closeDrawer();
+  }
+
+  handleCeRecordDeleted(credentialId: string): void {
+    this.openCredentialDetail(credentialId);
   }
 
   private readonly dashboard = signal<Dashboard>(this.buildEmptyDashboard());
@@ -176,6 +206,26 @@ export class DashboardPageComponent {
           this.dashboard.set(this.buildEmptyDashboard());
           this.errorMessage.set('We could not load the dashboard right now. Please try again.');
           this.isLoading.set(false);
+        },
+      });
+  }
+
+  private loadCredentialOptions(userId: string): void {
+    this.credentialService
+      .getCredentials({ userId })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (credentials: Credential[]) => {
+          this.credentialOptions.set(
+            credentials.map((credential) => ({
+              credentialId: credential.id,
+              credentialName: credential.name,
+              credentialOrganization: credential.issuingOrganization,
+            })),
+          );
+        },
+        error: () => {
+          this.credentialOptions.set([]);
         },
       });
   }

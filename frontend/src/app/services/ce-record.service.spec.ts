@@ -41,4 +41,29 @@ describe('CeRecordService', () => {
       certificateUrl: null,
     });
   });
+
+  it('creates CE records without a userId payload field', () => {
+    service
+      .createCeRecord('cred-123', {
+        title: 'Trauma Update',
+        provider: 'AACN',
+        hours: 4.5,
+        dateCompleted: '2026-03-01',
+        certificateUrl: null,
+      })
+      .subscribe();
+
+    const request = httpTesting.expectOne('http://localhost:8080/api/ce-records');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      title: 'Trauma Update',
+      provider: 'AACN',
+      hours: 4.5,
+      dateCompleted: '2026-03-01',
+      certificateUrl: null,
+      credentialId: 'cred-123',
+    });
+    expect('userId' in request.request.body).toBe(false);
+    request.flush({});
+  });
 });

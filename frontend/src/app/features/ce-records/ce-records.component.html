@@ -8,7 +8,17 @@
         context from the backend.
       </p>
     </div>
-    <span class="summary-pill">{{ resultSummary() }}</span>
+    <div class="header-actions">
+      <span class="summary-pill">{{ resultSummary() }}</span>
+      <button
+        class="credential-primary-button"
+        pButton
+        type="button"
+        label="Add CE Record"
+        [disabled]="credentialOptions().length === 0"
+        (click)="openAddDialog()"
+      ></button>
+    </div>
   </header>
 
   @if (isLoading()) {
@@ -31,6 +41,14 @@
         <strong>No CE records yet</strong>
         <p>Your live CE history will appear here once CE completions are linked to your credentials.</p>
       </div>
+      <button
+        class="credential-primary-button"
+        pButton
+        type="button"
+        label="Add CE Record"
+        [disabled]="credentialOptions().length === 0"
+        (click)="openAddDialog()"
+      ></button>
     </section>
   } @else {
     <section class="record-grid">
@@ -65,7 +83,15 @@
         [context]="recordContext"
         (close)="closeDrawer()"
         (credentialSelected)="openCredentialDetail($event)"
+        (deleted)="handleRecordDeleted()"
       />
     }
   }
 </app-drawer-shell>
+
+<app-ce-record-form-dialog
+  [open]="addDialogOpen()"
+  [credentialOptions]="credentialOptions()"
+  (close)="closeAddDialog()"
+  (saved)="handleRecordSaved()"
+/>

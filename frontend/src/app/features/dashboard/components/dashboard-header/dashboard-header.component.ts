@@ -12,4 +12,5 @@ import { DashboardHeaderView } from '../../models/dashboard.models';
 export class DashboardHeaderComponent {
   readonly header = input.required<DashboardHeaderView>();
   readonly addCredentialRequested = output<void>();
+  readonly addCeRecordRequested = output<void>();
 }

@@ -23,14 +23,13 @@ class DashboardControllerIntegrationTest extends AbstractControllerIntegrationTe
     @Test
     void shouldReturnAggregatedDashboardDataForAuthenticatedUser() throws Exception {
         AuthSession session = registerUser("Alex Carter", "alex.dashboard@example.com");
-        String userId = session.userId();
 
         String activeCredentialId = createCredential(session, "RN License", "LICENSE", LocalDate.now().plusDays(180), 20.0);
         String expiringCredentialId = createCredential(session, "ACLS", "CERTIFICATION", LocalDate.now().plusDays(20), 8.0);
         createCredential(session, "PALS", "CERTIFICATION", LocalDate.now().minusDays(2), 0.0);
 
-        createCeRecord(session, userId, activeCredentialId, "Nursing Update", 5.0, false);
-        createCeRecord(session, userId, expiringCredentialId, "Cardiac Review", 2.0, true);
+        createCeRecord(session, activeCredentialId, "Nursing Update", 5.0, false);
+        createCeRecord(session, expiringCredentialId, "Cardiac Review", 2.0, true);
 
         mockMvc.perform(get("/api/dashboard")
                         .header("Authorization", bearerToken(session)))
@@ -94,7 +93,6 @@ class DashboardControllerIntegrationTest extends AbstractControllerIntegrationTe
 
     private void createCeRecord(
             AuthSession session,
-            String userId,
             String credentialId,
             String title,
             double hours,
@@ -108,20 +106,18 @@ class DashboardControllerIntegrationTest extends AbstractControllerIntegrationTe
                   "hours": %s,
                   "dateCompleted": "2026-03-23",
                   "certificateUrl": "https://example.com/certificate.pdf",
-                  "credentialId": "%s",
-                  "userId": "%s"
+                  "credentialId": "%s"
                 }
-                """.formatted(title, hours, credentialId, userId)
+                """.formatted(title, hours, credentialId)
                 : """
                 {
                   "title": "%s",
                   "provider": "AHA",
                   "hours": %s,
                   "dateCompleted": "2026-03-23",
-                  "credentialId": "%s",
-                  "userId": "%s"
+                  "credentialId": "%s"
                 }
-                """.formatted(title, hours, credentialId, userId);
+                """.formatted(title, hours, credentialId);
 
         mockMvc.perform(post("/api/ce-records")
                         .header("Authorization", bearerToken(session))

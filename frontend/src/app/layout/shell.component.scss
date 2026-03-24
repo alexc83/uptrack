@@ -262,6 +262,49 @@
   }
 }
 
+:host ::ng-deep .delete-confirm-dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  border-radius: 1.35rem;
+}
+
+:host ::ng-deep .delete-confirm-dialog .p-dialog-header,
+:host ::ng-deep .delete-confirm-dialog .p-dialog-content {
+  padding-inline: 1.2rem;
+}
+
+:host ::ng-deep .delete-confirm-dialog .p-dialog-content {
+  padding-bottom: 1.2rem;
+}
+
+.confirm-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.confirm-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.confirm-header p {
+  margin: 0;
+  color: var(--text-color-secondary);
+  line-height: 1.55;
+}
+
+.confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
 // ─── Main content ─────────────────────────────────────────────────────────────
 
 .main-content {
@@ -331,5 +374,9 @@
   .main-toolbar {
     display: flex;
     padding: 1rem 1.25rem 0;
+  }
+
+  .confirm-actions {
+    flex-direction: column-reverse;
   }
 }
