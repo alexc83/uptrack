@@ -6,10 +6,12 @@ export interface CeRecordListItemView {
   title: string;
   provider: string;
   completedDateLabel: string;
+  hours: number;
   hoursLabel: string;
   credentialId: string;
   credentialName: string;
   credentialOrganization: string;
+  hasCertificate: boolean;
   certificateLabel: string;
 }
 
@@ -21,11 +23,13 @@ export function buildCeRecordListItemViews(records: CeRecord[]): CeRecordListIte
       title: record.title,
       provider: record.provider,
       completedDateLabel: formatShortDate(record.dateCompleted),
+      hours: record.hours,
       hoursLabel: `${formatHours(record.hours)} hrs`,
       credentialId: record.credentialId,
       credentialName: record.credentialName ?? 'Credential',
       credentialOrganization: record.credentialOrganization ?? 'Linked credential',
-      certificateLabel: record.certificateUrl ? 'Certificate on file' : 'No certificate',
+      hasCertificate: !!record.certificateUrl,
+      certificateLabel: record.certificateUrl ? 'On file' : 'Missing',
     }));
 }
 

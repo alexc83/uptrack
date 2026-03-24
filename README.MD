@@ -21,12 +21,12 @@ UpTrack brings those pieces together into one dashboard so you can quickly see w
 
 - Create an account or sign in through the landing page
 - Switch between light and dark mode
-- Use a live dashboard with credential status, CE attention, and recent activity
-- Add, edit, and delete credentials
-- Add, edit, and delete CE records
+- Use a live dashboard with credential status, CE attention, summary stats, and recent activity
+- Add, edit, and delete credentials from the dashboard and credentials page
+- Add, edit, and delete CE records from the dashboard, credential details, and CE Records page
 - Open credential and CE details in contextual drawers
-- Search and filter credentials
-- Review CE history from the dedicated CE Records page
+- Search and filter credentials by text, status, and type
+- Review CE history from the dedicated CE Records page with summary cards, chip filters, pagination, and a scalable table layout
 - Use the app on desktop or mobile layouts
 
 ## Try It Locally
@@ -142,9 +142,10 @@ That makes it easier to find expiring items or narrow the list to licenses versu
 
 The CE Records page gives you a dedicated view of your CE activity across credentials. From there you can:
 
-- browse all CE completions
-- see which credential each CE record counts toward
-- open record details
+- browse all CE completions in a table view
+- see the linked credential, completion date, hours, and certificate status at a glance
+- filter by credential and certificate presence
+- open record details from the row or action icon
 - add a new CE record with credential selection
 
 ## Current Status
@@ -156,10 +157,11 @@ UpTrack is already a working authenticated local app with live frontend/backend 
 - public landing page with light/dark mode toggle
 - login and sign-up modals
 - JWT authentication with session restore
-- live dashboard data
-- live credentials page with add/edit/delete
-- live CE records page with add/edit/delete
+- live dashboard data from the backend `/api/dashboard` endpoint
+- live credentials page with backend search/filtering plus add/edit/delete flows
+- live CE records page with add/edit/delete flows, filters, summary cards, pagination, and a table-based layout
 - live credential and CE detail drawers
+- credential detail responses with linked CE records and computed CE progress
 - responsive shell, navigation, and theme support
 
 ### Still not implemented
@@ -190,6 +192,15 @@ UpTrack is a full-stack Angular + Spring Boot application with a typed frontend 
 - Spring Data JPA
 - MySQL
 - JUnit 5 and Spring Boot Test
+
+### Current backend capabilities
+
+- User CRUD endpoints
+- Credential CRUD endpoints with derived status calculation
+- CE record CRUD endpoints with credential ownership validation
+- Aggregated credential detail responses with CE hour and CE progress calculations
+- Credential filtering by search, status, and type
+- Authenticated dashboard aggregation endpoint
 
 ## Project Structure
 
@@ -251,11 +262,12 @@ Current note:
 
 - frontend tests pass
 - backend tests pass
-- the frontend production build is still sensitive to Angular bundle/style budget thresholds, especially around the landing page stylesheet
+- the frontend production build has been verified during recent feature work
 
 ## Live Data and Seed Notes
 
 - the app no longer depends on frontend mock data for dashboard, credentials, or CE reads
+- credential and CE write flows are live and JWT-scoped
 - backend tests run against an isolated H2 profile and do not require your local MySQL database
 - local app usage expects MySQL data if you want persistent users and records between runs
 - backend configuration now uses `application.yml`
