@@ -462,12 +462,12 @@
 
 @media (max-width: 768px) {
   .section-shell {
-    width: min(100% - 1.5rem, 76rem);
+    width: min(100% - 2rem, 76rem);
   }
 
   .landing-header__inner {
     min-height: 4rem;
-    width: min(100% - 1.5rem, 76rem);
+    width: min(100% - 2rem, 76rem);
   }
 
   .hero-section {
@@ -476,6 +476,11 @@
 
   .dashboard-preview {
     padding-bottom: 4.5rem;
+  }
+
+  .dashboard-preview__frame {
+    width: min(100%, 24rem);
+    margin-inline: auto;
   }
 
   .features-section,

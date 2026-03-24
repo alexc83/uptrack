@@ -56,14 +56,24 @@
     <section class="dashboard-preview">
       <div class="section-shell">
         <div class="dashboard-preview__frame">
-          <img
-            [src]="
-              isDark()
-                ? '/landing/dark-mode-dashboard.png'
-                : '/landing/light-mode-dashboard.png'
-            "
-            alt="UpTrack dashboard preview"
-          />
+          <picture>
+            <source
+              media="(max-width: 768px)"
+              [attr.srcset]="
+                isDark()
+                  ? '/landing/mobile-dark-mode-dashboard.png'
+                  : '/landing/mobile-light-mode-dashboard.png'
+              "
+            />
+            <img
+              [src]="
+                isDark()
+                  ? '/landing/dark-mode-dashboard.png'
+                  : '/landing/light-mode-dashboard.png'
+              "
+              alt="UpTrack dashboard preview"
+            />
+          </picture>
         </div>
       </div>
     </section>
@@ -121,14 +131,24 @@
 
         <div class="compliance-visual">
           <div class="compliance-visual__frame">
-            <img
-              [src]="
-                isDark()
-                  ? '/landing/dark-mode-drawer.png'
-                  : '/landing/light-mode-drawer.png'
-              "
-              alt="UpTrack credential drawer preview"
-            />
+            <picture>
+              <source
+                media="(max-width: 768px)"
+                [attr.srcset]="
+                  isDark()
+                    ? '/landing/mobile-dark-mode-drawer.png'
+                    : '/landing/mobile-light-mode-drawer.png'
+                "
+              />
+              <img
+                [src]="
+                  isDark()
+                    ? '/landing/dark-mode-drawer.png'
+                    : '/landing/light-mode-drawer.png'
+                "
+                alt="UpTrack credential drawer preview"
+              />
+            </picture>
           </div>
         </div>
       </div>
