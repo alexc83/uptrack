@@ -1,5 +1,4 @@
 import {
-  AfterViewInit,
   Component,
   ElementRef,
   effect,
@@ -19,7 +18,7 @@ type AuthModalMode = 'login' | 'signup';
   templateUrl: './auth-modal.component.html',
   styleUrl: './auth-modal.component.scss',
 })
-export class AuthModalComponent implements AfterViewInit {
+export class AuthModalComponent {
   readonly mode = input.required<AuthModalMode>();
   readonly open = input(false);
 
@@ -35,17 +34,15 @@ export class AuthModalComponent implements AfterViewInit {
     }
   });
 
-  ngAfterViewInit(): void {
-    effect(() => {
-      if (!this.open()) {
-        return;
-      }
+  readonly focusFirstInput = effect(() => {
+    if (!this.open()) {
+      return;
+    }
 
-      queueMicrotask(() => {
-        this.firstInput()?.nativeElement.focus();
-      });
+    queueMicrotask(() => {
+      this.firstInput()?.nativeElement.focus();
     });
-  }
+  });
 
   handleVisibleChange(visible: boolean): void {
     if (!visible) {

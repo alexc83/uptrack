@@ -363,7 +363,7 @@
 }
 
 .landing-footer {
-  padding: 3rem 0 1.5rem;
+  padding: 1.55rem 0 1.1rem;
   border-top: 1px solid #e7edf5;
   background: #f8fafc;
 }
@@ -372,12 +372,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.45rem;
   text-align: center;
 }
 
 .brand--footer {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.15rem;
 }
 
 .landing-footer p,
@@ -388,9 +388,8 @@
 .landing-footer small {
   display: block;
   width: 100%;
-  margin-top: 1.1rem;
-  padding-top: 1.35rem;
-  border-top: 1px solid #e5ebf3;
+  margin-top: 0.35rem;
+  padding-top: 0;
   color: #6b7280;
 }
 
