@@ -164,29 +164,29 @@
           <tbody>
             @for (record of pagedRecords(); track record.id) {
               <tr class="ce-row" (click)="openRecordDetail(record)">
-                <td class="col-course">
+                <td class="col-course" data-label="Course Name">
                   <span class="course-name">{{ record.title }}</span>
                 </td>
-                <td class="col-org">
+                <td class="col-org" data-label="Organization">
                   <span class="cell-secondary">{{ record.provider }}</span>
                 </td>
-                <td class="col-date">
+                <td class="col-date" data-label="Date">
                   <span class="cell-secondary">{{ record.completedDateLabel }}</span>
                 </td>
-                <td class="col-hours">
+                <td class="col-hours" data-label="Hours">
                   <span class="hours-badge">{{ record.hoursLabel }}</span>
                 </td>
-                <td class="col-credential">
+                <td class="col-credential" data-label="Credential">
                   <span class="credential-name">{{ record.credentialName }}</span>
                 </td>
-                <td class="col-cert">
+                <td class="col-cert" data-label="Certificate">
                   <span
                     class="cert-badge"
                     [class.cert-badge-on-file]="record.hasCertificate"
                     [class.cert-badge-missing]="!record.hasCertificate"
                   >{{ record.certificateLabel }}</span>
                 </td>
-                <td class="col-actions">
+                <td class="col-actions" data-label="Open">
                   <button
                     class="row-action-btn"
                     type="button"
