@@ -3,7 +3,8 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { AvatarModule } from 'primeng/avatar';
-import { MOCK_USER } from '../../lib/mock-data';
+
+import { AuthStore } from '../core/auth/auth.store';
 
 @Component({
   selector: 'app-shell',
@@ -13,9 +14,10 @@ import { MOCK_USER } from '../../lib/mock-data';
 })
 export class ShellComponent implements OnInit {
   private static readonly MOBILE_BREAKPOINT = 768;
-  private renderer = inject(Renderer2);
+  private readonly renderer = inject(Renderer2);
+  private readonly authStore = inject(AuthStore);
 
-  readonly user = MOCK_USER;
+  readonly user = this.authStore.currentUser;
   readonly isDark = signal(false);
   readonly isMobile = signal(false);
   readonly isDesktopCollapsed = signal(false);
@@ -42,7 +44,8 @@ export class ShellComponent implements OnInit {
   });
 
   readonly userInitials = computed(() => {
-    const parts = this.user.name.split(' ');
+    const name = this.user()?.name ?? '';
+    const parts = name.split(' ').filter(Boolean);
     return parts.map((p) => p[0]).join('').toUpperCase();
   });
 
@@ -80,6 +83,11 @@ export class ShellComponent implements OnInit {
 
   handleNavClick(): void {
     this.closeMobileSidebar();
+  }
+
+  logout(): void {
+    this.closeMobileSidebar();
+    this.authStore.logout();
   }
 
   @HostListener('window:resize')

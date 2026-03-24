@@ -1,20 +1,25 @@
 import { Routes } from '@angular/router';
+
+import { authChildGuard, authGuard, landingRedirectGuard } from './core/auth/auth.guard';
 import { ShellComponent } from './layout/shell.component';
 
 export const routes: Routes = [
   {
     path: '',
+    canActivate: [landingRedirectGuard],
     loadComponent: () =>
       import('./features/landing-page/landing-page.component').then((m) => m.LandingPageComponent),
   },
-  { path: 'dashboard', redirectTo: 'app/dashboard', pathMatch: 'full' },
-  { path: 'credentials', redirectTo: 'app/credentials', pathMatch: 'full' },
-  { path: 'ce-records', redirectTo: 'app/ce-records', pathMatch: 'full' },
+  { path: 'app', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'app/dashboard', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'app/credentials', redirectTo: 'credentials', pathMatch: 'full' },
+  { path: 'app/ce-records', redirectTo: 'ce-records', pathMatch: 'full' },
   {
-    path: 'app',
+    path: '',
     component: ShellComponent,
+    canActivate: [authGuard],
+    canActivateChild: [authChildGuard],
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
         path: 'dashboard',
         loadComponent: () =>

@@ -18,3 +18,8 @@ spring:
 logging:
   level:
     org.hibernate.SQL: info
+
+auth:
+  jwt:
+    secret: ${AUTH_JWT_SECRET:uptrack-dev-secret-key-uptrack-dev-secret-key-1234567890}
+    expiration-seconds: ${AUTH_JWT_EXPIRATION_SECONDS:86400}

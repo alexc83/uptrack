@@ -7,6 +7,7 @@ import com.ccruce.backend.exception.BadRequestException;
 import com.ccruce.backend.exception.ResourceNotFoundException;
 import com.ccruce.backend.repository.UserRepository;
 import com.ccruce.backend.service.UserService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,9 +17,11 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -65,7 +68,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private void ensureEmailAvailable(String email, UUID currentUserId) {
-        userRepository.findByEmail(email)
+        userRepository.findByEmail(normalizeEmail(email))
                 .filter(user -> !user.getId().equals(currentUserId))
                 .ifPresent(user -> {
                     throw new BadRequestException("Email is already in use.");
@@ -74,8 +77,12 @@ public class UserServiceImpl implements UserService {
 
     private void applyRequest(User user, UserRequestDto requestDto) {
         user.setName(requestDto.name());
-        user.setEmail(requestDto.email());
-        user.setPassword(requestDto.password());
+        user.setEmail(normalizeEmail(requestDto.email()));
+        user.setPassword(passwordEncoder.encode(requestDto.password()));
+    }
+
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase();
     }
 
     private UserResponseDto toResponse(User user) {

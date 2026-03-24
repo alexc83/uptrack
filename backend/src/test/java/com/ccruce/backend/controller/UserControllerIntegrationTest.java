@@ -1,14 +1,10 @@
 package com.ccruce.backend.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -21,42 +17,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class UserControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class UserControllerIntegrationTest extends AbstractControllerIntegrationTest {
 
     @Test
     void shouldPerformFullUserCrudFlow() throws Exception {
-        String createPayload = """
-                {
-                  "name": "Sarah Mitchell",
-                  "email": "sarah.mitchell@example.com",
-                  "password": "secret123"
-                }
-                """;
+        AuthSession session = registerUser("Sarah Mitchell", "sarah.mitchell@example.com");
+        String userId = session.userId();
 
-        String createResponse = mockMvc.perform(post("/api/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(createPayload))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Sarah Mitchell"))
-                .andExpect(jsonPath("$.email").value("sarah.mitchell@example.com"))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        JsonNode createdUser = objectMapper.readTree(createResponse);
-        String userId = createdUser.get("id").asText();
-
-        mockMvc.perform(get("/api/users"))
+        mockMvc.perform(get("/api/users")
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].id", hasItem(userId)));
 
-        mockMvc.perform(get("/api/users/{id}", userId))
+        mockMvc.perform(get("/api/users/{id}", userId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("sarah.mitchell@example.com"));
 
@@ -69,16 +43,19 @@ class UserControllerIntegrationTest {
                 """;
 
         mockMvc.perform(put("/api/users/{id}", userId)
+                        .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatePayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Sarah M."))
                 .andExpect(jsonPath("$.email").value("sarah.m@example.com"));
 
-        mockMvc.perform(delete("/api/users/{id}", userId))
+        mockMvc.perform(delete("/api/users/{id}", userId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/users/{id}", userId))
+        mockMvc.perform(get("/api/users/{id}", userId)
+                        .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNotFound());
     }
 
@@ -92,12 +69,12 @@ class UserControllerIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())
