@@ -62,51 +62,29 @@ context/    project context, feature specs, screenshots, and working docs
 
 ## Features Implemented Right Now
 
-- Responsive Angular dashboard experience
-- Dashboard summary cards and status panels
-- Drawer-based detail exploration from the dashboard
-- Base Spring Boot API foundation
-- Starting persistence model for:
+- Public landing page with login and sign-up modals
+- JWT-based authentication with session restore and protected app routes
+- Responsive Angular dashboard, credentials page, and CE records page
+- Live dashboard stats, expirations, CE attention, recent activity, and drawer flows
+- Live credential detail and CE record detail drawers
+- Spring Boot REST API for users, credentials, CE records, dashboard aggregation, and auth
+- MySQL-backed persistence for:
   `User`, `Credential`, and `CERecord`
-- Shared backend error response and exception handling structure
-- Backend repository and DTO scaffolding for future CRUD work
+- Shared backend exception handling and typed frontend API/service layers
 
 ## Features Still To Be Implemented
-
-### Backend API Features
-
-- User CRUD
-  `POST`, `GET`, `PUT`, and `DELETE` endpoints under `/api/users`
-- Credential CRUD
-  creation, listing, detail, update, delete, and derived status calculation
-- CE Record CRUD
-  creation, listing, detail, update, and delete for records tied to both credentials and users
-- Relationship and query endpoints
-  especially credential detail responses with CE aggregation and `GET /api/credentials/{id}/ce-records`
-- User-scoped query behavior across the backend
-- DTO mapping and service-layer business rules for full CRUD flows
-
-### Frontend Features
 
 - Add/Edit credential modal flows
 - Add/Edit CE record modal flows
 - Wiring drawer action buttons to those future modal flows
-- Credentials management screens beyond the current dashboard shell
-- CE record management screens beyond the current dashboard shell
-- Dashboard integration with real backend data instead of mock data
-
-### Planned Product Features
-
 - CE summary/export
-- search and filtering
 - document upload integration
-- authentication and JWT-based session handling
 - user-scoped authorization
 - deployment-ready production configuration
 
 ## Current Development Status
 
-The project currently has a strong UI foundation on the frontend and a solid scaffolded API foundation on the backend, but the business CRUD flows and authenticated end-to-end integration are still in progress.
+The project is now running as a real authenticated app against the backend instead of a frontend-only prototype. The remaining work is mostly around mutation workflows, document handling, export, and production hardening rather than replacing mock reads.
 
 ## Local Development
 
@@ -140,8 +118,54 @@ cd backend
 ./mvnw test
 ```
 
+## Seed Data
+
+The app is expected to run locally against MySQL with realistic seed data already loaded or imported manually.
+
+Reference seed files in the repo:
+
+- `test_data_v2.sql`
+- `test_data.sql`
+
+The main app no longer depends on frontend mock data for dashboard, credentials, or CE record reads.
+
+### Seeded Login Expectations
+
+The current local seed set is intended to support users such as:
+
+- `alex@example.com`
+- `jordan@example.com`
+
+with the password:
+
+- `password123`
+
+Important:
+
+- Spring Security login expects BCrypt-hashed passwords in the database.
+- If you import the SQL reference files manually, do not leave the `users.password` column as raw plaintext; convert those values to BCrypt hashes for `password123` or recreate the users through the real sign-up flow.
+
+### Helpful Verification
+
+After seeding, verify that these render from the live backend:
+
+- login with a seeded user
+- dashboard stats and previews
+- credential detail drawer
+- CE record detail drawer
+- `/credentials`
+- `/ce-records`
+
+Useful SQL checks:
+
+```sql
+SELECT BIN_TO_UUID(id) AS id, name, email FROM users;
+SELECT BIN_TO_UUID(id) AS id, name, BIN_TO_UUID(user_id) AS user_id FROM credentials;
+SELECT BIN_TO_UUID(id) AS id, title, BIN_TO_UUID(credential_id) AS credential_id FROM ce_records;
+```
+
 ## Notes
 
 - The backend uses `application.yml` for app configuration.
 - Backend tests use an isolated H2 profile so they can run without depending on a live MySQL database.
-- Some frontend views still use mock data while the real backend endpoints are being built.
+- Main app runtime views no longer depend on `mock-data.ts`.
