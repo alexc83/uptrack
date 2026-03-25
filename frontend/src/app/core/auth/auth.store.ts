@@ -19,22 +19,38 @@ export class AuthStore {
   readonly authError = signal<string | null>(null);
   readonly isAuthenticated = computed(() => !!this.token() && !!this.currentUser());
 
-  async bootstrap(): Promise<void> {
+  private bootstrapped = false;
+  private bootstrapPromise: Promise<void> | null = null;
+
+  bootstrap(): Promise<void> {
+    if (this.bootstrapped) {
+      return Promise.resolve();
+    }
+    if (this.bootstrapPromise) {
+      return this.bootstrapPromise;
+    }
+
     const token = this.token();
     if (!token) {
-      return;
+      this.bootstrapped = true;
+      return Promise.resolve();
     }
 
     this.isLoading.set(true);
+    this.bootstrapPromise = firstValueFrom(this.authService.me())
+      .then((user) => {
+        this.currentUser.set(user);
+      })
+      .catch(() => {
+        this.clearSession();
+      })
+      .finally(() => {
+        this.isLoading.set(false);
+        this.bootstrapped = true;
+        this.bootstrapPromise = null;
+      });
 
-    try {
-      const user = await firstValueFrom(this.authService.me());
-      this.currentUser.set(user);
-    } catch {
-      this.clearSession();
-    } finally {
-      this.isLoading.set(false);
-    }
+    return this.bootstrapPromise;
   }
 
   async login(payload: AuthLoginRequest): Promise<boolean> {
