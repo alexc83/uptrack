@@ -6,8 +6,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.hamcrest.Matchers.hasItem;
@@ -121,5 +121,77 @@ class UserControllerIntegrationTest extends AbstractControllerIntegrationTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Email is already in use."));
+    }
+
+    @Test
+    void shouldChangeCurrentUserPasswordAndRequireNewPasswordForFutureLogin() throws Exception {
+        AuthSession session = registerUser("Alex Carter", "alex.password@example.com");
+
+        mockMvc.perform(put("/api/users/me/password")
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "secret123",
+                                  "newPassword": "updatedSecret123"
+                                }
+                                """))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "alex.password@example.com",
+                                  "password": "secret123"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Invalid email or password."));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "alex.password@example.com",
+                                  "password": "updatedSecret123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.email").value("alex.password@example.com"));
+    }
+
+    @Test
+    void shouldRejectPasswordChangeWhenCurrentPasswordIsIncorrect() throws Exception {
+        AuthSession session = registerUser("Alex Carter", "alex.password.error@example.com");
+
+        mockMvc.perform(put("/api/users/me/password")
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "wrong-password",
+                                  "newPassword": "updatedSecret123"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Current password is incorrect."));
+    }
+
+    @Test
+    void shouldRejectPasswordChangeWhenNewPasswordMatchesCurrentPassword() throws Exception {
+        AuthSession session = registerUser("Alex Carter", "alex.password.same@example.com");
+
+        mockMvc.perform(put("/api/users/me/password")
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "secret123",
+                                  "newPassword": "secret123"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("New password must be different from the current password."));
     }
 }

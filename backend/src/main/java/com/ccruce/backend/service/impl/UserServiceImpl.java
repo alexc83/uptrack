@@ -1,5 +1,6 @@
 package com.ccruce.backend.service.impl;
 
+import com.ccruce.backend.dto.request.ChangePasswordRequestDto;
 import com.ccruce.backend.dto.request.UpdateProfileRequestDto;
 import com.ccruce.backend.dto.request.UserRequestDto;
 import com.ccruce.backend.dto.response.UserResponseDto;
@@ -74,6 +75,22 @@ public class UserServiceImpl implements UserService {
         applyProfileUpdate(user, requestDto);
 
         return toResponse(userRepository.save(user));
+    }
+
+    @Override
+    public void changeCurrentUserPassword(ChangePasswordRequestDto requestDto) {
+        User user = getAuthenticatedUser();
+
+        if (!passwordEncoder.matches(requestDto.currentPassword(), user.getPassword())) {
+            throw new BadRequestException("Current password is incorrect.");
+        }
+
+        if (requestDto.currentPassword().equals(requestDto.newPassword())) {
+            throw new BadRequestException("New password must be different from the current password.");
+        }
+
+        user.setPassword(passwordEncoder.encode(requestDto.newPassword()));
+        userRepository.save(user);
     }
 
     @Override

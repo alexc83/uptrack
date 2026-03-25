@@ -1,5 +1,6 @@
 package com.ccruce.backend.controller;
 
+import com.ccruce.backend.dto.request.ChangePasswordRequestDto;
 import com.ccruce.backend.dto.request.UpdateProfileRequestDto;
 import com.ccruce.backend.dto.request.UserRequestDto;
 import com.ccruce.backend.dto.response.UserResponseDto;
@@ -62,6 +63,14 @@ public class UserController {
             @Valid @RequestBody UpdateProfileRequestDto requestDto
     ) {
         return ResponseEntity.ok(userService.updateCurrentUserProfile(requestDto));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> changeCurrentUserPassword(
+            @Valid @RequestBody ChangePasswordRequestDto requestDto
+    ) {
+        userService.changeCurrentUserPassword(requestDto);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

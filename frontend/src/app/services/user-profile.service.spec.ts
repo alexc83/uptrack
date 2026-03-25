@@ -51,4 +51,21 @@ describe('UserProfileService', () => {
     });
     request.flush({});
   });
+
+  it('updates the current user password', () => {
+    service
+      .changePassword({
+        currentPassword: 'OldPassword123',
+        newPassword: 'NewPassword123',
+      })
+      .subscribe();
+
+    const request = httpTesting.expectOne('http://localhost:8080/api/users/me/password');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({
+      currentPassword: 'OldPassword123',
+      newPassword: 'NewPassword123',
+    });
+    request.flush({});
+  });
 });
