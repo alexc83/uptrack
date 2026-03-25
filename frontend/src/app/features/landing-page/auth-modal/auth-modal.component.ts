@@ -10,7 +10,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
@@ -35,7 +34,6 @@ type AuthModalMode = 'login' | 'signup';
 export class AuthModalComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authStore = inject(AuthStore);
-  private readonly router = inject(Router);
 
   readonly mode = input.required<AuthModalMode>();
   readonly open = input(false);
@@ -118,7 +116,6 @@ export class AuthModalComponent {
     this.loginForm.reset({ email: '', password: '' });
     this.signupForm.reset({ name: '', email: '', password: '' });
     this.handleClose();
-    void this.router.navigateByUrl('/dashboard');
   }
 
   openLogin(): void {

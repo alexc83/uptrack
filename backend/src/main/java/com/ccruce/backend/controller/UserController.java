@@ -1,5 +1,6 @@
 package com.ccruce.backend.controller;
 
+import com.ccruce.backend.dto.request.UpdateProfileRequestDto;
 import com.ccruce.backend.dto.request.UserRequestDto;
 import com.ccruce.backend.dto.response.UserResponseDto;
 import com.ccruce.backend.service.UserService;
@@ -43,12 +44,24 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDto> getCurrentUserProfile() {
+        return ResponseEntity.ok(userService.getCurrentUserProfile());
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<UserResponseDto> updateUser(
             @PathVariable UUID id,
             @Valid @RequestBody UserRequestDto requestDto
     ) {
         return ResponseEntity.ok(userService.updateUser(id, requestDto));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserResponseDto> updateCurrentUserProfile(
+            @Valid @RequestBody UpdateProfileRequestDto requestDto
+    ) {
+        return ResponseEntity.ok(userService.updateCurrentUserProfile(requestDto));
     }
 
     @DeleteMapping("/{id}")

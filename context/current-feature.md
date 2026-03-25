@@ -1,5 +1,9 @@
 # Current Feature
 
+## Status
+
+Idle
+
 ## History
 
 <!-- Keep this updated, earliest to latest -->
@@ -34,3 +38,4 @@
 - **2026-03-24** — Completed CE report UI refinement with a stronger audit-ready header, authenticated user display, clearer CE progress emphasis, grouped summary sections, improved CE record table readability, styled certificate indicators, and stronger print or PDF page handling.
 - **2026-03-24** — Completed CE report layout cleanup by removing duplicated header and summary content, restoring a single clean report header, simplifying the credential summary into a compact grid, keeping the CE records table print-friendly, and reducing the PDF output to one disciplined bottom summary section.
 - **2026-03-24** — Completed CE report and credentials polish with clearer credentials-page CE report actions, cleaned card affordances, dark-mode-safe printable report output, stabilized CE summary and table layout, proper print header repetition through native table headers, multi-page CE records support, and final print overflow cleanup for certificate text.
+- **2026-03-24** — Completed Settings Page + Account Profile Management with an authenticated avatar menu, dedicated `/settings` route, JWT-scoped self-service profile read/update endpoints, name/email validation and conflict handling, reactive settings form feedback, and frontend/backend verification for profile management flows.

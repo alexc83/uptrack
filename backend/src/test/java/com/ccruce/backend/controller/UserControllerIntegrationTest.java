@@ -80,4 +80,46 @@ class UserControllerIntegrationTest extends AbstractControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Email is already in use."));
     }
+
+    @Test
+    void shouldGetAndUpdateCurrentUserProfile() throws Exception {
+        AuthSession session = registerUser("Alex Carter", "alex.profile@example.com");
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Alex Carter"))
+                .andExpect(jsonPath("$.email").value("alex.profile@example.com"));
+
+        mockMvc.perform(put("/api/users/me")
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "  Alex Nurse  ",
+                                  "email": "ALEX.NURSE@example.com"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Alex Nurse"))
+                .andExpect(jsonPath("$.email").value("alex.nurse@example.com"));
+    }
+
+    @Test
+    void shouldRejectCurrentUserProfileUpdateWhenEmailAlreadyExists() throws Exception {
+        AuthSession alex = registerUser("Alex Carter", "alex.profile.conflict@example.com");
+        registerUser("Jordan Hale", "jordan.profile.conflict@example.com");
+
+        mockMvc.perform(put("/api/users/me")
+                        .header("Authorization", bearerToken(alex))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Alex Carter",
+                                  "email": "jordan.profile.conflict@example.com"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Email is already in use."));
+    }
 }
