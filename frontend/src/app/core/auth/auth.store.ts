@@ -54,6 +54,10 @@ export class AuthStore {
     void this.router.navigateByUrl('/');
   }
 
+  setCurrentUser(user: User): void {
+    this.currentUser.set(user);
+  }
+
   handleUnauthorized(): void {
     if (!this.token()) {
       return;
@@ -72,6 +76,7 @@ export class AuthStore {
       this.token.set(response.token);
       this.currentUser.set(response.user);
       localStorage.setItem(AuthStore.TOKEN_STORAGE_KEY, response.token);
+      void this.router.navigateByUrl('/dashboard');
       return true;
     } catch (error) {
       this.authError.set(this.getFriendlyErrorMessage(error));

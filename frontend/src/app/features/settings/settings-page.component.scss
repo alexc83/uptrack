@@ -1,0 +1,200 @@
+.settings-page {
+  min-height: 100%;
+  padding: 1.5rem;
+  position: relative;
+}
+
+.settings-layout {
+  width: 100%;
+}
+
+.settings-shell {
+  width: min(100%, 46rem);
+  margin: 0 auto;
+}
+
+.settings-header {
+  margin-bottom: 1rem;
+}
+
+.back-button {
+  position: absolute;
+  top: 1.6rem;
+  left: 1.5rem;
+  color: var(--ut-primary);
+}
+
+.back-button :is(.p-button-label, .p-button-icon) {
+  color: inherit;
+}
+
+.settings-kicker {
+  display: inline-block;
+  color: var(--ut-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-header h1,
+.card-heading h2 {
+  margin: 0;
+}
+
+.settings-header h1 {
+  margin-top: 0.35rem;
+  font-size: clamp(2rem, 4vw, 2.5rem);
+  line-height: 1.05;
+}
+
+.settings-header p,
+.card-heading p,
+.settings-state p {
+  margin: 0.55rem 0 0;
+  color: var(--text-color-secondary);
+  line-height: 1.6;
+}
+
+.settings-card {
+  border: 1px solid color-mix(in srgb, var(--surface-border) 78%, white 22%);
+  border-radius: 1.4rem;
+  background: color-mix(in srgb, var(--surface-card) 94%, white 6%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+  padding: 1.3rem;
+}
+
+.card-heading {
+  margin-bottom: 1.2rem;
+}
+
+.card-heading h2 {
+  font-size: 1.25rem;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.field span {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.field input {
+  width: 100%;
+}
+
+.field-error {
+  color: #b5473a;
+  font-size: 0.84rem;
+}
+
+.form-actions {
+  padding-top: 0.35rem;
+}
+
+.feedback-banner {
+  margin-bottom: 1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.95rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.feedback-banner-success {
+  border: 1px solid color-mix(in srgb, #16a34a 24%, transparent);
+  background: color-mix(in srgb, #dcfce7 72%, var(--surface-card) 28%);
+  color: #166534;
+}
+
+.feedback-banner-error,
+.settings-state-error {
+  border: 1px solid color-mix(in srgb, #f97316 24%, transparent);
+  background: color-mix(in srgb, #fff7ed 78%, var(--surface-card) 22%);
+  color: var(--text-color);
+}
+
+.settings-state {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.settings-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.loading-line {
+  height: 1rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface-card) 82%, white 18%) 0%,
+    color-mix(in srgb, var(--surface-card) 66%, white 34%) 50%,
+    color-mix(in srgb, var(--surface-card) 82%, white 18%) 100%
+  );
+  background-size: 200% 100%;
+  animation: settings-loading 1.4s ease-in-out infinite;
+}
+
+.loading-line-title {
+  width: 35%;
+  height: 1.4rem;
+}
+
+.loading-line-button {
+  width: 10rem;
+  height: 2.75rem;
+  margin-top: 0.5rem;
+}
+
+@keyframes settings-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+:host-context(html.dark) .feedback-banner-success {
+  background: color-mix(in srgb, #10321f 72%, var(--surface-card) 28%);
+  color: #8fe3ad;
+}
+
+:host-context(html.dark) .feedback-banner-error,
+:host-context(html.dark) .settings-state-error {
+  background: color-mix(in srgb, #3a1e16 72%, var(--surface-card) 28%);
+}
+
+@media (max-width: 768px) {
+  .settings-page {
+    padding: 1rem;
+  }
+
+  .settings-layout {
+    width: 100%;
+  }
+
+  .back-button {
+    position: static;
+    margin-bottom: 0.75rem;
+  }
+
+  .settings-card {
+    padding: 1.05rem;
+  }
+}

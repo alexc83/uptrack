@@ -1,5 +1,6 @@
 package com.ccruce.backend.service;
 
+import com.ccruce.backend.dto.request.UpdateProfileRequestDto;
 import com.ccruce.backend.dto.request.UserRequestDto;
 import com.ccruce.backend.dto.response.UserResponseDto;
 
@@ -14,7 +15,11 @@ public interface UserService {
 
     UserResponseDto getUserById(UUID id);
 
+    UserResponseDto getCurrentUserProfile();
+
     UserResponseDto updateUser(UUID id, UserRequestDto requestDto);
+
+    UserResponseDto updateCurrentUserProfile(UpdateProfileRequestDto requestDto);
 
     void deleteUser(UUID id);
 }

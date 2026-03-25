@@ -177,12 +177,28 @@
 .sidebar-footer {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   padding: 1.15rem 1rem 1.25rem;
   border-top: 1px solid #cfd7e3;
   box-shadow: inset 0 1px 0 #f7f9fc;
   flex-shrink: 0;
   min-height: 84px;
+}
+
+.account-trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  border-radius: 0.95rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--surface-hover) 82%, transparent);
+  }
 }
 
 .user-info {
@@ -196,6 +212,11 @@
 .sidebar.sidebar-collapsed .sidebar-footer {
   justify-content: center;
   padding-inline: 0.75rem;
+}
+
+.sidebar.sidebar-collapsed .account-trigger {
+  width: auto;
+  padding-inline: 0.45rem;
 }
 
 .sidebar.sidebar-collapsed .user-info {
@@ -241,30 +262,19 @@
   text-overflow: ellipsis;
 }
 
-.logout-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
+.account-trigger__icon {
+  font-size: 0.78rem;
   color: var(--text-color-secondary);
-  cursor: pointer;
-  font-size: 0.875rem;
   flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
-
-  &:hover {
-    background-color: var(--surface-hover);
-    color: var(--text-color);
-  }
 }
 
 :host ::ng-deep .delete-confirm-dialog {
   width: min(28rem, calc(100vw - 2rem));
   border-radius: 1.35rem;
+}
+
+:host ::ng-deep .sidebar-footer .p-menu {
+  margin-top: 0.35rem;
 }
 
 :host ::ng-deep .delete-confirm-dialog .p-dialog-header,

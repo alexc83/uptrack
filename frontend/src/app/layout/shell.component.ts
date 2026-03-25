@@ -1,9 +1,12 @@
 import { Component, signal, computed, OnInit, Renderer2, inject, HostListener } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { AvatarModule } from 'primeng/avatar';
+import { MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
+import { Menu } from 'primeng/menu';
 
 import { AuthStore } from '../core/auth/auth.store';
 
@@ -17,6 +20,7 @@ import { AuthStore } from '../core/auth/auth.store';
     DialogModule,
     TooltipModule,
     AvatarModule,
+    MenuModule,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
@@ -25,6 +29,7 @@ export class ShellComponent implements OnInit {
   private static readonly MOBILE_BREAKPOINT = 768;
   private readonly renderer = inject(Renderer2);
   private readonly authStore = inject(AuthStore);
+  private readonly router = inject(Router);
 
   readonly user = this.authStore.currentUser;
   readonly isDark = signal(false);
@@ -32,6 +37,25 @@ export class ShellComponent implements OnInit {
   readonly isDesktopCollapsed = signal(false);
   readonly mobileSidebarOpen = signal(false);
   readonly logoutConfirmOpen = signal(false);
+  readonly accountMenuItems = computed<MenuItem[]>(() => [
+    {
+      label: 'Settings',
+      icon: 'pi pi-cog',
+      command: () => {
+        this.closeMobileSidebar();
+        void this.router.navigateByUrl('/settings', {
+          state: {
+            from: this.router.url,
+          },
+        });
+      },
+    },
+    {
+      label: 'Logout',
+      icon: 'pi pi-sign-out',
+      command: () => this.requestLogout(),
+    },
+  ]);
 
   readonly themeIcon = computed(() => (this.isDark() ? 'pi pi-sun' : 'pi pi-moon'));
   readonly themeLabel = computed(() => (this.isDark() ? 'Light mode' : 'Dark mode'));
@@ -97,6 +121,10 @@ export class ShellComponent implements OnInit {
 
   requestLogout(): void {
     this.logoutConfirmOpen.set(true);
+  }
+
+  toggleAccountMenu(event: Event, menu: Menu): void {
+    menu.toggle(event);
   }
 
   closeLogoutConfirm(): void {

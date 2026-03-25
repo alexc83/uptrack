@@ -87,28 +87,32 @@
 
     <!-- User area -->
     <div class="sidebar-footer">
-      <div class="user-info">
-        <p-avatar
-          [label]="userInitials()"
-          shape="circle"
-          styleClass="user-avatar"
-        />
-        @if (!isSidebarCollapsed()) {
-          <div class="user-details">
-            <span class="user-name">{{ user()?.name ?? 'UpTrack User' }}</span>
-            <span class="user-role">{{ user()?.email ?? 'Signed in' }}</span>
-          </div>
-        }
-      </div>
       <button
-        class="logout-btn"
-        pTooltip="Log out"
+        class="account-trigger"
+        type="button"
+        [pTooltip]="isSidebarCollapsed() ? 'Account menu' : undefined"
         tooltipPosition="right"
-        aria-label="Log out"
-        (click)="requestLogout()"
+        aria-label="Open account menu"
+        (click)="toggleAccountMenu($event, accountMenu)"
       >
-        <i class="pi pi-sign-out"></i>
+        <div class="user-info">
+          <p-avatar
+            [label]="userInitials()"
+            shape="circle"
+            styleClass="user-avatar"
+          />
+          @if (!isSidebarCollapsed()) {
+            <div class="user-details">
+              <span class="user-name">{{ user()?.name ?? 'UpTrack User' }}</span>
+              <span class="user-role">{{ user()?.email ?? 'Signed in' }}</span>
+            </div>
+          }
+        </div>
+        @if (!isSidebarCollapsed()) {
+          <i class="pi pi-chevron-up account-trigger__icon"></i>
+        }
       </button>
+      <p-menu #accountMenu [popup]="true" [model]="accountMenuItems()"></p-menu>
     </div>
   </aside>
 

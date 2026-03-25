@@ -1,12 +1,18 @@
 package com.ccruce.backend.service.impl;
 
+import com.ccruce.backend.dto.request.UpdateProfileRequestDto;
 import com.ccruce.backend.dto.request.UserRequestDto;
 import com.ccruce.backend.dto.response.UserResponseDto;
 import com.ccruce.backend.entity.User;
 import com.ccruce.backend.exception.BadRequestException;
+import com.ccruce.backend.exception.ConflictException;
 import com.ccruce.backend.exception.ResourceNotFoundException;
+import com.ccruce.backend.exception.UnauthorizedException;
 import com.ccruce.backend.repository.UserRepository;
+import com.ccruce.backend.security.AuthenticatedUser;
 import com.ccruce.backend.service.UserService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -48,10 +54,24 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserResponseDto getCurrentUserProfile() {
+        return toResponse(getAuthenticatedUser());
+    }
+
+    @Override
     public UserResponseDto updateUser(UUID id, UserRequestDto requestDto) {
         User user = getExistingUser(id);
         ensureEmailAvailable(requestDto.email(), id);
         applyRequest(user, requestDto);
+
+        return toResponse(userRepository.save(user));
+    }
+
+    @Override
+    public UserResponseDto updateCurrentUserProfile(UpdateProfileRequestDto requestDto) {
+        User user = getAuthenticatedUser();
+        ensureEmailAvailable(requestDto.email(), user.getId());
+        applyProfileUpdate(user, requestDto);
 
         return toResponse(userRepository.save(user));
     }
@@ -71,14 +91,32 @@ public class UserServiceImpl implements UserService {
         userRepository.findByEmail(normalizeEmail(email))
                 .filter(user -> !user.getId().equals(currentUserId))
                 .ifPresent(user -> {
-                    throw new BadRequestException("Email is already in use.");
+                    throw new ConflictException("Email is already in use.");
                 });
     }
 
     private void applyRequest(User user, UserRequestDto requestDto) {
-        user.setName(requestDto.name());
+        user.setName(normalizeName(requestDto.name()));
         user.setEmail(normalizeEmail(requestDto.email()));
         user.setPassword(passwordEncoder.encode(requestDto.password()));
+    }
+
+    private void applyProfileUpdate(User user, UpdateProfileRequestDto requestDto) {
+        user.setName(normalizeName(requestDto.name()));
+        user.setEmail(normalizeEmail(requestDto.email()));
+    }
+
+    private User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser currentUser)) {
+            throw new UnauthorizedException("Authentication is required.");
+        }
+
+        return getExistingUser(currentUser.id());
+    }
+
+    private String normalizeName(String name) {
+        return name.trim();
     }
 
     private String normalizeEmail(String email) {

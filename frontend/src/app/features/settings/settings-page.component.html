@@ -1,0 +1,86 @@
+<section class="settings-page">
+  <div class="settings-layout">
+    <button
+      pButton
+      type="button"
+      class="back-button p-button-text"
+      icon="pi pi-arrow-left"
+      label="Back"
+      (click)="goBack()"
+    ></button>
+
+    <div class="settings-shell">
+      <header class="settings-header">
+        <span class="settings-kicker">Account</span>
+        <h1>Settings</h1>
+        <p>Manage your account information.</p>
+      </header>
+
+      @if (isLoading()) {
+        <section class="settings-card settings-loading" aria-label="Loading settings">
+          <div class="loading-line loading-line-title"></div>
+          <div class="loading-line"></div>
+          <div class="loading-line"></div>
+          <div class="loading-line loading-line-button"></div>
+        </section>
+      } @else if (loadError()) {
+        <section class="settings-card settings-state settings-state-error" role="alert">
+          <div>
+            <strong>Settings unavailable</strong>
+            <p>{{ loadError() }}</p>
+          </div>
+          <button pButton type="button" label="Retry" (click)="retryLoad()"></button>
+        </section>
+      } @else {
+        <section class="settings-card">
+          <div class="card-heading">
+            <div>
+              <h2>Profile</h2>
+              <p>Update the name and email tied to your UpTrack account.</p>
+            </div>
+          </div>
+
+          @if (successMessage()) {
+            <div class="feedback-banner feedback-banner-success" role="status">
+              {{ successMessage() }}
+            </div>
+          }
+
+          @if (saveError()) {
+            <div class="feedback-banner feedback-banner-error" role="alert">
+              {{ saveError() }}
+            </div>
+          }
+
+          <form class="settings-form" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+            <label class="field">
+              <span>Name</span>
+              <input pInputText type="text" formControlName="name" autocomplete="name" />
+              @if (getFieldError('name'); as errorMessage) {
+                <small class="field-error">{{ errorMessage }}</small>
+              }
+            </label>
+
+            <label class="field">
+              <span>Email</span>
+              <input pInputText type="email" formControlName="email" autocomplete="email" />
+              @if (getFieldError('email'); as errorMessage) {
+                <small class="field-error">{{ errorMessage }}</small>
+              }
+            </label>
+
+            <div class="form-actions">
+              <button
+                pButton
+                type="submit"
+                label="Save Changes"
+                [loading]="isSaving()"
+                [disabled]="profileForm.invalid || !hasChanges() || isSaving()"
+              ></button>
+            </div>
+          </form>
+        </section>
+      }
+    </div>
+  </div>
+</section>
