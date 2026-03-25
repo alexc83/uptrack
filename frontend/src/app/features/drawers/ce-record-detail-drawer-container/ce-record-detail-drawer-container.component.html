@@ -51,7 +51,7 @@
   </section>
 } @else if (view(); as ceRecordView) {
   @if (isEditing()) {
-    <section class="drawer-state drawer-state-edit">
+    <section class="drawer-state drawer-state-edit ut-fade-in">
       <header class="drawer-state__header">
         <div>
           <strong>Edit CE record</strong>
@@ -89,6 +89,7 @@
     </section>
   } @else {
     <app-ce-record-detail-drawer
+      class="ut-fade-in"
       [view]="ceRecordView"
       [isRemovingCertificate]="isRemovingCertificate()"
       (close)="close.emit()"

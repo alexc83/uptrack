@@ -19,8 +19,14 @@
     </div>
   </header>
 
-  @if (!isLoading() && !errorMessage() && hasRecords()) {
+  @if (isLoading()) {
     <div class="summary-cards">
+      @for (placeholder of [1, 2, 3]; track placeholder) {
+        <div class="summary-card-skeleton"></div>
+      }
+    </div>
+  } @else if (!errorMessage() && hasRecords()) {
+    <div class="summary-cards ut-fade-in">
       <div class="summary-card">
         <span class="summary-card-label">Total CE Hours</span>
         <strong class="summary-card-value">{{ summaryTotalHours() }}</strong>
@@ -111,7 +117,7 @@
       </div>
     </div>
   } @else if (errorMessage()) {
-    <section class="page-message page-message-error" role="alert">
+    <section class="page-message page-message-error ut-fade-in" role="alert">
       <div>
         <strong>CE records unavailable</strong>
         <p>{{ errorMessage() }}</p>
@@ -119,7 +125,7 @@
       <button pButton type="button" label="Retry" severity="contrast" (click)="retryLoad()"></button>
     </section>
   } @else if (!hasRecords()) {
-    <section class="page-message page-message-empty">
+    <section class="page-message page-message-empty ut-fade-in">
       <div>
         <strong>No CE records yet</strong>
         <p>Your CE history will appear here once completions are linked to your credentials.</p>
@@ -137,7 +143,7 @@
       }
     </section>
   } @else if (!hasFilteredRecords()) {
-    <section class="page-message page-message-empty">
+    <section class="page-message page-message-empty ut-fade-in">
       <div>
         <strong>No records match these filters</strong>
         <p>Try adjusting your search, credential, or certificate filters.</p>
@@ -145,7 +151,7 @@
       <button pButton type="button" label="Clear Filters" severity="secondary" (click)="clearFilters()"></button>
     </section>
   } @else {
-    <div class="table-shell">
+    <div class="table-shell ut-fade-in">
       <p class="showing-label">{{ showingLabel() }}</p>
 
       <div class="ce-table-wrap">

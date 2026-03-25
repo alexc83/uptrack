@@ -66,13 +66,13 @@
   border-radius: 1.5rem;
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--surface-card) 82%, white 18%) 0%,
-    color-mix(in srgb, var(--surface-card) 65%, white 35%) 50%,
-    color-mix(in srgb, var(--surface-card) 82%, white 18%) 100%
+    var(--surface-card) 0%,
+    color-mix(in srgb, var(--surface-card) 78%, var(--surface-hover) 22%) 50%,
+    var(--surface-card) 100%
   );
   background-size: 200% 100%;
   animation: dashboard-loading 1.4s ease-in-out infinite;
-  border: 1px solid color-mix(in srgb, var(--surface-border) 80%, white 20%);
+  border: 1px solid var(--surface-border);
 }
 
 .loading-card {
