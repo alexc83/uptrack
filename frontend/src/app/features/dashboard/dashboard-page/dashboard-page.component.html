@@ -22,7 +22,7 @@
     </section>
   } @else {
     @if (errorMessage()) {
-      <section class="dashboard-message dashboard-message-error" role="alert">
+      <section class="dashboard-message dashboard-message-error ut-fade-in" role="alert">
         <div>
           <strong>Dashboard unavailable</strong>
           <p>{{ errorMessage() }}</p>
@@ -33,15 +33,15 @@
 
     @if (!errorMessage()) {
       @if (!hasCredentials()) {
-        <section class="dashboard-message dashboard-message-empty">
+        <section class="dashboard-message dashboard-message-empty ut-fade-in">
           <strong>No credentials yet</strong>
           <p>Add your first credential to start tracking expirations, CE progress, and renewal activity here.</p>
         </section>
       }
 
-      <app-stats-cards [cards]="view().stats" />
+      <app-stats-cards class="ut-fade-in" [cards]="view().stats" />
 
-      <section class="dashboard-grid">
+      <section class="dashboard-grid ut-fade-in">
         <app-expirations-panel
           [rows]="view().expirations"
           [overflowCount]="view().expirationsOverflowCount"
@@ -56,7 +56,7 @@
         />
       </section>
 
-      <app-recent-activity-panel [rows]="view().recentActivity" />
+      <app-recent-activity-panel class="ut-fade-in" [rows]="view().recentActivity" />
     }
   }
 </section>

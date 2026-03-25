@@ -408,6 +408,22 @@
   color: var(--text-color);
 }
 
+// ── Summary card skeleton ───────────────────────────────────────
+
+.summary-card-skeleton {
+  min-height: 5.5rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 1.35rem;
+  background: linear-gradient(
+    90deg,
+    var(--surface-card) 0%,
+    color-mix(in srgb, var(--surface-card) 78%, var(--surface-hover) 22%) 50%,
+    var(--surface-card) 100%
+  );
+  background-size: 200% 100%;
+  animation: ce-loading 1.4s ease-in-out infinite;
+}
+
 // ── Loading rows ───────────────────────────────────────────────
 
 .table-loading {
@@ -418,12 +434,12 @@
 
 .loading-row {
   height: 3.6rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--surface-border) 60%, transparent 40%);
+  border-bottom: 1px solid var(--surface-border);
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--surface-card) 82%, white 18%) 0%,
-    color-mix(in srgb, var(--surface-card) 65%, white 35%) 50%,
-    color-mix(in srgb, var(--surface-card) 82%, white 18%) 100%
+    var(--surface-card) 0%,
+    color-mix(in srgb, var(--surface-card) 78%, var(--surface-hover) 22%) 50%,
+    var(--surface-card) 100%
   );
   background-size: 200% 100%;
   animation: ce-loading 1.4s ease-in-out infinite;
@@ -547,6 +563,7 @@
 // ── Dark mode ──────────────────────────────────────────────────
 
 :host-context(html.dark) .summary-card,
+:host-context(html.dark) .summary-card-skeleton,
 :host-context(html.dark) .ce-table-wrap,
 :host-context(html.dark) .table-loading,
 :host-context(html.dark) .page-message {

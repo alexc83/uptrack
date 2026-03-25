@@ -68,6 +68,22 @@ html.dark {
   --ut-status-expired-text: #f7c1c1;
 }
 
+// ─── Content fade-in — used when skeleton is replaced by loaded content ───────
+@keyframes ut-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ut-fade-in {
+  animation: ut-fade-in 0.18s ease-out both;
+}
+
 // ─── Shared PrimeNG button defaults ──────────────────────────────────────────
 body .p-button:not(.p-button-secondary):not(.p-button-contrast):not(.p-button-danger):not(
     .p-button-success

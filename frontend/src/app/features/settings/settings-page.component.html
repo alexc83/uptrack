@@ -24,7 +24,7 @@
           <div class="loading-line loading-line-button"></div>
         </section>
       } @else if (loadError()) {
-        <section class="settings-card settings-state settings-state-error" role="alert">
+        <section class="settings-card settings-state settings-state-error ut-fade-in" role="alert">
           <div>
             <strong>Settings unavailable</strong>
             <p>{{ loadError() }}</p>
@@ -32,7 +32,7 @@
           <button pButton type="button" label="Retry" (click)="retryLoad()"></button>
         </section>
       } @else {
-        <div class="settings-stack">
+        <div class="settings-stack ut-fade-in">
           <section class="settings-card">
             <div class="card-heading">
               <div>
