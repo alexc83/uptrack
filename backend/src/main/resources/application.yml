@@ -1,3 +1,6 @@
+server:
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
     name: uptrack-backend
@@ -27,3 +30,7 @@ cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
+
+app:
+  cors:
+    allowed-origin-patterns: ${ALLOWED_ORIGIN_PATTERNS:http://localhost:4200,http://127.0.0.1:4200}
