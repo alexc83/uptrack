@@ -5,4 +5,9 @@ export interface UpdateProfileRequest {
   email: string;
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export type UserProfileResponse = User;

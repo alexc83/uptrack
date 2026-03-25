@@ -32,55 +32,165 @@
           <button pButton type="button" label="Retry" (click)="retryLoad()"></button>
         </section>
       } @else {
-        <section class="settings-card">
-          <div class="card-heading">
-            <div>
-              <h2>Profile</h2>
-              <p>Update the name and email tied to your UpTrack account.</p>
+        <div class="settings-stack">
+          <section class="settings-card">
+            <div class="card-heading">
+              <div>
+                <h2>Profile</h2>
+                <p>Update the name and email tied to your UpTrack account.</p>
+              </div>
             </div>
-          </div>
 
-          @if (successMessage()) {
-            <div class="feedback-banner feedback-banner-success" role="status">
-              {{ successMessage() }}
-            </div>
-          }
+            @if (profileSuccessMessage()) {
+              <div class="feedback-banner feedback-banner-success" role="status">
+                {{ profileSuccessMessage() }}
+              </div>
+            }
 
-          @if (saveError()) {
-            <div class="feedback-banner feedback-banner-error" role="alert">
-              {{ saveError() }}
-            </div>
-          }
+            @if (profileSaveError()) {
+              <div class="feedback-banner feedback-banner-error" role="alert">
+                {{ profileSaveError() }}
+              </div>
+            }
 
-          <form class="settings-form" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
-            <label class="field">
-              <span>Name</span>
-              <input pInputText type="text" formControlName="name" autocomplete="name" />
-              @if (getFieldError('name'); as errorMessage) {
-                <small class="field-error">{{ errorMessage }}</small>
-              }
-            </label>
+            <form class="settings-form" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+              <label class="field">
+                <span>Name</span>
+                <input pInputText type="text" formControlName="name" autocomplete="name" />
+                @if (getFieldError('name'); as errorMessage) {
+                  <small class="field-error">{{ errorMessage }}</small>
+                }
+              </label>
 
-            <label class="field">
-              <span>Email</span>
-              <input pInputText type="email" formControlName="email" autocomplete="email" />
-              @if (getFieldError('email'); as errorMessage) {
-                <small class="field-error">{{ errorMessage }}</small>
-              }
-            </label>
+              <label class="field">
+                <span>Email</span>
+                <input pInputText type="email" formControlName="email" autocomplete="email" />
+                @if (getFieldError('email'); as errorMessage) {
+                  <small class="field-error">{{ errorMessage }}</small>
+                }
+              </label>
 
-            <div class="form-actions">
+              <div class="form-actions">
+                <button
+                  pButton
+                  type="submit"
+                  label="Save Changes"
+                  [loading]="isSaving()"
+                  [disabled]="profileForm.invalid || !hasChanges() || isSaving()"
+                ></button>
+              </div>
+            </form>
+          </section>
+
+          <section class="settings-card">
+            <div class="card-heading card-heading-row">
+              <div>
+                <h2>Security</h2>
+                <p>Update your password.</p>
+              </div>
+
               <button
                 pButton
-                type="submit"
-                label="Save Changes"
-                [loading]="isSaving()"
-                [disabled]="profileForm.invalid || !hasChanges() || isSaving()"
+                type="button"
+                label="Change Password"
+                class="security-action"
+                (click)="openPasswordDialog()"
               ></button>
             </div>
-          </form>
-        </section>
+
+            @if (passwordSuccessMessage()) {
+              <div class="feedback-banner feedback-banner-success" role="status">
+                {{ passwordSuccessMessage() }}
+              </div>
+            }
+          </section>
+        </div>
       }
     </div>
   </div>
 </section>
+
+<p-dialog
+  [visible]="isPasswordDialogOpen()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [closeOnEscape]="true"
+  [showHeader]="false"
+  [blockScroll]="true"
+  styleClass="password-modal-dialog"
+  (visibleChange)="handlePasswordDialogVisibleChange($event)"
+>
+  <section class="password-modal" aria-label="Change Password">
+    <div class="password-modal-copy">
+      <h2>Change Password</h2>
+      <p>Update your password with a secure confirmation step.</p>
+    </div>
+
+    @if (passwordError()) {
+      <div class="feedback-banner feedback-banner-error" role="alert">
+        {{ passwordError() }}
+      </div>
+    }
+
+    <form class="settings-form" [formGroup]="passwordForm" (ngSubmit)="updatePassword()">
+      <label class="field">
+        <span>Current Password</span>
+        <input
+          pInputText
+          type="password"
+          formControlName="currentPassword"
+          autocomplete="current-password"
+        />
+        @if (getPasswordFieldError('currentPassword'); as errorMessage) {
+          <small class="field-error">{{ errorMessage }}</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>New Password</span>
+        <input
+          pInputText
+          type="password"
+          formControlName="newPassword"
+          autocomplete="new-password"
+        />
+        @if (getPasswordFieldError('newPassword'); as errorMessage) {
+          <small class="field-error">{{ errorMessage }}</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Confirm New Password</span>
+        <input
+          pInputText
+          type="password"
+          formControlName="confirmPassword"
+          autocomplete="new-password"
+        />
+        @if (getPasswordFieldError('confirmPassword'); as errorMessage) {
+          <small class="field-error">{{ errorMessage }}</small>
+        }
+      </label>
+
+      <div class="modal-actions">
+        <button
+          pButton
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          [text]="true"
+          (click)="closePasswordDialog()"
+        ></button>
+        <button
+          pButton
+          type="submit"
+          label="Update Password"
+          [loading]="isUpdatingPassword()"
+          [disabled]="passwordForm.invalid || isUpdatingPassword()"
+        ></button>
+      </div>
+    </form>
+  </section>
+</p-dialog>

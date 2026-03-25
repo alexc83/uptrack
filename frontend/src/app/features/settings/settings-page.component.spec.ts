@@ -11,6 +11,7 @@ describe('SettingsPageComponent', () => {
   let userProfileService: {
     getCurrentProfile: ReturnType<typeof vi.fn>;
     updateCurrentProfile: ReturnType<typeof vi.fn>;
+    changePassword: ReturnType<typeof vi.fn>;
   };
   let authStore: {
     setCurrentUser: ReturnType<typeof vi.fn>;
@@ -20,6 +21,7 @@ describe('SettingsPageComponent', () => {
     userProfileService = {
       getCurrentProfile: vi.fn(),
       updateCurrentProfile: vi.fn(),
+      changePassword: vi.fn(),
     };
     authStore = {
       setCurrentUser: vi.fn(),
@@ -100,7 +102,7 @@ describe('SettingsPageComponent', () => {
       name: 'Alex Carter',
       email: 'Alex.Carter@example.com',
     });
-    expect(component.successMessage()).toBe('Profile updated');
+    expect(component.profileSuccessMessage()).toBe('Profile updated');
     expect(authStore.setCurrentUser).toHaveBeenLastCalledWith(
       expect.objectContaining({
         name: 'Alex Carter',
@@ -139,6 +141,110 @@ describe('SettingsPageComponent', () => {
 
     component.saveProfile();
 
-    expect(component.saveError()).toBe('Email is already in use.');
+    expect(component.profileSaveError()).toBe('Email is already in use.');
+  });
+
+  it('opens, submits, and resets the password dialog on success', () => {
+    userProfileService.getCurrentProfile.mockReturnValue(
+      of({
+        id: 'user-123',
+        name: 'Alex Nurse',
+        email: 'alex@example.com',
+        createdAt: '2026-03-24T00:00:00Z',
+      }),
+    );
+    userProfileService.changePassword.mockReturnValue(of(void 0));
+
+    fixture = TestBed.createComponent(SettingsPageComponent);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance;
+    component.openPasswordDialog();
+    component.passwordForm.setValue({
+      currentPassword: 'secret123',
+      newPassword: 'updatedSecret123',
+      confirmPassword: 'updatedSecret123',
+    });
+
+    component.updatePassword();
+
+    expect(userProfileService.changePassword).toHaveBeenCalledWith({
+      currentPassword: 'secret123',
+      newPassword: 'updatedSecret123',
+    });
+    expect(component.passwordSuccessMessage()).toBe('Password updated');
+    expect(component.isPasswordDialogOpen()).toBe(false);
+    expect(component.passwordForm.getRawValue()).toEqual({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
+  });
+
+  it('shows password form validation errors for mismatch and same-password rules', () => {
+    userProfileService.getCurrentProfile.mockReturnValue(
+      of({
+        id: 'user-123',
+        name: 'Alex Nurse',
+        email: 'alex@example.com',
+        createdAt: '2026-03-24T00:00:00Z',
+      }),
+    );
+
+    fixture = TestBed.createComponent(SettingsPageComponent);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance;
+    component.openPasswordDialog();
+    component.passwordForm.setValue({
+      currentPassword: 'secret123',
+      newPassword: 'secret123',
+      confirmPassword: 'different123',
+    });
+    component.passwordForm.controls.newPassword.markAsTouched();
+    component.passwordForm.controls.confirmPassword.markAsTouched();
+
+    expect(component.getPasswordFieldError('newPassword')).toBe(
+      'New password must be different from your current password.',
+    );
+    expect(component.getPasswordFieldError('confirmPassword')).toBe(
+      'Confirm password must match the new password.',
+    );
+  });
+
+  it('shows a friendly backend error when password update fails', () => {
+    userProfileService.getCurrentProfile.mockReturnValue(
+      of({
+        id: 'user-123',
+        name: 'Alex Nurse',
+        email: 'alex@example.com',
+        createdAt: '2026-03-24T00:00:00Z',
+      }),
+    );
+    userProfileService.changePassword.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 400,
+            error: { message: 'Current password is incorrect.' },
+          }),
+      ),
+    );
+
+    fixture = TestBed.createComponent(SettingsPageComponent);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance;
+    component.openPasswordDialog();
+    component.passwordForm.setValue({
+      currentPassword: 'wrong-password',
+      newPassword: 'updatedSecret123',
+      confirmPassword: 'updatedSecret123',
+    });
+
+    component.updatePassword();
+
+    expect(component.passwordError()).toBe('Current password is incorrect.');
+    expect(component.isPasswordDialogOpen()).toBe(true);
   });
 });

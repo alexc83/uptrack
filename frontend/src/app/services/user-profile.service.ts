@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 
 import { API_BASE_URL } from '../core/api/api.config';
 import { buildApiUrl } from '../core/api/api.helpers';
-import { UpdateProfileRequest, UserProfileResponse } from '../models/user-profile.models';
+import { ChangePasswordRequest, UpdateProfileRequest, UserProfileResponse } from '../models/user-profile.models';
 
 @Injectable({ providedIn: 'root' })
 export class UserProfileService {
@@ -17,5 +17,9 @@ export class UserProfileService {
 
   updateCurrentProfile(payload: UpdateProfileRequest) {
     return this.http.put<UserProfileResponse>(buildApiUrl(this.usersUrl, '/me'), payload);
+  }
+
+  changePassword(payload: ChangePasswordRequest) {
+    return this.http.put<void>(buildApiUrl(this.usersUrl, '/me/password'), payload);
   }
 }
