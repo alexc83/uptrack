@@ -1,69 +1,38 @@
-# Repository Guidelines
+# UpTrack — portable coding-agent instructions
 
-## Project Overview
+**This is the authoritative shared instruction file for Claude Code, OpenAI Codex, Google Antigravity and Mistral Vibe.** Client adapters may direct agents here but must not redefine the rules.
 
-UpTrack is a full-stack web application with an Angular frontend and Spring Boot backend.
+## First actions (every new task/session)
+1. Read `AGENTS.md` and `context/migration/master-plan.md`, `context/migration/migration-status.md`, `context/migration/architecture.md`, `context/migration/feature-inventory.md`.
+2. Read `context/project-overview.md`, `context/coding-standards.md`, `context/ai-interaction.md`, `context/current-feature.md` when those original repo files are present.
+3. Determine active milestone; read its spec and related actual Angular/backend code. State the active spec status and current git branch.
+4. If no spec is READY, do **read-only** inspection and prepare that milestone's detailed spec; stop for user approval before writing application code.
 
-- Frontend: Angular 21 (standalone), PrimeNG, TypeScript
-- Backend: Spring Boot 3, Java 21, MySQL
+## Product / technical reality
+Angular 21 + PrimeNG in `frontend/`; new React + strict TS + Vite + Flowbite React + Tailwind CSS 4 in `frontend-react/` after M03. Java 21 / Spring Boot 3.5.x in `backend/`. Active backend config uses **PostgreSQL**, even though some legacy docs refer to MySQL; treat source/config as authoritative for observed setup.
 
----
+## Scope and safety
+- Preserve every existing user-visible workflow; do not expand product scope.
+- Keep `frontend/` read-only, do not remove it. Keep `backend/` and API/DB contracts unchanged unless separately approved.
+- Do not expose credentials, secret values, real health records, seed passwords or auth tokens in logs or commits.
+- Prefer Flowbite React components, Tailwind layout, minimal custom CSS; React Router, TanStack Query, native fetch, React Hook Form/Zod. No extra UI/state library without approval.
+- Never silently alter acceptance criteria, skip error/empty/mobile/auth states or claim tests ran without evidence.
 
-## Context Files
+## Milestone lifecycle
+1. Read and refine DRAFT spec after code audit.
+2. Present READY spec to human and request approval. Do not start coding without approval.
+3. Check git status; create approved milestone branch.
+4. Implement only approved scope, write tests.
+5. Run relevant typecheck/lint/test/build and functional/browser parity checks; record output, failures and NOT RUN limitations.
+6. Fill `context/migration/verification/mxx-report.md`; update tracker and original current-feature record as appropriate.
+7. Explain changed files, evidence, deviations and blockers. Request permission before **each** commit, merge and branch deletion. Never push without user authorization.
+8. Advance to next milestone only after merge and tracker update.
 
-Before making changes, read the following files:
+## Stops / escalation
+If tests cannot run, report blocker and do not claim parity. If 2–3 grounded fixes fail, stop rather than random retries. Ask before architecture changes, destructive operations, schema updates, dependency additions outside spec, modifying git history, deployments, and branch deletion.
 
-- context/project-overview.md
-- context/coding-standards.md
-- context/ai-interaction.md
-- context/current-feature.md
+## Verification
+For React milestones after M03: `npm run typecheck`, `npm run lint`, `npm run test -- --run`, `npm run build` (from `frontend-react/`, after scripts are set up). For backend-impacting changes: `./mvnw test` and appropriate package build from `backend/`. Verify relevant browser scenarios with test accounts and screenshots when accessible. Never claim a command exists until the scaffold defines it.
 
-These files define:
-- Architecture and system design
-- Coding standards and conventions
-- Expected AI behavior
-- Current feature scope
-
-Do not proceed without aligning with these files.
-
----
-
-## Project Structure & Module Organization
-This repository is split into `frontend/` and `backend/`.
-
-- `frontend/src/` contains the Angular app. Core app files currently live in `frontend/src/app/` (`app.ts`, `app.routes.ts`, `app.spec.ts`), with static assets in `frontend/public/`.
-- `backend/src/main/java/com/ccruce/backend/` contains the Spring Boot application code.
-- `backend/src/main/resources/` holds runtime config and web resources.
-- `backend/src/test/java/` mirrors the Java package structure for tests.
-- `context/` stores project screenshots and reference material, not application code.
-
-## Build, Test, and Development Commands
-Run commands from the relevant subproject directory.
-
-- `cd frontend && npm start` starts the Angular dev server on `http://localhost:4200/`.
-- `cd frontend && npm run build` creates a production build.
-- `cd frontend && npm test` runs Angular unit tests with Vitest.
-- `cd backend && ./mvnw spring-boot:run` starts the Spring Boot API locally.
-- `cd backend && ./mvnw test` runs JUnit and Spring test suites.
-- `cd backend && ./mvnw package` builds the backend artifact.
-
-## Coding Style & Naming Conventions
-- Follow `frontend/.editorconfig`: UTF-8, spaces, 2-space indentation, final newline, trimmed trailing whitespace.
-- TypeScript uses single quotes and Angular file naming such as `feature-name.ts`, `feature-name.spec.ts`, and `feature-name.scss`.
-- Java follows standard Spring conventions: 4-space indentation, `PascalCase` class names, `camelCase` methods and fields, packages under `com.ccruce.backend`.
-- Prefer small, focused modules and keep frontend and backend changes isolated unless the feature requires both.
-
-## Testing Guidelines
-- Frontend tests live beside source files as `*.spec.ts`.
-- Backend tests live under `backend/src/test/java/` and should mirror production packages.
-- Add or update tests for any behavior change; treat `npm test` and `./mvnw test` as the minimum pre-PR check.
-
-## Commit & Pull Request Guidelines
-Git history is short but shows concise, imperative subjects such as `chore: add ...` and `Bootstrapped the frontend and backend`. Prefer `type: short summary` (`feat:`, `fix:`, `chore:`) and keep each commit scoped to one logical change.
-
-PRs should include a brief description, linked issue if applicable, test evidence, and screenshots for UI changes. Call out config, schema, or security-impacting changes explicitly.
-
-## Security & Configuration Tips
-Do not commit secrets. Keep environment-specific values out of `backend/src/main/resources/application.properties` and document required local overrides in the PR when configuration changes.
-
-**IMPORTANT:** Do not add Codex to any commit messages
+## Cross-agent handoff
+Make all decisions durable in specs, tracker and verification files; do not depend on chat memory or agent-specific plans. At handoff report active step, branch, spec status, exact tests run, known issues, next action.
