@@ -61,3 +61,13 @@
 | F13 | **S2 reaches the UI:** user B opening `/credentials?credentialId=<A's credential id>` sees A's full credential in the drawer (backend `GET /credentials/{id}` has no ownership check). B's lists and A's report URL are correctly empty/404 | BROWSER FAIL X1.4; PASS X1.2, X1.3 |
 | F14 | Stale success banner: after a password change the Profile card still shows "Profile updated" next to "Password updated" | BROWSER observation S2.4 |
 | F15 | The dashboard recent-activity list is capped at 4 while the API returned 12 (matches source; documented spec says 5) | BROWSER PASS D1.2 |
+
+## Remediation status (S01, branch `fix/backend-authorization`; verified 2026-10-31; NOT merged, NOT deployed)
+| ID | Status after S01 | Evidence |
+|---|---|---|
+| S1 | Remediated on the branch: `/users` collection and `/users/{id}` endpoints removed (404/405); `/users/me*` unchanged | `verification/s01-report.md`; runtime R12.1, R12.2, R12.14–R12.16 PASS |
+| S2 / F13 | Remediated on the branch: ownership check (404) on credential-by-id, its CE records, CE-record-by-id; CE list scoped | runtime R12.3–R12.6, UI X1.4 PASS (`verification/s01-evidence/x1-b-deeplink-a-credential-after-fix.png`) |
+| S3 | Remediated on the branch: credential list always scoped to the caller; `userId` ignored | runtime R12.7, R12.8 PASS |
+| S4 | Remediated on the branch: invalid/expired tokens no longer break public endpoints; one generic 401 on protected endpoints | backend tests (11 token kinds), runtime R2.3, R2.4, S01.11 PASS |
+| S5, S6, S7, S8 | Open (not in S01 scope) | `verification/s01-report.md` "Remaining security limitations" |
+| B1, B3, R6.9 | Open (unknown path/method now 404/405; other framework errors still 500) | S01 runtime unchanged FAIL rows |

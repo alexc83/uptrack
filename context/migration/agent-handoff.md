@@ -1,16 +1,16 @@
 # Agent handoff (update at each session boundary)
 
 - Last agent/tool: Claude Code (Sonnet 5.5), 2026-10-31
-- Active milestone: none in progress. M01 verified (awaiting merge approval); next is S01 (needs go-ahead to implement), then M02
-- Current git branch: `chore/react-migration-planning` (base `9769237`; the M01 documentation commit sits on top of it — see `git log`; not pushed, not merged)
-- Spec status: M01 READY/verified; S01 DRAFT with design decisions approved; M02 DRAFT
-- Last verification result: FE build/38 tests, BE 39 tests, package exit 0; API runtime 55 PASS/18 FAIL/4 INFO; browser (Playwright+Edge) 125 PASS/10 FAIL/1 NOT RUN/4 INFO (`baseline/runtime-results-{api,ui}.md`)
-- Blockers: none for M01 review; successful certificate upload NOT RUN (no safe credentials)
-- Next approved action: none (stop after M01 documentation commit and report)
-- Servers: backend and Angular dev server stopped; DB `uptrack_migration_test` and role `uptrack_m01` RETAINED (teardown only with separate approval); Playwright lives in the scratchpad outside the repo
-- Required human approval: merge of M01 work; push; S01 implementation go-ahead (and branch creation); teardown of DB `uptrack_migration_test` / role `uptrack_m01` when no longer needed; any contact with the hosted backend; M02 start
-- Approved 2026-10-31: roadmap Option A — S01 inserted between M01 and M02 with no renumbering; S01 design decisions 1–7 in `specs/s01-backend-security-remediation.md` (remove `/users` collection and `/users/{id}`, 404 for cross-user access, credential and CE listings scoped to caller, 404 for CE record on another user's credential, generic consistent 401 and public endpoints unaffected by stale tokens, update insecure-behavior tests, add two-user regression tests). **These are decisions, not authorization to implement.**
-- **URGENT FLAG:** the production API base in `environment.production.ts` points at an externally hosted backend that may run the vulnerable code (S1–S3). Not contacted or tested in M01. Do NOT probe, deploy to, or modify it without separate explicit human authorization.
+- Active milestone: S01 (implemented, verified, committed locally; awaiting push/merge approval). M02 not started.
+- Current git branch: `fix/backend-authorization` (created from `main` at `19f3053`; `main` and `origin/main` both at `19f3053`). S01 is committed locally in two commits (backend code and tests; documentation) — see `git log`. NOT pushed, merged or deployed.
+- Spec status: M01 merged; S01 implemented (design approved 2026-10-31); M02 DRAFT
+- Last verification result: backend `mvnw test` 90/90 (47 new cross-user tests + 4 filter unit tests), package OK; frontend 38/38 tests + build OK; runtime API 83 PASS/6 FAIL (out of scope)/3 INFO; browser 126 PASS/9 FAIL (frontend findings, out of scope)/1 NOT RUN; 0 regressions vs M01 (`verification/s01-report.md`)
+- Blockers: none; successful certificate upload still NOT RUN
+- Next approved action: none (stop and report)
+- Servers: backend and Angular dev server stopped; DB `uptrack_migration_test` and role `uptrack_m01` RETAINED (hold synthetic data); Playwright/scripts live in the scratchpad outside the repo
+- Required human approval: push and merge of S01, any deployment of the backend, teardown of the test DB/role, M02 start
+- Approved 2026-10-31: roadmap Option A (S01 between M01 and M02, no renumbering) and S01 design decisions 1–7 (see `specs/s01-backend-security-remediation.md`); implementation plan approved with extra requirements (narrow JWT exception catch, ownership from the authenticated user, broader two-user matrix, generic 404/405 for removed endpoints, no response-shape changes)
+- HOSTED BACKEND: suspended by the owner; only the Angular frontend remains deployed. Keep it suspended. The S01 fix is NOT deployed; do not contact, probe, redeploy or restart the hosted backend without separate explicit authorization.
 - Evidence: 25 curated screenshots committed; the full 77-file capture is local-only in git-excluded `baseline/screenshots-local/`
 - Key facts: do not add AI agent attribution to commit messages (human rule); backend needs `JAVA_HOME` JDK 21 (default JDK is 27); no lint/e2e scripts exist; do not modify `frontend/` or `backend/`
 
