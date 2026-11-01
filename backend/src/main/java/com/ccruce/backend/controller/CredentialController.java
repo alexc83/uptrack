@@ -42,12 +42,11 @@ public class CredentialController {
 
     @GetMapping
     public ResponseEntity<List<CredentialResponseDto>> getAllCredentials(
-            @RequestParam(required = false) UUID userId,
             @RequestParam(required = false) CredentialStatus status,
             @RequestParam(required = false) CredentialType type,
             @RequestParam(required = false) String search
     ) {
-        return ResponseEntity.ok(credentialService.getAllCredentials(userId, status, type, search));
+        return ResponseEntity.ok(credentialService.getAllCredentials(status, type, search));
     }
 
     @GetMapping("/{id}")

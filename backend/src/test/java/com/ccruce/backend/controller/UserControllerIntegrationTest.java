@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -20,43 +19,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UserControllerIntegrationTest extends AbstractControllerIntegrationTest {
 
     @Test
-    void shouldPerformFullUserCrudFlow() throws Exception {
+    void shouldNoLongerExposeGeneralUserCrudEndpoints() throws Exception {
         AuthSession session = registerUser("Sarah Mitchell", "sarah.mitchell@example.com");
         String userId = session.userId();
 
-        mockMvc.perform(get("/api/users")
-                        .header("Authorization", bearerToken(session)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].id", hasItem(userId)));
-
-        mockMvc.perform(get("/api/users/{id}", userId)
-                        .header("Authorization", bearerToken(session)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("sarah.mitchell@example.com"));
-
-        String updatePayload = """
-                {
-                  "name": "Sarah M.",
-                  "email": "sarah.m@example.com",
-                  "password": "updated-secret"
-                }
-                """;
-
+        // The collection and {id} endpoints were removed (milestone S01): they exposed every account to every user.
+        mockMvc.perform(get("/api/users").header("Authorization", bearerToken(session)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/users/{id}", userId).header("Authorization", bearerToken(session)))
+                .andExpect(status().isNotFound());
         mockMvc.perform(put("/api/users/{id}", userId)
                         .header("Authorization", bearerToken(session))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(updatePayload))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Sarah M."))
-                .andExpect(jsonPath("$.email").value("sarah.m@example.com"));
-
-        mockMvc.perform(delete("/api/users/{id}", userId)
-                        .header("Authorization", bearerToken(session)))
-                .andExpect(status().isNoContent());
-
-        mockMvc.perform(get("/api/users/{id}", userId)
-                        .header("Authorization", bearerToken(session)))
+                        .content("{\"name\": \"Sarah M.\", \"email\": \"sarah.m@example.com\", \"password\": \"updated-secret\"}"))
                 .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/users/{id}", userId).header("Authorization", bearerToken(session)))
+                .andExpect(status().isNotFound());
+
+        // ...and the account is still intact and reachable through /me
+        mockMvc.perform(get("/api/users/me").header("Authorization", bearerToken(session)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("sarah.mitchell@example.com"));
     }
 
     @Test

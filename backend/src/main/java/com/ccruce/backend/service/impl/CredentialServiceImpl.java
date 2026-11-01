@@ -61,12 +61,11 @@ public class CredentialServiceImpl implements CredentialService {
 
     @Override
     public List<CredentialResponseDto> getAllCredentials(
-            UUID userId,
             CredentialStatus status,
             CredentialType type,
             String search
     ) {
-        return getCredentialsForQuery(userId, type)
+        return getCredentialsForQuery(getAuthenticatedUser().getId(), type)
                 .stream()
                 .filter(credential -> status == null || deriveStatus(credential.getExpirationDate()) == status)
                 .filter(credential -> matchesSearch(credential, search))
@@ -76,12 +75,15 @@ public class CredentialServiceImpl implements CredentialService {
 
     @Override
     public CredentialResponseDto getCredentialById(UUID id) {
-        return toResponse(getExistingCredential(id));
+        Credential credential = getExistingCredential(id);
+        ensureCredentialBelongsToAuthenticatedUser(credential);
+        return toResponse(credential);
     }
 
     @Override
     public List<CERecordResponseDto> getCredentialCERecords(UUID id) {
         Credential credential = getExistingCredential(id);
+        ensureCredentialBelongsToAuthenticatedUser(credential);
         return getCERecordsForCredential(credential)
                 .stream()
                 .map(this::toCERecordResponse)
@@ -198,18 +200,11 @@ public class CredentialServiceImpl implements CredentialService {
     }
 
     private List<Credential> getCredentialsForQuery(UUID userId, CredentialType type) {
-        if (userId != null && type != null) {
+        if (type != null) {
             return credentialRepository.findAllByUserIdAndType(userId, type);
         }
 
-        if (userId != null) {
-            return credentialRepository.findAllByUserId(userId);
-        }
-
-        return credentialRepository.findAll()
-                .stream()
-                .filter(credential -> type == null || credential.getType() == type)
-                .toList();
+        return credentialRepository.findAllByUserId(userId);
     }
 
     private boolean matchesSearch(Credential credential, String search) {
