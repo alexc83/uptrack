@@ -109,3 +109,21 @@ No `@angular/ssr` or `@angular/platform-server` exists in `package.json`, and `a
 - Frontend: `npm audit --json` and `npm audit --omit=dev --json` (read-only, `package-lock.json` unchanged), plus lockfile dev/prod flags and `npm view` for latest 21.2.x.
 - Exploitation data: CISA KEV catalog (released 2026-10-30) and EPSS (api.first.org) for the 32 backend critical/high CVEs.
 - Limits: reachability statements come from greps and configuration reads, not from exploit attempts; "not reachable" can become wrong if features are added later. Version data reflects 2026-10-31. Scripts and raw JSON are in the scratchpad (not committed).
+
+---
+
+## 9. S02 Remediation Results Addendum (2026-11-01)
+Milestone **S02** successfully executed the Scenario B+ remediation plan on branch `fix/backend-dependency-remediation`:
+- **Spring Boot Parent**: `3.5.12` → `3.5.16` (final OSS release on Maven Central).
+- **Core Overrides**: `tomcat.version` `10.1.61`, `jackson-bom.version` `2.21.8`, `postgresql.version` `42.7.14`.
+- **Cloudinary & HTTP**: `cloudinary-http5` `2.5.0` (corrected from invalid 2.6.0), `httpclient5.version` `5.6.4`, `httpcore5.version` `5.4.3`, `commons-lang3.version` `3.18.0`, `log4j2.version` `2.25.5`.
+- **Advisories Before vs After**:
+  - Baseline (Group 0): **66 advisories** (8 Critical, 24 High, 27 Moderate, 7 Low).
+  - Post-S02 (Group 3): **2 advisories** (2 Critical, 0 High, 0 Moderate, 0 Low).
+  - Both remaining criticals (`GHSA-j9f9-w8pj-32f8`, `GHSA-pc63-qcmh-9cmg`) reside in `spring-webmvc` 6.2.19, cannot be patched on Spring Boot 3.5 without migrating to Spring Boot 4, and are unreferenced in UpTrack's pure JSON REST architecture (see S02 verification report for detailed prerequisite, evidence, and uncertainty analysis).
+- **Verification Evidence**:
+  - Backend automated test suite: 90/90 pass (`./mvnw -B test` with JDK 21).
+  - Runtime API regression suite on isolated PostgreSQL DB: 83 PASS / 6 FAIL (out-of-scope) / 3 INFO (0 regressions vs S01).
+  - Runtime Playwright browser suite (10 stages) on isolated PostgreSQL DB: 131 PASS / 21 FAIL (frontend findings) / 1 NOT RUN / 4 INFO (0 regressions vs S01, identical to baseline).
+  - Application source code modified: 0 files. Database schema changes: 0.
+  - S02 verification report: `context/migration/verification/s02-report.md`.
