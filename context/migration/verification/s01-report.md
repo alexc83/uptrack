@@ -1,6 +1,6 @@
 # S01 verification report — backend security remediation
 
-Status: **IMPLEMENTED, VERIFIED AND COMMITTED LOCALLY on branch `fix/backend-authorization` (two commits: code and tests, then documentation; see `git log`); NOT pushed, NOT merged, NOT deployed.** Results approved by the human on 2026-10-31. Successful certificate upload remains NOT RUN (no safe Cloudinary credentials, unchanged from M01).
+Status: **IMPLEMENTED, VERIFIED, MERGED AND PUSHED (branch `fix/backend-authorization`, commits `39ceddf` code/tests and `6fd6f47` documentation; `main` at `6fd6f47`); NOT deployed.** Results approved by the human on 2026-10-31. Successful certificate upload remains NOT RUN (no safe Cloudinary credentials, unchanged from M01).
 Agent / model / session: Claude Code, Sonnet 5.5 (claude-sonnet-5-5), session of 2026-10-31
 Date / branch / base: 2026-10-31 / `fix/backend-authorization` / created from `main` at `19f3053` (the M01 documentation commit)
 Spec version / approved changes: `specs/s01-backend-security-remediation.md` design decisions 1–7 plus the five additional requirements given with the implementation approval (see "Requirements" below)

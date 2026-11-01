@@ -1,6 +1,6 @@
 # S01 — Backend security remediation
 
-**Status:** IMPLEMENTED, VERIFIED AND COMMITTED LOCALLY on `fix/backend-authorization` (two commits; not pushed, not merged, not deployed). Roadmap placement (Option A), design decisions 1–7 and the implementation plan were approved by the human on 2026-10-31. Evidence: `verification/s01-report.md`, `verification/s01-runtime-results.md`.
+**Status:** IMPLEMENTED, VERIFIED, MERGED AND PUSHED (`main` at `6fd6f47`; branch `fix/backend-authorization`, commits `39ceddf` and `6fd6f47`); not deployed. Roadmap placement (Option A), design decisions 1–7 and the implementation plan were approved by the human on 2026-10-31. Evidence: `verification/s01-report.md`, `verification/s01-runtime-results.md`.
 **Branch:** `fix/backend-authorization` (human-chosen name; supersedes the earlier proposed `fix/backend-security-remediation`)
 **Dependency:** M01 merged (evidence in `baseline/`; merged to `main` at `19f3053`). **Revision:** 2 (2026-10-31)
 **Owner/agent:** to be assigned. **Roadmap placement:** Option A approved — S01 sits between M01 and M02; M01–M14 IDs and filenames unchanged (master plan, tracker and handoff updated).

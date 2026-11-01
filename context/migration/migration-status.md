@@ -1,17 +1,19 @@
 # Migration status
 
-- Current: M01 VERIFIED and merged to `main` (`19f3053`, pushed). S01 IMPLEMENTED, VERIFIED AND COMMITTED LOCALLY on `fix/backend-authorization` (two commits; not pushed, not merged, not deployed). M02 not started.
-- Next milestone: push/merge approval for S01, then M02
-- Active branch: `fix/backend-authorization` (S01 committed locally; not pushed)
+- Current: M01 and S01 are VERIFIED, merged and pushed (`main` at `6fd6f47`; S01 commits `39ceddf` backend, `6fd6f47` docs). The S01 fix is NOT deployed. The dependency security assessment (read-only) is written and S02 is added to the roadmap as DRAFT; both are committed on branch `docs/dependency-security-assessment` (not pushed or merged). M02 not started.
+- Next milestone: M02 (documentation/architecture), then S02 (backend dependency remediation; must be merged before M03 and before any hosted backend redeployment).
+- Active branch: `docs/dependency-security-assessment` (documentation only; branched from `main` at `6fd6f47`). `main`, `fix/backend-authorization` and `chore/react-migration-planning` are retained.
 - Baseline: build/test RAN 2026-10-31 (frontend 38 tests, backend 39 tests pass); API runtime RAN (55 PASS/18 FAIL/4 INFO) and browser runtime RAN (125 PASS/10 FAIL/1 NOT RUN/4 INFO); security findings S1-S4 + F13 confirmed; successful upload NOT RUN
-- Last approved milestone: M01 (merged and pushed 2026-10-31); S01 results await review
+- Last approved milestone: S01 (merged and pushed 2026-10-31)
 - Hosted backend: suspended by the owner; keep suspended; the S01 fix is not deployed; any deployment or contact needs separate approval
+- Dependency security assessment (read-only, 2026-10-31): `dependency-security-assessment.md`. Backend 66 advisories (8 C / 24 H / 27 M / 7 L) from the Spring Boot 3.5.12 BOM pins, none in CISA KEV, no critical advisory reachable in UpTrack's code; patch-level fix path (Boot 3.5.16 plus property overrides and Cloudinary 2.6.0) would leave 2, both unfixable on Spring Framework 6.2 and unreachable. Angular production: 6 flagged packages (4 H / 2 M), unreachable (no SSR). Dev/build tree: 45 packages, not shipped. Gate: do not redeploy the backend before S02 (dependency remediation) is verified and merged. No manifest or lockfile was changed.
 
 | Milestone | Spec | Branch | Tests | Review | Commit/PR | Status |
 |---|---|---|---|---|---|---|
 | M01 | READY | chore/react-migration-planning (merged to main) | FE build + 38 tests, BE 39 tests, API runtime, browser runtime RAN; upload success NOT RUN (agreed) | Approved by human | `19f3053` (merged, pushed) | Merged |
-| S01 | READY (design approved; implemented) | fix/backend-authorization | BE 90 tests, FE 38 tests + build, API runtime (83 PASS/6 FAIL out of scope), browser runtime (126 PASS/9 FAIL out of scope) RAN; upload success NOT RUN | Approved by human | two local commits on `fix/backend-authorization` (see git log); not pushed | Verified |
+| S01 | READY (design approved; implemented) | fix/backend-authorization (merged to main) | BE 90 tests, FE 38 tests + build, API runtime (83 PASS/6 FAIL out of scope), browser runtime (126 PASS/9 FAIL out of scope) RAN; upload success NOT RUN | Approved by human | `39ceddf`, `6fd6f47` (merged, pushed) | Merged |
 | M02 | DRAFT | — | Not run | Pending | — | Not started |
+| S02 | DRAFT (placement approved 2026-10-31; implementation not authorized) | fix/backend-dependency-remediation (not created) | Not run | Pending | — | Not started |
 | M03 | DRAFT | — | Not run | Pending | — | Not started |
 | M04 | DRAFT | — | Not run | Pending | — | Not started |
 | M05 | DRAFT | — | Not run | Pending | — | Not started |
@@ -25,6 +27,6 @@
 | M13 | DRAFT | — | Not run | Pending | — | Not started |
 | M14 | DRAFT | — | Not run | Pending | — | Not started |
 
-Note: S01 is an ID-preserving insertion between M01 and M02; M01–M14 are not renumbered.
+Note: S01 (between M01 and M02) and S02 (between M02 and M03) are ID-preserving insertions; M01–M14 are not renumbered.
 
 Allowed status values: Not started, Spec ready, In progress, Blocked, Verified, Merged. Never mark Verified when essential tests are Not run.

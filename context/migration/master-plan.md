@@ -1,6 +1,6 @@
 # UpTrack React Migration — Master Plan
 
-Status: PLANNED. M01 audit and baseline completed 2026-10-31 (documentation only); no application files have been migrated. S01 (backend security remediation) inserted before M02. **Flagged risk (updated):** the externally hosted backend referenced by `frontend/src/environments/environment.production.ts` has been suspended by the owner (only the Angular frontend remains deployed); keep it suspended until a fixed backend (S01) is approved for deployment. It was never contacted or tested.
+Status: PLANNED. M01 audit and baseline completed 2026-10-31 (documentation only); no application files have been migrated. S01 (backend security remediation) inserted before M02; S02 (backend dependency remediation) inserted after M02 and before M03. **Flagged risk (updated):** the externally hosted backend referenced by `frontend/src/environments/environment.production.ts` has been suspended by the owner (only the Angular frontend remains deployed); keep it suspended until a fixed backend (S01 merged, and S02 dependency remediation verified and merged) is separately approved for deployment. It was never contacted or tested.
 
 ## Objective
 Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript + Flowbite React + Tailwind CSS 4 frontend while preserving all user-visible behavior and existing Spring Boot APIs. This is an AI-agent refactoring experiment, not a portfolio rewrite.
@@ -23,9 +23,10 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 
 ## Milestones
 - **M01** Existing-app audit and baseline — `chore/react-audit` (human override: work done on `chore/react-migration-planning`); prerequisite: none. Verified 2026-10-31.
-- **S01** Backend security remediation (inserted between M01 and M02; ID-preserving, no renumbering) — `fix/backend-authorization`; prerequisite: M01 merged. Spec `specs/s01-backend-security-remediation.md` (implemented, verified and committed locally on `fix/backend-authorization` 2026-10-31; not pushed/merged/deployed; evidence in `verification/s01-report.md`).
+- **S01** Backend security remediation (inserted between M01 and M02; ID-preserving, no renumbering) — `fix/backend-authorization`; prerequisite: M01 merged. Spec `specs/s01-backend-security-remediation.md` (implemented, verified, merged to `main` and pushed 2026-10-31 (`39ceddf`, `6fd6f47`); not deployed; evidence in `verification/s01-report.md`).
 - **M02** Architecture and parity contract — `chore/react-architecture`; prerequisite: S01 merged (so the contract describes the fixed API).
-- **M03** React/Flowbite foundation — `feature/react-foundation`; prerequisite: prior milestone merged.
+- **S02** Backend dependency remediation (inserted between M02 and M03; ID-preserving, no renumbering; M01–M14 and S01 unchanged) — proposed branch `fix/backend-dependency-remediation`; prerequisite: M02 merged. Spec `specs/s02-backend-dependency-remediation.md` (DRAFT; creation and placement approved 2026-10-31; implementation NOT authorized). Target is Scenario B+ of `dependency-security-assessment.md`, done in incremental groups with verification after each group and a final dependency-tree/advisory assessment; the projected advisory count is not a guaranteed result.
+- **M03** React/Flowbite foundation — `feature/react-foundation`; prerequisite: S02 merged and verified (React work must run against the patched backend).
 - **M04** Theme, shared UI and app shell — `feature/react-app-shell`; prerequisite: prior milestone merged.
 - **M05** Typed HTTP and server-state foundation — `feature/react-api-layer`; prerequisite: prior milestone merged.
 - **M06** Authentication and route guards — `feature/react-auth`; prerequisite: prior milestone merged.
@@ -40,10 +41,11 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 
 ## Gates
 - Gate A after M02: inventory and architecture approved, and S01 merged and verified (S01 must be merged before M02 is marked READY).
+- S02 gate: S02 must be merged and verified before M03 begins, and the hosted backend must not be redeployed until S02 is verified and merged and the deployment is separately approved.
 - Gate B after M06: foundations, authentication and route behavior tested.
 - Gate C after M12: all feature areas implemented.
 - Gate D after M13: parity evidence accepted.
-- M14 may cut over only after Gate D and with S01 verified; deletion of Angular is out of scope by default.
+- M14 may cut over only after Gate D and with S01 and S02 verified; deletion of Angular is out of scope by default.
 
 ## Definition of done for each implementation milestone
 - Current milestone spec has concrete source paths, scope and acceptance criteria.
@@ -54,7 +56,7 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 - Human approves commit, merge and branch deletion separately; log hash/status after actions.
 
 ## Specification approach
-All 14 specs exist as **DRAFT OUTLINES**. Before each milestone, AI performs read-only source inspection and expands that spec to READY with endpoint contracts, behavior matrix, tests and exact acceptance criteria. Human approves READY before code changes. Never rewrite acceptance criteria merely to match generated code; request a change decision.
+All 14 specs exist as **DRAFT OUTLINES**; the S01 spec is implemented and the S02 spec is a detailed DRAFT. Before each milestone, AI performs read-only source inspection and expands that spec to READY with endpoint contracts, behavior matrix, tests and exact acceptance criteria. Human approves READY before code changes. Never rewrite acceptance criteria merely to match generated code; request a change decision.
 
 ## Source-of-truth precedence
 Direct user request > `AGENTS.md` project workflow > approved active spec > `context/migration/architecture.md` > actual source code/config for observed behavior > README/legacy docs. When these disagree, document the discrepancy; do not guess.
