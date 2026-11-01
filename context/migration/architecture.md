@@ -1,16 +1,32 @@
-# Architecture decisions (initial; M02 finalizes)
+# Architecture decisions — FINAL (M02, approved 2026-10-31)
 
-- React with TypeScript strict mode and Vite in `frontend-react/`; Angular `frontend/` remains read-only.
-- Flowbite **React** for interactive components; Tailwind CSS v4 for layout and tokens. Prefer Flowbite primitives first, custom composition only for missing interactions.
-- React Router for routing; TanStack Query for server state; React state/context for local UI and auth; native `fetch` centralized in one client; React Hook Form + Zod for complex forms; Lucide icons. No Redux/Zustand unless approved.
-- Preserve Angular URL paths including redirects and direct-link report route.
-- Preserve REST DTO shapes; confirm actual backend controller annotations and API behavior in M01.
-- Handle JWT using existing backend contract; assess existing storage risks, but no unilateral security protocol changes.
-- Use Vite `/api` dev proxy when appropriate; production base URL must be environment configurable and documented.
-- Avoid hard-coded healthcare data, live credentials or demo passwords in frontend.
-- Theme: light/dark, accessible keyboard and focus treatment, responsive tables/cards, modal/drawer dismissal.
-- Tests: Vitest + React Testing Library; Playwright for critical end-to-end and screenshot scenarios. Baseline evidence should indicate unavailable services clearly.
-- Deployment/cutover cannot happen until parity gate passes.
+Status: FINALIZED in M02 (`chore/react-architecture`). Replaces the previous "initial; M02 finalizes" draft. Portable across Claude Code, Codex, Antigravity and Mistral Vibe — client adapters must not redefine these rules. The detailed contract lives in `parity-contract.md`; the full spec in `specs/m02-architecture-and-parity-contract.md`.
 
-## Open decisions for M02
-Confirm source API CORS assumptions; browser storage and session bootstrapping semantics; exact breakpoints; file upload constraints; Flowbite component gaps; actual accessibility of Angular implementation; dev environment and seeded/test accounts.
+## Decisions
+
+- React 19 with TypeScript strict mode and Vite in sibling `frontend-react/`; Angular `frontend/` remains read-only and is never deleted during the migration.
+- Flowbite **React** for interactive components; Tailwind CSS v4 (`@tailwindcss/vite`) for layout and design tokens. Prefer Flowbite primitives first; custom composition only for the gaps listed in the M02 spec §6 (right-side drawer shell with focus return, form dialogs with server-error banner, token-driven status badges/progress, debounced search, confirm dialogs, print styles).
+- React Router (data router, lazy routes) for routing; TanStack Query for **all** server state; React context/providers for auth and local UI state; native `fetch` centralized in one client (`core/api/apiFetch`); React Hook Form + Zod for forms; `lucide-react` icons. **No Redux/Zustand or any other state/UI library.**
+- Preserve Angular URL paths exactly, including the `/app`, `/app/dashboard`, `/app/credentials`, `/app/ce-records` redirects, the standalone `/credentials/:credentialId/ce-report` route (outside the shell, `?returnTo=`), `?credentialId=` drawer deep-linking on `/credentials`, and `**` → `/`.
+- Preserve the post-S01 REST DTO shapes exactly (including the literal `requiredCEHours` JSON key). The React client sends **no** `userId` query param — post-S01 every list/read is scoped to the caller (404 for foreign resources).
+- JWT handling: token in `localStorage['uptrack_token']`, sent as `Authorization: Bearer` on all `/api/**` requests except public paths (`/api/auth/login`, `/api/auth/register`, `/api/health`). This preserves the S01-verified contract. **Known limitations (documented, not silently changed):** token readable by any XSS (S5), no refresh token, logout is client-only, no server-side revocation; a token remains valid until expiry even after password change.
+- Session restoration: lazy and single-flight — the protected-route guard and the landing redirect guard await one memoized `GET /api/auth/me`; no render-blocking bootstrap. Any 401 → clear session + redirect `/`. Logout clears the token and navigates `/`.
+- API base URL is environment-driven: `VITE_API_BASE_URL` (build-time env), dev default `/api` with a Vite `server.proxy` entry to `http://localhost:8080` (target overridable). **No hosted backend URL is committed anywhere** — the suspended production host stays out of the repo; deployment is an M14 decision. Dev proxy removes the CORS/S7 problem without backend changes.
+- CE records are derived from `GET /api/credentials` (nested `ceRecords`) through a dedicated adapter/query function (`features/ce-records/adapters/`), preserving Angular behavior and keeping credential context on CE rows; components never touch the nested response shape directly.
+- Theme: light/dark via `html.dark` (Tailwind v4 class strategy, `@custom-variant dark`); **single** `uptrack-theme` localStorage key applied by an inline script in `index.html` before first paint (consolidates the old `uptrack-theme`/`uptrack-landing-theme` split and removes the report-route flash — intentional fix of F1); `prefers-color-scheme` fallback; sidebar collapse persisted under `uptrack-sidebar-collapsed`; token palette (`--ut-*`, status colors, primary #185FA5/#378ADD) reproduced in Tailwind v4 `@theme`.
+- Responsive: Tailwind `md:` (768 px) is the shell breakpoint, matching Angular's `window.innerWidth <= 768`; CE table becomes stacked cards ≤768 px; 375/768/1280 px must show no horizontal overflow; 44 px minimum tap targets.
+- Accessibility baseline: semantic HTML, labelled inputs, `aria-pressed`/`aria-expanded`, `aria-live` status regions, focus restore on dialog/drawer close, Esc/backdrop dismissal, keyboard-reachable rows, visible focus rings, per-page titles. The Angular findings F7/F8/F11/F12 are fixed deliberately in the React milestones and documented as intentional improvements, not parity regressions.
+- Testing: Vitest + React Testing Library (jsdom) for unit/component tests; Playwright for critical e2e and screenshot parity against `baseline/screenshots/`; scripts `dev`, `build`, `typecheck`, `lint`, `test`, `e2e`. Evidence policy: every check PASS/FAIL/NOT RUN with command + exit code; failures preserved; successful Cloudinary upload remains NOT RUN without safe credentials.
+- Dependencies are pinned with a committed lockfile at M03; `npm audit` is recorded at scaffold time; M13/M14 gate: no high/critical advisories in `frontend-react/` production dependencies.
+- Deployment/cutover cannot happen until the parity gate (Gate D, after M13) passes; **S02 must be merged and verified before M03 begins**, and the hosted backend must not be redeployed until S02 is verified and merged and deployment is separately approved. The hosted backend remains suspended; no agent may contact it.
+- Avoid hard-coded healthcare data, live credentials, demo passwords or tokens in frontend code, docs, logs or commits.
+
+## Resolved open decisions (from the initial draft)
+
+- CORS: solved by the Vite dev proxy (no backend CORS change); production origins remain a deployment-time concern.
+- Browser storage / session bootstrapping: localStorage key preserved; bootstrap is guard-lazy and single-flight (above).
+- Breakpoints: 768 px shell breakpoint via Tailwind `md:`; verified at 375/768/1280 px in parity runs.
+- File upload constraints: multipart part `file`, types pdf/jpg/jpeg/png/webp/gif, client-side type check only (no client size check — server default 1 MB applies; oversize currently returns 500, recorded as S6/B1-family behavior, not changed by the frontend).
+- Flowbite gaps: custom-composition list in M02 spec §6.
+- Accessibility of the Angular implementation: F7/F8/F11/F12 fixed deliberately (decision above).
+- Dev environment and test accounts: isolated PostgreSQL DB `uptrack_migration_test` + role `uptrack_m01` retained with synthetic accounts A/B (passwords only in the git-ignored scratchpad); React runtime verification reuses them in M13.

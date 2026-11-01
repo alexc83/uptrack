@@ -1,8 +1,8 @@
 # Migration status
 
-- Current: M01 and S01 are VERIFIED, merged and pushed (`main` at `6fd6f47`; S01 commits `39ceddf` backend, `6fd6f47` docs). The S01 fix is NOT deployed. The dependency security assessment (read-only) is written and S02 is added to the roadmap as DRAFT; both are committed on branch `docs/dependency-security-assessment` (not pushed or merged). M02 not started.
-- Next milestone: M02 (documentation/architecture), then S02 (backend dependency remediation; must be merged before M03 and before any hosted backend redeployment).
-- Active branch: `docs/dependency-security-assessment` (documentation only; branched from `main` at `6fd6f47`). `main`, `fix/backend-authorization` and `chore/react-migration-planning` are retained.
+- Current: M01 and S01 are VERIFIED, merged and pushed. The dependency security assessment and the S02 DRAFT spec are merged into `main` (commit `ee72760`, which also merged `docs/dependency-security-assessment`; the branch is now fully merged and retained). `main` = `origin/main` at `ee72760`. The S01 fix is NOT deployed. **M02 spec is READY** on branch `chore/react-architecture` (created from `ee72760`; documentation only, uncommitted until human approval).
+- Next milestone: M02 (documentation/architecture) completion, then S02 (backend dependency remediation; must be merged and verified before M03 and before any hosted backend redeployment).
+- Active branch: `chore/react-architecture` (M02 documentation; branched from `main` at `ee72760`). `main`, `fix/backend-authorization`, `chore/react-migration-planning` and `docs/dependency-security-assessment` are retained (the last two fully merged).
 - Baseline: build/test RAN 2026-10-31 (frontend 38 tests, backend 39 tests pass); API runtime RAN (55 PASS/18 FAIL/4 INFO) and browser runtime RAN (125 PASS/10 FAIL/1 NOT RUN/4 INFO); security findings S1-S4 + F13 confirmed; successful upload NOT RUN
 - Last approved milestone: S01 (merged and pushed 2026-10-31)
 - Hosted backend: suspended by the owner; keep suspended; the S01 fix is not deployed; any deployment or contact needs separate approval
@@ -12,7 +12,7 @@
 |---|---|---|---|---|---|---|
 | M01 | READY | chore/react-migration-planning (merged to main) | FE build + 38 tests, BE 39 tests, API runtime, browser runtime RAN; upload success NOT RUN (agreed) | Approved by human | `19f3053` (merged, pushed) | Merged |
 | S01 | READY (design approved; implemented) | fix/backend-authorization (merged to main) | BE 90 tests, FE 38 tests + build, API runtime (83 PASS/6 FAIL out of scope), browser runtime (126 PASS/9 FAIL out of scope) RAN; upload success NOT RUN | Approved by human | `39ceddf`, `6fd6f47` (merged, pushed) | Merged |
-| M02 | DRAFT | — | Not run | Pending | — | Not started |
+| M02 | READY (approved 2026-10-31) | chore/react-architecture (from `ee72760`) | Docs-only: no runtime tests apply; read-only cross-checks recorded in `verification/m02-report.md` | Approved by human (architecture decisions 1–8) | pending commit approval | Spec ready |
 | S02 | DRAFT (placement approved 2026-10-31; implementation not authorized) | fix/backend-dependency-remediation (not created) | Not run | Pending | — | Not started |
 | M03 | DRAFT | — | Not run | Pending | — | Not started |
 | M04 | DRAFT | — | Not run | Pending | — | Not started |
