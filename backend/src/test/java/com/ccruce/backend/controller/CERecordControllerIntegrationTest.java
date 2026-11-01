@@ -225,8 +225,8 @@ class CERecordControllerIntegrationTest extends AbstractControllerIntegrationTes
                         .header("Authorization", bearerToken(anotherUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Credential does not belong to the specified user."));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Credential not found for id: " + credentialId));
     }
 
     @Test

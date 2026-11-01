@@ -2,7 +2,6 @@ package com.ccruce.backend.service.impl;
 
 import com.ccruce.backend.dto.request.ChangePasswordRequestDto;
 import com.ccruce.backend.dto.request.UpdateProfileRequestDto;
-import com.ccruce.backend.dto.request.UserRequestDto;
 import com.ccruce.backend.dto.response.UserResponseDto;
 import com.ccruce.backend.entity.User;
 import com.ccruce.backend.exception.BadRequestException;
@@ -17,7 +16,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -32,40 +30,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponseDto createUser(UserRequestDto requestDto) {
-        ensureEmailAvailable(requestDto.email(), null);
-
-        User user = new User();
-        applyRequest(user, requestDto);
-
-        return toResponse(userRepository.save(user));
-    }
-
-    @Override
-    public List<UserResponseDto> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
-    }
-
-    @Override
-    public UserResponseDto getUserById(UUID id) {
-        return toResponse(getExistingUser(id));
-    }
-
-    @Override
     public UserResponseDto getCurrentUserProfile() {
         return toResponse(getAuthenticatedUser());
-    }
-
-    @Override
-    public UserResponseDto updateUser(UUID id, UserRequestDto requestDto) {
-        User user = getExistingUser(id);
-        ensureEmailAvailable(requestDto.email(), id);
-        applyRequest(user, requestDto);
-
-        return toResponse(userRepository.save(user));
     }
 
     @Override
@@ -93,12 +59,6 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    @Override
-    public void deleteUser(UUID id) {
-        User user = getExistingUser(id);
-        userRepository.delete(user);
-    }
-
     private User getExistingUser(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found for id: " + id));
@@ -110,12 +70,6 @@ public class UserServiceImpl implements UserService {
                 .ifPresent(user -> {
                     throw new ConflictException("Email is already in use.");
                 });
-    }
-
-    private void applyRequest(User user, UserRequestDto requestDto) {
-        user.setName(normalizeName(requestDto.name()));
-        user.setEmail(normalizeEmail(requestDto.email()));
-        user.setPassword(passwordEncoder.encode(requestDto.password()));
     }
 
     private void applyProfileUpdate(User user, UpdateProfileRequestDto requestDto) {

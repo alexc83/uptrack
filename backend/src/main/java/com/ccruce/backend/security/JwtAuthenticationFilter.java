@@ -1,7 +1,11 @@
 package com.ccruce.backend.security;
 
-import com.ccruce.backend.exception.UnauthorizedException;
-import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.PrematureJwtException;
+import io.jsonwebtoken.RequiredTypeException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,27 +36,49 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String authorization = request.getHeader("Authorization");
 
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            AuthenticatedUser authenticatedUser = parseOrNull(authorization.substring(7));
+
+            if (authenticatedUser != null) {
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        authenticatedUser,
+                        null,
+                        List.of()
+                );
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } else {
+                SecurityContextHolder.clearContext();
+            }
         }
 
-        String token = authorization.substring(7);
-
-        try {
-            AuthenticatedUser authenticatedUser = jwtService.parseToken(token);
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    authenticatedUser,
-                    null,
-                    List.of()
-            );
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        } catch (JwtException | IllegalArgumentException exception) {
-            SecurityContextHolder.clearContext();
-            throw new UnauthorizedException("Your session is invalid or has expired.");
-        }
-
+        // An invalid token never fails the request here: the request simply stays unauthenticated. Protected
+        // endpoints are then rejected by RestAuthenticationEntryPoint with one generic 401, and public endpoints
+        // (login, register, health) keep working even if the browser still holds a stale token.
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Returns the authenticated user for a valid token, or {@code null} when the token itself is unusable.
+     *
+     * <p>Only the token-specific failures are treated as "invalid token": malformed, unsupported (for example
+     * unsigned), bad signature, expired, not yet valid, a claim of the wrong type, and an unusable user-id claim
+     * (jjwt rejects empty tokens, and {@link JwtService} rejects a missing or non-UUID user id, with
+     * {@link IllegalArgumentException}). The try block contains nothing but the token parsing call. Signing-key
+     * configuration errors (jjwt's {@code WeakKeyException} and friends) and any other unexpected exception are
+     * deliberately not caught and still surface as server errors.
+     */
+    private AuthenticatedUser parseOrNull(String token) {
+        try {
+            return jwtService.parseToken(token);
+        } catch (ExpiredJwtException
+                 | PrematureJwtException
+                 | MalformedJwtException
+                 | UnsupportedJwtException
+                 | SignatureException
+                 | RequiredTypeException
+                 | IllegalArgumentException exception) {
+            return null;
+        }
     }
 }

@@ -37,14 +37,23 @@ public class JwtService {
     }
 
     public AuthenticatedUser parseToken(String token) {
+        // Resolve the key first so that a misconfigured secret surfaces as a server error instead of being
+        // reported as an invalid token.
+        SecretKey signingKey = getSigningKey();
+
         Claims claims = Jwts.parser()
-                .verifyWith(getSigningKey())
+                .verifyWith(signingKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
 
+        String userId = claims.get("uid", String.class);
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("Token does not carry a user id.");
+        }
+
         return new AuthenticatedUser(
-                UUID.fromString(claims.get("uid", String.class)),
+                UUID.fromString(userId),
                 claims.getSubject(),
                 claims.get("name", String.class)
         );

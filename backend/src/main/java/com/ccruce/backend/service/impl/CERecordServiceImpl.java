@@ -61,7 +61,7 @@ public class CERecordServiceImpl implements CERecordService {
 
     @Override
     public List<CERecordResponseDto> getAllCERecords() {
-        return ceRecordRepository.findAll()
+        return ceRecordRepository.findAllByUserId(getAuthenticatedUser().getId())
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -69,7 +69,9 @@ public class CERecordServiceImpl implements CERecordService {
 
     @Override
     public CERecordResponseDto getCERecordById(UUID id) {
-        return toResponse(getExistingCERecord(id));
+        CERecord ceRecord = getExistingCERecord(id);
+        ensureCERecordBelongsToUser(ceRecord, getAuthenticatedUser());
+        return toResponse(ceRecord);
     }
 
     @Override
@@ -130,7 +132,8 @@ public class CERecordServiceImpl implements CERecordService {
 
     private void ensureCredentialBelongsToUser(Credential credential, User user) {
         if (!credential.getUser().getId().equals(user.getId())) {
-            throw new BadRequestException("Credential does not belong to the specified user.");
+            // Same answer as for a credential that does not exist, so ids of other users' credentials cannot be probed.
+            throw new ResourceNotFoundException("Credential not found for id: " + credential.getId());
         }
     }
 

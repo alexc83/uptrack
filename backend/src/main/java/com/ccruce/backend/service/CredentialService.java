@@ -14,7 +14,8 @@ public interface CredentialService {
 
     CredentialResponseDto createCredential(CredentialRequestDto requestDto);
 
-    List<CredentialResponseDto> getAllCredentials(UUID userId, CredentialStatus status, CredentialType type, String search);
+    /** Lists the authenticated user's credentials only; there is no way to list another user's credentials. */
+    List<CredentialResponseDto> getAllCredentials(CredentialStatus status, CredentialType type, String search);
 
     CredentialResponseDto getCredentialById(UUID id);
 
