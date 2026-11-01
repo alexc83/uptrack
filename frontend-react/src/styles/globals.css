@@ -1,0 +1,57 @@
+@import "tailwindcss";
+@import "flowbite-react/plugin/tailwindcss";
+@source "../../node_modules/flowbite-react";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* UpTrack design tokens (matching Angular styles.scss) */
+:root {
+  --ut-primary: #185fa5;
+  --ut-primary-dark: #134d87;
+  --ut-primary-subtle: #e8f1fb;
+
+  --ut-sidebar-bg: #f8f9fa;
+  --ut-main-bg: #eef0f3;
+
+  --ut-status-active-bg: #eaf3de;
+  --ut-status-active-text: #27500a;
+
+  --ut-status-expiring-bg: #faeeda;
+  --ut-status-expiring-text: #633806;
+
+  --ut-status-expired-bg: #fcebeb;
+  --ut-status-expired-text: #791f1f;
+}
+
+html.dark {
+  --ut-primary: #378add;
+  --ut-primary-dark: #5499e3;
+  --ut-primary-subtle: #172233;
+
+  --ut-sidebar-bg: #1a1a1a;
+  --ut-main-bg: #111111;
+
+  --ut-status-active-bg: #1e2d1a;
+  --ut-status-active-text: #c0dd97;
+
+  --ut-status-expiring-bg: #2d2010;
+  --ut-status-expiring-text: #fac775;
+
+  --ut-status-expired-bg: #2d1515;
+  --ut-status-expired-text: #f7c1c1;
+}
+
+@keyframes ut-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ut-fade-in {
+  animation: ut-fade-in 0.18s ease-out both;
+}

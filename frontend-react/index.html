@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UpTrack — Credential &amp; CE Tracking</title>
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('uptrack-theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (theme === 'dark' || (!theme && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen bg-[var(--ut-main-bg)] text-gray-900 antialiased dark:text-gray-100">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
