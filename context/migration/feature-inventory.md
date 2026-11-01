@@ -1,6 +1,6 @@
-# Feature inventory / parity matrix (initial)
+# Feature inventory / parity matrix
 
-Status: DISCOVERY REQUIRED. These are verified source locations, not a claim of functional runtime verification.
+Status: M02 mapping decisions recorded 2026-10-31 (see bottom section). These are verified source locations, not a claim of functional runtime verification.
 
 | Area | Angular source | React milestone | Baseline | React result | Notes |
 |---|---|---|---|---|---|
@@ -44,3 +44,21 @@ Evidence: SOURCE = read in code, TEST = automated test passed (`environment.md`)
 
 ## Dependencies between features
 Auth store -> every protected route and the interceptor; `CredentialWriteEventsService.revision` -> dashboard, credentials, CE records and drawers refresh after any write; credential drawer -> CE form dialog -> upload service; CE drawer -> credential drawer via `?credentialId=`; credentials card/drawer -> CE report (`?returnTo=`); settings -> `authStore.setCurrentUser` -> shell avatar/name.
+
+## M02 architecture mapping (2026-10-31, `chore/react-architecture`)
+
+Decisions from the approved M02 spec (`specs/m02-architecture-and-parity-contract.md`) and `parity-contract.md`:
+
+| Area | React pattern (decision) | Milestone |
+|---|---|---|
+| Landing/auth entry | Flowbite `Modal` in shared `AppModal` (focus restore, Esc/backdrop close — fixes F11/F12); auth via `AuthProvider` context + TanStack Query mutation | M06–M07 |
+| Route guards/session | React Router data router; guard-lazy single-flight `GET /api/auth/me` bootstrap; token in `localStorage['uptrack_token']` (contract preserved, S5 documented) | M06 |
+| Dashboard | `useQuery(['dashboard'])`; panels per parity contract §5 | M08 |
+| Credentials | `useQuery(['credentials', filters])` — **no `userId` param** (post-S01 caller-scoped); 250 ms debounce; chip filters; RHF+Zod form dialog; invalidation replaces the revision signal | M09 |
+| CE records | derived from `GET /api/credentials` via dedicated adapter (`features/ce-records/adapters/`) — decision D9; 10/page; table/cards at `md:` breakpoint | M10 |
+| Certificates | multipart upload on select via apiFetch; inline status/error; success path NOT RUN without safe credentials | M10 |
+| CE report | standalone route outside shell; `print:` Tailwind variant + `@page`; theme pre-paint fixes F1 | M11 |
+| Settings | `useQuery/useMutation` on `/api/users/me*`; password dialog | M12 |
+| Responsive/theme | Tailwind v4 class dark mode on `html.dark`; single `uptrack-theme` key, pre-paint inline script; `md:` = 768 px shell breakpoint; token palette per parity contract §7 | M04, M13 |
+
+Cross-feature refresh in React = mutation `onSuccess` query invalidation (parity contract §4), replacing Angular's `CredentialWriteEventsService.revision`.
