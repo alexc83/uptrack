@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Production build output
+dist/
+
+# Test output & Playwright reports
+coverage/
+playwright-report/
+test-results/
+blob-report/
+e2e/screenshots/
+
+# Vite temporary files
+.vite/
+
+# Environment files with secrets
+.env*.local
+
+# OS files
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
