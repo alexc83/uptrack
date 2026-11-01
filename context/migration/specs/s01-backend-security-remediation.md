@@ -1,8 +1,8 @@
 # S01 — Backend security remediation
 
-**Status:** DRAFT — roadmap placement (Option A) and design decisions 1–7 **approved by the human on 2026-10-31**. **Implementation is NOT yet authorized**: it needs a separate go-ahead because it changes `backend/` and API behavior (AGENTS.md). No code written.
-**Proposed branch:** `fix/backend-security-remediation` (created only after approval)
-**Dependency:** M01 merged (evidence in `baseline/`). **Revision:** 1 (2026-10-31)
+**Status:** IMPLEMENTED, VERIFIED AND COMMITTED LOCALLY on `fix/backend-authorization` (two commits; not pushed, not merged, not deployed). Roadmap placement (Option A), design decisions 1–7 and the implementation plan were approved by the human on 2026-10-31. Evidence: `verification/s01-report.md`, `verification/s01-runtime-results.md`.
+**Branch:** `fix/backend-authorization` (human-chosen name; supersedes the earlier proposed `fix/backend-security-remediation`)
+**Dependency:** M01 merged (evidence in `baseline/`; merged to `main` at `19f3053`). **Revision:** 2 (2026-10-31)
 **Owner/agent:** to be assigned. **Roadmap placement:** Option A approved — S01 sits between M01 and M02; M01–M14 IDs and filenames unchanged (master plan, tracker and handoff updated).
 
 ## Goal and non-goals
@@ -34,7 +34,7 @@ These are approved designs, not authorization to implement.
 7. **Tests:** update existing integration tests that expect the insecure behavior (tests listed in the risk section below), and add comprehensive two-user authorization regression tests (plan below).
 
 ## Open item
-- **D-G hosted backend — flagged as a potentially URGENT exposure.** `environment.production.ts` points at an externally hosted backend. If that instance runs the current `backend/` code, S1–S3 (any registered user can read other users' data, list all credentials and CE records, and take over other accounts) would be exploitable there. **M01 did not contact or test it, and nothing in S01 authorizes contacting it.** Any probing, deployment, redeploy, credential rotation or takedown of the hosted service needs separate explicit authorization from the human. Decision needed (not an S01 code task): how soon to prioritize S01 and whether to take interim protective steps on the hosted service.
+- **D-G hosted backend:** the externally hosted Spring Boot backend referenced by `environment.production.ts` has been **suspended by the owner** (only the Angular frontend remains deployed). It must stay suspended throughout S01 and until a fixed build is deployed; deploying is a separate decision and approval. It was never contacted or tested by M01 or S01.
 
 ## Target API contract (assuming recommended options)
 | Endpoint | Today (M01 observed) | After S01 |
@@ -88,6 +88,16 @@ Re-run M01 evidence: the API runner script and Playwright scenarios (U/X series)
 **Option A (approved, ID-preserving):** add one new milestone **S01** outside the M-series. M01–M14 keep their IDs, files, branch names and report paths, so cross-agent references stay valid. Order: M01 -> **S01** -> M02 ... M14. Rules: S01 must be merged before M02 is marked READY (so the parity contract describes the fixed API) and before Gate B; Gate A additionally requires S01 verified; the cutover gate (M14) may not pass with S01 open; `migration-status.md` gets one S01 row; `master-plan.md` gets one milestone line and one gate sentence. Files to touch on approval: `master-plan.md`, `migration-status.md`, `agent-handoff.md`, and (if contract facts change) `baseline/api-matrix.md` via the S01 report — nothing is renumbered.
 **Option B (renumbered):** insert as M02 and shift the current M02–M14 to M03–M15: rename 13 spec files and 13 report skeletons, rewrite their internal IDs, branch names, the master-plan milestone list, status table, gates and every cross-reference in `AGENTS.md`/handoff. Higher churn and risk of stale references; not recommended.
 **Option C (defer):** run S01 later (e.g., after M06). Not recommended because React auth and every data milestone would be built and tested against the vulnerable contract.
+
+## Implementation record (actual, 2026-10-31)
+Implemented as planned, with these specifics and deviations (all in `verification/s01-report.md`):
+- Token handling: the plan's "catch RuntimeException" was replaced, per the human's requirement, by a specific catch list in `JwtAuthenticationFilter` (expired, premature, malformed, unsupported, signature, required-type, and `IllegalArgumentException` limited to the parse call). `JwtService.parseToken` now resolves the key first (so `WeakKeyException` surfaces as a server error) and rejects a missing/blank `uid` explicitly.
+- Credential list: the `userId` parameter was removed from the controller and service signatures rather than kept (ignored by Spring if supplied).
+- `UserRequestDto`, `applyRequest` and five `UserService` methods were deleted.
+- Two narrow handlers (404 for unknown resources, 405 for wrong methods) were added to `GlobalExceptionHandler`; as a side effect all unknown `/api` paths now return 404 instead of 500. The wider B1 problem (bad UUID, malformed JSON, multipart) remains out of scope.
+- Tests: new `CrossUserAuthorizationIntegrationTest` (47 executions) and `JwtAuthenticationFilterTest` (4); two existing tests changed (`UserControllerIntegrationTest` CRUD test replaced, `CERecordControllerIntegrationTest` foreign-credential test now 404). Backend suite: 90 tests, 0 failures.
+- Runtime on the isolated DB: API 83 PASS / 6 FAIL (unchanged, out of scope) / 3 INFO; browser 126 PASS / 9 FAIL (unchanged frontend findings) / 1 NOT RUN; 0 regressions in both.
+Remaining limitations are listed in the report; the fix is not deployed.
 
 ## Completion report
 `context/migration/verification/s01-report.md`

@@ -1,6 +1,6 @@
 # UpTrack React Migration — Master Plan
 
-Status: PLANNED. M01 audit and baseline completed 2026-10-31 (documentation only); no application files have been migrated. S01 (backend security remediation) inserted before M02. **Flagged risk:** the production API base in `frontend/src/environments/environment.production.ts` points at an externally hosted backend that may be running the vulnerable code (M01 findings S1–S3); it has not been contacted or tested and must not be without separate human authorization.
+Status: PLANNED. M01 audit and baseline completed 2026-10-31 (documentation only); no application files have been migrated. S01 (backend security remediation) inserted before M02. **Flagged risk (updated):** the externally hosted backend referenced by `frontend/src/environments/environment.production.ts` has been suspended by the owner (only the Angular frontend remains deployed); keep it suspended until a fixed backend (S01) is approved for deployment. It was never contacted or tested.
 
 ## Objective
 Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript + Flowbite React + Tailwind CSS 4 frontend while preserving all user-visible behavior and existing Spring Boot APIs. This is an AI-agent refactoring experiment, not a portfolio rewrite.
@@ -23,7 +23,7 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 
 ## Milestones
 - **M01** Existing-app audit and baseline — `chore/react-audit` (human override: work done on `chore/react-migration-planning`); prerequisite: none. Verified 2026-10-31.
-- **S01** Backend security remediation (inserted between M01 and M02; ID-preserving, no renumbering) — `fix/backend-security-remediation`; prerequisite: M01 merged. Spec `specs/s01-backend-security-remediation.md` (DRAFT; design decisions approved 2026-10-31; implementation needs separate go-ahead).
+- **S01** Backend security remediation (inserted between M01 and M02; ID-preserving, no renumbering) — `fix/backend-authorization`; prerequisite: M01 merged. Spec `specs/s01-backend-security-remediation.md` (implemented, verified and committed locally on `fix/backend-authorization` 2026-10-31; not pushed/merged/deployed; evidence in `verification/s01-report.md`).
 - **M02** Architecture and parity contract — `chore/react-architecture`; prerequisite: S01 merged (so the contract describes the fixed API).
 - **M03** React/Flowbite foundation — `feature/react-foundation`; prerequisite: prior milestone merged.
 - **M04** Theme, shared UI and app shell — `feature/react-app-shell`; prerequisite: prior milestone merged.
