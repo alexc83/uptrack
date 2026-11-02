@@ -31,8 +31,13 @@ test('desktop geometry, persistence, navigation, account menu and independent sc
   // M06: the placeholder account (disabled "Log out") is replaced by the signed-in identity and an enabled Log out.
   await expect(page.getByRole('menu').getByText('Test User')).toBeVisible();
   await expect(page.getByRole('button', { name: /Log out/ })).toBeEnabled();
+  // Opening from the keyboard focuses the first item (Settings). With Log out now enabled, ArrowDown moves on to it and ArrowUp returns.
+  const settingsItem = page.getByRole('link', { name: 'Settings', exact: true });
+  await expect(settingsItem).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('link', { name: 'Settings', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: /Log out/ })).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(settingsItem).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page).toHaveTitle('Settings — UpTrack');

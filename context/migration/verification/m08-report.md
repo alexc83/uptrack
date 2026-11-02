@@ -1,6 +1,6 @@
 # M08 verification report
 
-**Status: IMPLEMENTED; verified in the Linux cloud sandbox; PENDING local macOS/Edge verification (browser suite, 8 visual goldens, live demo database). Committed as two checkpoint commits on the harness branch only; not merged, not on `main`.**
+**Status: IMPLEMENTED; automated verification COMPLETE on macOS/Edge (112/112 browser tests incl. all 8 visual comparisons; 421/421 unit; typecheck/lint/build pass). Live backend/demo-account acceptance PENDING. Not merged; merge authorization withheld until the live demo check.** (Original cloud-sandbox status below is retained as history and is superseded by the "macOS/Edge verification results" section.)
 
 Agent / model / session: Claude Code (Claude Sonnet 5.5), cloud session, 2026-11-02.
 Branch: `claude/m08-dashboard-planning-u4ieuq` — **approved one-time exception.** The master plan and original spec name `feature/react-dashboard`; the cloud session is pinned to the harness-managed branch and cannot create/push the approved name, so the human approved this branch for M08 only (branch name only; every other requirement stands). Do not rename it. Later milestones return to the master-plan naming.
@@ -114,3 +114,15 @@ Untouched: `backend/`, `frontend/`, `package.json`, `package-lock.json`, M05/M06
 ## Review and approvals
 
 - Two checkpoint commits and a push to `claude/m08-dashboard-planning-u4ieuq` only: approved (2026-11-02). Merge, push to `main`, branch deletion: not granted. Screenshot-baseline update: not granted. Narrow `app-shell.spec.ts:5` correction: approved. Playwright project config unchanged.
+
+## macOS/Edge verification results (2026-11-02, branch `m08-review`)
+
+Results: typecheck, lint, build pass; unit 421/421; Playwright Edge **112/112** (24 M08 dashboard tests, all 8 `visual.spec.ts` comparisons without update mode). Live backend/demo-account acceptance was **not** performed and remains pending (procedure above); no backend, database or demo data was contacted.
+
+Initial macOS run: 107/112. Remaining failures and root causes (all test-only; no application defect):
+
+1. **`theme.spec.ts:29` (pre-paint script without React, 3 paths).** The test aborted `**/src/main.tsx`, but Vite serves the entry as `/src/main.tsx?t=<timestamp>`; the glob does not match a query string, so the request was never aborted and React mounted. Fix: route regex `/\/src\/main\.tsx(\?.*)?$/` plus a counter asserting at least one request was intercepted. The `html.dark`, body background and empty-`#root` assertions are unchanged.
+2. **`visual.spec.ts` (4 comparisons failed first).** Expected consequence of the approved `/dashboard` → `/settings` move. Seven baselines regenerated with `--update-snapshots=changed` after inspecting expected/actual/diff: `shell-{light,dark}-desktop`, `shell-{light,dark}-mobile-navigation`, `shell-{light,dark}-collapsed`, `modal-light-mobile` (all `*-msedge-darwin.png`). `modal-dark-mobile` did not change. Differences are limited to h1 "Dashboard" → "Settings", banner "reserved for M08" → "reserved for M12", and the active Dashboard nav highlight removed (changed-pixel bounding boxes all within y ≈ 50–242; changed pixels vs committed: 18,718 / 18,719 / 13,430 / 13,430 / 9,102 / 9,101 / 2,939). Layout, spacing, typography, theme, sidebar width and the `Test User / test.user@example.test` identity are unchanged. No UI regression.
+3. **`app-shell.spec.ts:5` ArrowDown (the known intermittent M04 flake; failed deterministically in the full macOS runs, 3/5 on a clean server).** Opening the account menu from the keyboard makes floating-ui asynchronously autofocus the first item (Settings). The old assertion (ArrowDown → Settings focused) only passed when the keypress beat the autofocus. It was valid pre-M06 because Log out was disabled; with Log out enabled (M06), ArrowDown correctly moves focus to it. Diagnosed with a scratch spec (focus after open = Settings; after ArrowDown = Log out, with and without a 300 ms delay). Not an accessibility defect. Fix: await Settings focused after open, ArrowDown → Log out focused, ArrowUp → Settings focused, then Enter navigates to `/settings`. The ArrowDown requirement is strengthened, with no sleeps. 15/15 passes on a clean Playwright-managed server.
+
+Test files changed: `e2e/theme.spec.ts`, `e2e/app-shell.spec.ts`, plus the seven PNGs. No application code, dependency, backend, Angular or demo-data change.
