@@ -1,6 +1,6 @@
 # UpTrack React Migration — Master Plan
 
-Status: M01, S01, M02, S02, M03 and M04 are merged and pushed. M04 reached `main` and live `origin/main` at `b47bd4226c83015139bf9e5a54cd4ad170f06bbd` (`9440d21`, `b47bd42`) after explicit merge/push authorization. M05 is DRAFT / Not started; no M05 implementation is authorized. The externally hosted backend remains suspended and must not be contacted or deployed without separate authorization.
+Status: M01, S01, M02, S02, M03 and M04 are merged and pushed. M05 implementation is authorized and implemented on `feature/react-api-layer`, based on synchronized main/origin/main `249603f8a10eeda26e3d4ae55e7d099aea003fe0`. M05 is Verified after the approved focused test correction; verification and limitations are recorded in `verification/m05-report.md`; implementation/results and exactly two local commits are approved; merge and push still require separate authorization. M06 has not started. The externally hosted backend remains suspended and must not be contacted or deployed without separate authorization.
 
 ## Objective
 Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript + Flowbite React + Tailwind CSS 4 frontend while preserving all user-visible behavior and existing Spring Boot APIs. This is an AI-agent refactoring experiment, not a portfolio rewrite.
@@ -57,7 +57,7 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 - Human approves commit, merge and branch deletion separately; log hash/status after actions.
 
 ## Specification approach
-M01–M04 and S01/S02 are completed and merged. M05–M14 remain DRAFT outlines; M05 has not started. Before each milestone, AI performs read-only source inspection and expands that spec to READY with endpoint contracts, behavior matrix, tests and exact acceptance criteria. Human approves READY before code changes. Never rewrite acceptance criteria merely to match generated code; request a change decision.
+M01–M04 and S01/S02 are completed and merged. M05 has an approved READY specification, verified implementation/results and authorization for exactly two local commits; M06–M14 remain DRAFT outlines. Before each milestone, AI performs read-only source inspection and expands that spec to READY with endpoint contracts, behavior matrix, tests and exact acceptance criteria. Human approves READY before code changes. Never rewrite acceptance criteria merely to match generated code; request a change decision.
 
 ## Source-of-truth precedence
 Direct user request > `AGENTS.md` project workflow > approved active spec > `context/migration/architecture.md` > actual source code/config for observed behavior > README/legacy docs. When these disagree, document the discrepancy; do not guess.

@@ -13,6 +13,7 @@ Status: M02 mapping decisions recorded 2026-10-31 (see bottom section). These ar
 | CE report | `frontend/src/app/features/ce-report/` | M11 | Not run | Not started | Print and multi-page |
 | Settings | `frontend/src/app/features/settings/` | M12 | Not run | Not started | Profile/password |
 | Responsive/theme | `frontend/src/app/layout/`, `context/screenshots/` | M04, M13 | M01 runtime + screenshots | M04 implementation; verification report authoritative | Light/dark, shell and shared UI only; M13 cross-feature checks pending |
+| HTTP/server-state infrastructure | `frontend/src/app/core/api/`, backend controllers/DTOs | M05 | Post-S01 source contract | Implemented; verification in `verification/m05-report.md`; awaiting review | Dormant bindings, Fetch, optional token adapter, query defaults/keys/invalidation; no feature hooks |
 
 
 ## M01 expanded scenario matrix
@@ -66,3 +67,7 @@ Cross-feature refresh in React = mutation `onSuccess` query invalidation (parity
 ## M04 clarification — 2026-11-01
 
 M04 implements shared presentation and shell only. Canonical business routes are labelled migration previews; their feature/auth statuses above remain Not started. Mobile is ≤768 px inclusive, desktop >768 px (approved correction to the earlier md wording). M01 evidence is historical and unchanged. Current M04 browser results and screenshots are in `verification/m04-report.md` and `verification/m04-evidence/`.
+
+## M05 clarification — 2026-11-01
+
+The M01 scenario matrix is historical source evidence, including its pre-S01 userId wording. M05 follows the post-S01 contract: caller-scoped access, no userId, arrays without invented pagination. CE flattening/client pagination belongs to M10. Authentication/session behavior belongs to M06; optional bearer injection is infrastructure only. M05 does not advance the feature statuses above. Installed resolver/Zod 4 invalid-input compatibility remains a mandatory gate before M06 forms.

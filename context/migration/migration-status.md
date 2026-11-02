@@ -1,9 +1,9 @@
 # Migration status
 
-- Current: M01, S01, M02, S02, M03 and M04 are merged and pushed. At the M04 merge point, after explicit human authorization, `main` and live `origin/main` were verified at `b47bd4226c83015139bf9e5a54cd4ad170f06bbd` (ahead/behind 0/0).
-- Active milestone: none. M04 is complete; its READY spec, implementation and verification results were approved. M05 remains DRAFT / Not started and has not been authorized.
-- Next action: await further human instructions. The documentation-only merge-status correction was approved for commit and push. Do not begin M05, deploy or delete branches without separate authorization.
-- Working branch: `main`. The approved documentation correction was prepared on `chore/m04-merge-status` from merged `main` at `b47bd42`; its commit follows the M04 merge point without changing application code. Both correction and original feature branches are retained.
+- Current: M01, S01, M02, S02, M03 and M04 remain merged and pushed. Before M05 edits, local main, origin/main and live remote were verified synchronized at `249603f8a10eeda26e3d4ae55e7d099aea003fe0`, with no tracked/staged changes.
+- Active milestone: M05 — approved READY spec; infrastructure implemented on `feature/react-api-layer`. Verification is complete: the approved test-only correction models focus-opened tooltip dismissal before drawer dismissal. Five consecutive default unit runs pass 177/177; E2E passes 42/42 including eight unchanged visuals. Full audit still has 16 deferred development findings; production audit is zero. See `verification/m05-report.md`.
+- Next action: review the two authorized local M05 commits. Merge/push/deploy/branch deletion/M06 remain unauthorized.
+- Working branch: `feature/react-api-layer`, base `249603f8a10eeda26e3d4ae55e7d099aea003fe0`; application commit `ac720664bf05bfc28f626fbd5f490315a9b9cd55`, followed by this tracker's authorized documentation commit. M05 remains local and unmerged. Unrelated untracked duplicate helper preserved and excluded.
 - Baseline: build/test RAN 2026-11-01 (backend 90 tests pass, package built); API runtime RAN (83 PASS/6 FAIL/3 INFO) and browser runtime RAN (131 PASS/21 FAIL/1 NOT RUN/4 INFO); 0 regressions vs S01; successful upload NOT RUN (placeholder Cloudinary credentials)
 - Last completed milestone: M04 — merged and pushed as `9440d21` (React) and `b47bd42` (verification/documentation).
 - Hosted backend: suspended by the owner; keep suspended; the S01 fix is not deployed; any deployment or contact needs separate approval
@@ -17,7 +17,7 @@
 | S02 | READY (implemented, verified) | fix/backend-dependency-remediation (merged to main) | BE 90 tests, package OK, API 83 PASS / 6 FAIL, browser 131 PASS / 21 FAIL / 1 NOT RUN (0 regressions) | Approved by human (implementation) | `cb74890`, `6e0ba0d` (merged, pushed) | Merged |
 | M03 | READY (implemented, verified) | feature/react-foundation (merged to main) | Historical M03: typecheck/lint/unit 2/build/E2E 3 passed | Approved by human | `eb7948b`, `9e297f8` (merged, pushed) | Merged |
 | M04 | READY (implemented, verified) | feature/react-app-shell (merged to main; retained) | typecheck/lint, unit 32, build, E2E 34 (8 visual comparisons), production audit 0; full audit 16 deferred dev findings | Implementation/results and merge/push approved | `9440d21`, `b47bd42` (merged, pushed) | Merged |
-| M05 | DRAFT | — | Not run | Pending | — | Not started |
+| M05 | READY (implemented, verified) | feature/react-api-layer | typecheck/lint/build pass; 5 consecutive default unit runs 177/177; E2E 42/42 incl. 8 visuals; production audit 0, full audit 16 deferred findings | Implementation/results and exactly two local commits approved | `ac720664bf05bfc28f626fbd5f490315a9b9cd55` (application), following documentation commit contains this record; unmerged/unpushed | Verified |
 | M06 | DRAFT | — | Not run | Pending | — | Not started |
 | M07 | DRAFT | — | Not run | Pending | — | Not started |
 | M08 | DRAFT | — | Not run | Pending | — | Not started |
