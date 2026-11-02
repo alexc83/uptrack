@@ -1,5 +1,11 @@
 # Current Feature
 
+## Current — M09 Credential CRUD checkpoint
+
+M09 automated acceptance **PASSED** (owner: unit **490/490**, Playwright **504/504** including Edge/Chrome/Firefox/WebKit and Edge visuals, typecheck/lint/production build PASS, `npm audit --omit=dev`: **0 vulnerabilities**). Branch `feature/react-credential-crud`; feature checkpoint `3b2a6c1a35754a4d551a49bd5ddd4e0717dee653`. **Live-backend acceptance and integration remain pending; M09 is not merged or complete.** Two checkpoint commits authorized; push, merge, deployment, database changes and M10 are not authorized.
+
+Final owner evidence and prepared read-only live checklist: `migration/verification/m09-report.md`. This pass reviewed/staged/committed only approved M09 files; no backend requests or DB operations. Earlier status sections below are historical.
+
 ## Status
 
 M08 is ACCEPTED, MERGED and PUSHED: fast-forward of `m08-review` into `main` (no squash/rewrite) integrating `d215667` (feat), `054e7af` (docs) and `b1503435bd45e66b1e793f5c191042e56b7bd81a` (test stabilization); `main` = `origin/main` = `b1503435bd45e66b1e793f5c191042e56b7bd81a` at merge, before this documentation follow-up commit. Local Edge/macOS verification PASSED (unit 421/421, Edge 112/112 incl. all 8 visual comparisons, typecheck/lint/build pass). Live demo acceptance PASSED against the isolated `uptrack_migration_test` database (35/35 UI-vs-`/api/dashboard` comparisons for `demo-main`, `demo-empty`, `demo-second`; SPA account-switching isolation with no cross-account leakage and a positive-control detector; delayed-loading skeleton; no console errors; only `POST /api/auth/login` and `GET /api/dashboard` issued). No database changes: before/after row counts and content hashes identical (users 5, credentials 13, ce_records 20). The hosted backend was never contacted. Next milestone: M09 — Credentials CRUD — DRAFT, not yet authorized. `claude/m08-dashboard-planning-u4ieuq` and `m08-review` are retained. Earlier text below is historical.

@@ -7,7 +7,7 @@ Status: M02 mapping decisions recorded 2026-10-31 (see bottom section). These ar
 | Landing/auth entry | `frontend/src/app/features/landing-page/` | M06–M07 | Not run | Not started | Login/register dialogs |
 | Route guards/session | `frontend/src/app/core/auth/` | M06 | Not run | Not started | Deep links and refresh |
 | Dashboard | `frontend/src/app/features/dashboard/` | M08 | Not run | Implemented, verified and merged (M08); see `verification/m08-report.md` | Counts, attention, overflow list drawers; credential detail drawer/Add actions deferred to M09/M10 |
-| Credentials | `frontend/src/app/features/credentials/` | M09 | Not run | Not started | CRUD, filters, detail |
+| Credentials | `frontend/src/app/features/credentials/` | M09 | Source audit + focused Edge/macOS mocked runtime | Implemented; owner automated acceptance passed; live acceptance/integration pending | CRUD, filters, independent detail, consumed deep links, linked CE summaries; M10 actions deferred; see verification/m09-report.md |
 | CE records | `frontend/src/app/features/ce-records/` | M10 | Not run | Not started | Desktop table/mobile cards |
 | Certificates | `frontend/src/app/services/upload.service.ts` | M10 | Not run | Not started | Cloudinary through backend |
 | CE report | `frontend/src/app/features/ce-report/` | M11 | Not run | Not started | Print and multi-page |
@@ -76,3 +76,13 @@ The M01 scenario matrix is historical source evidence, including its pre-S01 use
 ## M08 clarification — 2026-11-02
 
 The dashboard is one `GET /api/dashboard` (no credentials call because the Add buttons are omitted until M09/M10). Approved deviations: Add Credential/Add CE Record omitted; rows link to `/credentials?credentialId=`; real CE-attention count; hours to ≤2 decimals; token colors; semantic links; Lucide icons. Verified source behavior and the parity table are in `verification/m08-report.md`.
+
+## M09 implementation handoff — 2026-11-02
+
+M09 Credential CRUD is implemented on `feature/react-credential-crud` from `24ab6c0b49d3569d529c2e30017c1fff5e87b369`. Spec READY and owner-authorized. Targeted checks passed; full regression and live acceptance pending owner. No commit, push, merge, deployment, backend/Angular/database change or M10 work authorized. See `verification/m09-report.md`.
+Dashboard Add Credential now uses the reusable M09 dialog; Add CE and CE detail navigation remain M10. Report links retain the M11 placeholder. Historical M01 rows above record the audited Angular source, including its old userId parameter; the React client never sends userId.
+
+## M09 automated-acceptance checkpoint — 2026-11-02
+
+M09 automated acceptance **PASSED** (owner: unit **490/490**, Playwright **504/504** including Edge/Chrome/Firefox/WebKit and Edge visuals, typecheck/lint/production build PASS, `npm audit --omit=dev`: **0 vulnerabilities**). Branch `feature/react-credential-crud`; feature checkpoint `3b2a6c1a35754a4d551a49bd5ddd4e0717dee653`. **Live-backend acceptance and integration remain pending; M09 is not merged or complete.** Two checkpoint commits authorized; push, merge, deployment, database changes and M10 are not authorized.
+Read-only live checklist and separately authorized disposable-target CRUD strategy: `verification/m09-report.md`. Earlier handoff status is historical.
