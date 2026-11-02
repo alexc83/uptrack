@@ -1,4 +1,5 @@
 import { PageHeader } from '../../shared/layout/page-header';
+import { AddCredentialAction } from '../credentials/credential-form-dialog';
 
 export function DashboardHeader({ greeting, firstName, dateLabel }: { greeting: string | null; firstName: string; dateLabel: string | null }) {
   return (
@@ -7,6 +8,7 @@ export function DashboardHeader({ greeting, firstName, dateLabel }: { greeting: 
         eyebrow="Dashboard"
         title="Live compliance overview"
         description="Monitor credential urgency, CE progress, and recent activity from one live dashboard."
+        actions={<AddCredentialAction />}
       />
       {greeting && (
         <p className="flex flex-col gap-1">

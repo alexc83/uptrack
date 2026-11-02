@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import type { Route } from '@playwright/test';
-import { test, expect, allowApi, capture, e2eToken, e2eUser, evidenceDirectory, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, allowApi, capture, e2eToken, e2eUser, evidenceDirectory, mockCredentialReads, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
 
 const hero = 'Track credentials. Stay compliant. Own your career.';
 const viewports = [375, 640, 768, 769, 920, 1080, 1280] as const;
@@ -101,6 +101,7 @@ test('query-driven dialog keeps returnTo on close and restores it after mocked l
   await page.route(/^http:\/\/localhost:5173\/api\/auth\/login$/, (route: Route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ token: e2eToken, user: e2eUser }) }),
   );
+  await mockCredentialReads(page);
   await page.goto('/?auth=login&returnTo=%2Fcredentials');
   const dialog = page.getByRole('dialog', { name: 'Log in' });
   await expect(dialog).toBeVisible();

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { test, expect, allowApi, capture, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, allowApi, capture, mockCredentialReads, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
 import { dashboardNow, emptyDashboard, overflowDashboard, populatedDashboard } from '../src/test/fixtures/dashboard-fixtures';
 
 // All /api traffic is mocked at the browser; the default-deny fixture still fails any undeclared request.
@@ -7,6 +7,7 @@ import { dashboardNow, emptyDashboard, overflowDashboard, populatedDashboard } f
 test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(dashboardNow);
   await signIn(page);
+  await mockCredentialReads(page);
 });
 
 const widths = [375, 768, 769, 1280] as const;
@@ -29,7 +30,8 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(page.getByRole('region', { name: 'Upcoming Expirations' })).toBeVisible();
       await expect(page.getByRole('region', { name: 'CEs Still Needed' })).toBeVisible();
       await expect(page.getByRole('region', { name: 'Recent Activity' })).toBeVisible();
-      await expect(page.getByRole('button', { name: /Add (Credential|CE Record)/ })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Add Credential' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Add CE Record' })).toHaveCount(0);
       await noOverflow(page);
       // Stat cards: 4 columns above 1200px, 2 up to 1200px, 1 up to 768px (Angular proportions).
       const boxes = await page.getByRole('group').evaluateAll(nodes => nodes.map(node => { const { x, y } = node.getBoundingClientRect(); return { x: Math.round(x), y: Math.round(y) }; }));
@@ -116,7 +118,8 @@ test('"See more" opens the overflow drawer, rows deep-link, Escape returns focus
   await expect(trigger).toBeFocused();
   await trigger.click();
   await drawer.getByRole('link').first().click();
-  await expect(page).toHaveURL(/\/credentials\?credentialId=s-0$/);
+  await expect(page.getByRole('dialog', { name: 'Credential details' })).toBeVisible();
+  await expect(page).toHaveURL(/\/credentials$/);
 });
 
 test('mobile drawer fits at 375px without horizontal overflow', async ({ page }) => {
@@ -151,7 +154,8 @@ test('keyboard users reach dashboard rows with a visible focus indicator', async
   await expect(row).toBeFocused();
   expect(await row.evaluate(element => getComputedStyle(element).outlineStyle)).not.toBe('none');
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/credentials\?credentialId=A-acls$/);
+  await expect(page.getByRole('dialog', { name: 'Credential details' })).toBeVisible();
+  await expect(page).toHaveURL(/\/credentials$/);
 });
 
 test('guest cannot see protected dashboard content', async ({ page }) => {

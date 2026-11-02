@@ -1,6 +1,7 @@
 import { test as base, expect, type Locator, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { credential } from '../src/test/fixtures/api-fixtures';
 
 // Default-deny: every /api request is aborted and fails the test unless the test declared it with allowApi()
 // AND registered an explicit mock for it. M06 auth specs are the only ones that do so.
@@ -33,6 +34,19 @@ export const emptyDashboardResponse = {
 export async function mockDashboard(page: Page, body: unknown = emptyDashboardResponse, status = 200) {
   allowApi(page, 'GET', '/api/dashboard');
   await page.route(/^http:\/\/localhost:5173\/api\/dashboard$/, route => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) }));
+}
+
+/** Routing-only fixtures: permit only explicit credential list/detail GET handlers. */
+export async function mockCredentialReads(page: Page) {
+  allowApi(page, 'GET', '/api/credentials');
+  await page.route(/^http:\/\/localhost:5173\/api\/credentials(?:\?.*)?$/, route => route.request().method() === 'GET'
+    ? route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }) : route.fallback());
+  await page.route(/^http:\/\/localhost:5173\/api\/credentials\/[^/?]+$/, route => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    const path = new URL(route.request().url()).pathname;
+    allowApi(page, 'GET', path);
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...credential, id: decodeURIComponent(path.split('/').at(-1)!) }) });
+  });
 }
 
 export const evidenceDirectory = resolve('test-results/evidence');
@@ -80,6 +94,14 @@ export async function activateWithKeyboard(page: Page, trigger: Locator) {
   await trigger.focus();
   await expect(trigger).toBeFocused();
   await page.keyboard.press('Enter');
+}
+
+/** Flowbite returns focus in a microtask; the shared overlay also reconciles it on the next frame. */
+export async function expectOverlayClosed(page: Page, overlay: Locator, returnTarget: Locator) {
+  await expect(overlay).toHaveCount(0);
+  // Finish the documented close lifecycle before another control takes keyboard focus.
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+  await expect(returnTarget).toBeFocused();
 }
 
 /** Key that moves focus to the next link/control: Safari/WebKit on macOS skips links on plain Tab (Option+Tab reaches them). */

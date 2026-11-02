@@ -1,9 +1,11 @@
+import { credentialsApi } from '../core/api/credentials-api';
+import { credential as credentialFixture } from '../test/fixtures/api-fixtures';
 import { screen, waitFor } from '@testing-library/react';
-import { expect, it } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 import { routes } from './router';
 import { renderWithProviders } from '../test/render-with-providers';
 
-it.each(['/credentials?credentialId=preview', '/ce-records', '/settings'])('renders labelled shell placeholders without consuming query strings: %s', async path => {
+it.each(['/ce-records', '/settings'])('renders labelled shell placeholders without consuming query strings: %s', async path => {
   const { router } = renderWithProviders(null, { routes, path, session: 'authenticated' });
   expect(await screen.findByText('Migration preview — feature not implemented.')).toBeVisible();
   expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
@@ -18,4 +20,10 @@ it('keeps the report preview outside the shell and leaves returnTo untouched', a
   expect(await screen.findByRole('heading', { level: 1, name: 'CE Report' })).toBeVisible();
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   expect(router.state.location.search).toBe('?returnTo=%2Fdashboard');
+});
+
+// M09: these routing/auth tests now reach the real credential page.
+beforeEach(() => {
+  vi.spyOn(credentialsApi, 'list').mockResolvedValue([]);
+  vi.spyOn(credentialsApi, 'get').mockResolvedValue(credentialFixture);
 });

@@ -1,0 +1,190 @@
+import { act, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { credentialsApi } from '../../core/api/credentials-api';
+import { dashboardApi } from '../../core/api/dashboard-api';
+import { ApiError } from '../../core/api/api-error';
+import { queryKeys } from '../../core/query/query-keys';
+import { credential, deferred } from '../../test/fixtures/api-fixtures';
+import { emptyDashboard } from '../../test/fixtures/dashboard-fixtures';
+import { renderWithProviders } from '../../test/render-with-providers';
+import { routes } from '../../app/router';
+import { CredentialsPage } from './credentials-page';
+import type { CredentialResponse } from '../../lib/dto/credentials';
+
+beforeEach(() => {
+  vi.spyOn(credentialsApi, 'list').mockResolvedValue([structuredClone(credential)]);
+  vi.spyOn(credentialsApi, 'get').mockResolvedValue(structuredClone(credential));
+});
+afterEach(() => vi.restoreAllMocks());
+const open = (path = '/credentials') => renderWithProviders(<CredentialsPage />, { path, session: 'authenticated' });
+async function fill(person: ReturnType<typeof open>['user'], root = screen, name = ' New credential ') {
+  await waitFor(() => expect(root.getByLabelText('Credential name')).toHaveFocus());
+  await person.type(root.getByLabelText('Credential name'), name);
+  await person.selectOptions(root.getByRole('combobox', { name: 'Type' }), 'LICENSE');
+  await person.type(root.getByLabelText('Issuing organization'), ' New organization ');
+  await person.type(root.getByLabelText('Expiration date'), '2028-02-29');
+  await person.type(root.getByLabelText('Renewal cycle (months)'), '24');
+  await person.type(root.getByLabelText('Required CE hours'), '12.34');
+}
+
+describe('credential list and queries', () => {
+  it('renders ordered cards, title, report links and only linked CE summaries', async () => {
+    vi.mocked(credentialsApi.list).mockResolvedValue([credential, { ...credential, id: 'early', name: 'Earlier', expirationDate: '2020-01-01' }]);
+    const { user } = open();
+    const list = await screen.findByRole('region', { name: 'Credential list' });
+    expect(within(list).getAllByRole('heading', { level: 2 }).map(item => item.textContent)).toEqual(['Earlier', credential.name]);
+    expect(document.title).toBe('Credentials — UpTrack');
+    expect(within(list).getByRole('link', { name: `Open CE Report for ${credential.name}` })).toHaveAttribute('href', `/credentials/${credential.id}/ce-report?returnTo=%2Fcredentials`);
+    await user.click(screen.getByRole('button', { name: credential.name }));
+    const drawer = await screen.findByRole('dialog', { name: 'Credential details' });
+    expect(await within(drawer).findByText('Fixture record')).toBeVisible();
+    expect(within(drawer).queryByRole('button', { name: /Add CE|Fixture record/ })).not.toBeInTheDocument();
+    expect(credentialsApi.get).toHaveBeenCalledWith(credential.id, { signal: expect.objectContaining({ aborted: false }) });
+  });
+  it('debounces trimmed search, combines filters, and Clear cancels a pending search', async () => {
+    const { user } = open();
+    await screen.findByRole('region', { name: 'Credential list' });
+    await user.type(screen.getByRole('searchbox'), ' Org ');
+    expect(credentialsApi.list).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(credentialsApi.list).toHaveBeenLastCalledWith({ search: 'Org', status: undefined, type: undefined }, { signal: expect.objectContaining({ aborted: false }) }));
+    await user.click(within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: 'Expired' }));
+    await user.click(within(screen.getByRole('group', { name: 'Type' })).getByRole('button', { name: 'License' }));
+    await waitFor(() => expect(credentialsApi.list).toHaveBeenLastCalledWith({ search: 'Org', status: 'EXPIRED', type: 'LICENSE' }, expect.anything()));
+    await user.type(screen.getByRole('searchbox'), ' pending');
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 300)); });
+    expect(screen.getByRole('searchbox')).toHaveValue('');
+    expect(credentialsApi.list).not.toHaveBeenCalledWith(expect.objectContaining({ search: 'Org  pending' }), expect.anything());
+    expect(within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+  });
+  it('shows loading then distinct empty/no-match states', async () => {
+    const gate = deferred<CredentialResponse[]>();
+    vi.mocked(credentialsApi.list).mockReturnValueOnce(gate.promise).mockResolvedValue([]);
+    const { user } = open();
+    expect(await screen.findByText('Loading credentials…')).toBeVisible();
+    await act(async () => gate.resolve([]));
+    expect(await screen.findByText('No credentials yet')).toBeVisible();
+    await user.click(within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: 'Active' }));
+    expect(await screen.findByText('No credentials match these filters')).toBeVisible();
+  });
+  it('retries initial failures and retains data after a failed background refresh', async () => {
+    vi.mocked(credentialsApi.list).mockRejectedValueOnce(new ApiError('http', 403, 'Forbidden'));
+    const { user, client } = open();
+    expect(await screen.findByText('Credentials unavailable')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('button', { name: credential.name })).toBeVisible();
+    vi.mocked(credentialsApi.list).mockRejectedValue(new ApiError('network', 0, 'Offline'));
+    await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.credentialsRoot() }); });
+    expect(await screen.findByText('Credentials may be out of date')).toBeVisible();
+    expect(screen.getByRole('button', { name: credential.name })).toBeVisible();
+  });
+  it('opens independent detail outside filters and consumes only credentialId with replacement; repeated/missing links work', async () => {
+    vi.mocked(credentialsApi.list).mockResolvedValue([]);
+    const { router, user } = open(`/credentials?other=kept&credentialId=${credential.id}#top`);
+    expect(await screen.findByRole('dialog', { name: 'Credential details' })).toBeVisible();
+    await screen.findByText('Fixture record');
+    expect(router.state.location.search).toBe('?other=kept');
+    expect(router.state.location.hash).toBe('#top');
+    expect(router.state.historyAction).toBe('REPLACE');
+    await user.click(screen.getByRole('button', { name: 'Close drawer' }));
+    vi.mocked(credentialsApi.get).mockRejectedValue(new ApiError('http', 404, 'Credential not found'));
+    await act(async () => { await router.navigate('/credentials?other=kept&credentialId=missing#top'); });
+    expect(await screen.findByText('Credential unavailable')).toBeVisible();
+    expect(router.state.location.search).toBe('?other=kept');
+    vi.mocked(credentialsApi.get).mockResolvedValue(credential);
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Fixture record')).toBeVisible();
+  });
+});
+
+describe('credential forms and deletion', () => {
+  it('shows accessible invalid-field errors without sending a request, and resets on cancel', async () => {
+    const create = vi.spyOn(credentialsApi, 'create');
+    const { user } = open();
+    await user.click(await screen.findByRole('button', { name: 'Add Credential' }));
+    await user.click(screen.getByRole('button', { name: 'Save Credential' }));
+    expect(await screen.findAllByText('This field is required.')).toHaveLength(3);
+    expect(screen.getByLabelText('Credential name')).toHaveAttribute('aria-invalid', 'true');
+    expect(create).not.toHaveBeenCalled();
+    await user.type(screen.getByLabelText('Credential name'), 'Discard');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Add Credential' }));
+    expect(screen.getByLabelText('Credential name')).toHaveValue('');
+  });
+  it('retains values on save failure, submits normalized values once, blocks saving dismissal and invalidates dashboard', async () => {
+    const gate = deferred<CredentialResponse>();
+    const create = vi.spyOn(credentialsApi, 'create').mockRejectedValueOnce(new ApiError('http', 400, 'Server validation')).mockReturnValueOnce(gate.promise);
+    const { user, client } = open();
+    client.setQueryData(queryKeys.dashboard(), emptyDashboard);
+    await user.click(await screen.findByRole('button', { name: 'Add Credential' }));
+    await fill(user);
+    await user.click(screen.getByRole('button', { name: 'Save Credential' }));
+    expect(await screen.findByText('Server validation')).toBeVisible();
+    expect(screen.getByLabelText('Credential name')).toHaveValue(' New credential ');
+    await user.click(screen.getByRole('button', { name: 'Save Credential' }));
+    expect(await screen.findByRole('button', { name: 'Saving…' })).toBeDisabled();
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.getByRole('dialog', { name: 'Add credential' })).toBeVisible();
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(create).toHaveBeenLastCalledWith({ name: 'New credential', type: 'LICENSE', issuingOrganization: 'New organization', expirationDate: '2028-02-29', renewalCycleMonths: 24, requiredCEHours: 12.34 });
+    await act(async () => gate.resolve({ ...credential, name: 'New credential' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Add credential' })).not.toBeInTheDocument());
+    expect(client.getQueryState(queryKeys.dashboard())?.isInvalidated).toBe(true);
+  });
+  it('edits inline, cancels without writing, and retains failed edit values until successful save', async () => {
+    const update = vi.spyOn(credentialsApi, 'update').mockRejectedValueOnce(new ApiError('http', 404, 'Credential unavailable')).mockImplementation(async (_id, request) => ({ ...credential, ...request }));
+    const { user } = open(`/credentials?credentialId=${credential.id}`);
+    await user.click(await screen.findByRole('button', { name: 'Edit Credential' }));
+    await user.clear(screen.getByLabelText('Credential name'));
+    await user.type(screen.getByLabelText('Credential name'), 'Discard');
+    await user.click(screen.getByRole('button', { name: 'Cancel Edit' }));
+    expect(update).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Edit Credential' }));
+    expect(screen.getByLabelText('Credential name')).toHaveValue(credential.name);
+    await user.clear(screen.getByLabelText('Credential name'));
+    await user.type(screen.getByLabelText('Credential name'), 'Edited');
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Credential unavailable');
+    expect(screen.getByLabelText('Credential name')).toHaveValue('Edited');
+    await user.click(screen.getByRole('button', { name: 'Cancel Edit' }));
+    await user.click(screen.getByRole('button', { name: 'Edit Credential' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Credential name')).toHaveValue(credential.name);
+    await user.clear(screen.getByLabelText('Credential name'));
+    await user.type(screen.getByLabelText('Credential name'), 'Edited');
+    vi.mocked(credentialsApi.get).mockResolvedValue({ ...credential, name: 'Edited' });
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+    expect(await screen.findByRole('heading', { name: 'Edited' })).toBeVisible();
+  });
+  it('warns about cascading CE deletion, keeps errors in confirmation, then evicts dependent caches', async () => {
+    const remove = vi.spyOn(credentialsApi, 'delete').mockRejectedValueOnce(new ApiError('http', 403, 'Cannot delete')).mockResolvedValueOnce();
+    const { user, client } = open(`/credentials?credentialId=${credential.id}`);
+    client.setQueryData(queryKeys.ceRecord('linked'), { title: 'linked' });
+    client.setQueryData(queryKeys.credentialCEReport(credential.id), { report: true });
+    await user.click(await screen.findByRole('button', { name: 'Delete Credential' }));
+    const confirm = screen.getByRole('dialog', { name: 'Delete credential?' });
+    expect(within(confirm).getByText(/any linked CE records/)).toBeVisible();
+    await user.click(within(confirm).getByRole('button', { name: 'Delete Credential' }));
+    expect(await within(confirm).findByRole('alert')).toHaveTextContent('Cannot delete');
+    vi.mocked(credentialsApi.list).mockResolvedValue([]);
+    await user.click(within(confirm).getByRole('button', { name: 'Delete Credential' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(client.getQueryData(queryKeys.ceRecord('linked'))).toBeUndefined();
+    expect(client.getQueryData(queryKeys.credentialCEReport(credential.id))).toBeUndefined();
+    expect(await screen.findByText('No credentials yet')).toBeVisible();
+    expect(remove).toHaveBeenCalledTimes(2);
+  });
+  it('dashboard reuses the same create form and refreshes its dashboard query without a list request', async () => {
+    const get = vi.spyOn(dashboardApi, 'get').mockResolvedValue(emptyDashboard);
+    vi.spyOn(credentialsApi, 'create').mockResolvedValue(credential);
+    const { user } = renderWithProviders(null, { routes, path: '/dashboard', session: 'authenticated' });
+    await screen.findByText('No credentials yet');
+    await user.click(screen.getByRole('button', { name: 'Add Credential' }));
+    await fill(user);
+    await user.click(screen.getByRole('button', { name: 'Save Credential' }));
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
+    expect(credentialsApi.list).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Add CE Record' })).not.toBeInTheDocument();
+  });
+});

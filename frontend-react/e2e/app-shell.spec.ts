@@ -1,6 +1,6 @@
-import { test, expect, capture, mockDashboard, nextFocusableKey, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, capture, mockCredentialReads, mockDashboard, nextFocusableKey, noOverflow, setTheme, signIn } from './helpers';
 
-test.beforeEach(async ({ page }) => { await signIn(page); });
+test.beforeEach(async ({ page }) => { await signIn(page); await mockCredentialReads(page); });
 
 test('desktop geometry, persistence, navigation, account menu and independent scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -23,7 +23,7 @@ test('desktop geometry, persistence, navigation, account menu and independent sc
   await expect(sidebar).toHaveCSS('width', '88px');
   for (const name of ['Credentials', 'CE Records', 'Dashboard']) {
     await page.getByRole('link', { name, exact: true }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(name === 'Dashboard' ? 'Live compliance overview' : name);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(name === 'Dashboard' ? 'Live compliance overview' : name === 'Credentials' ? 'Live credential tracking' : name);
     await expect(page.getByRole('link', { name, exact: true })).toHaveAttribute('aria-current', 'page');
   }
   await page.getByRole('button', { name: 'Open account menu' }).focus();
@@ -108,7 +108,7 @@ test('767/768/769 breakpoint transitions preserve desktop collapse and remove cl
 
 test('skip link and keyboard-visible focus reach semantic main content', async ({ page, browserName }) => {
   await page.goto('/credentials');
-  await expect(page.getByRole('heading', { level: 1, name: 'Credentials' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Live credential tracking' })).toBeVisible();
   await page.keyboard.press(nextFocusableKey(browserName));
   await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused();
   await page.keyboard.press('Enter');
@@ -124,8 +124,8 @@ test('exact redirects, query preservation and standalone report route', async ({
     await expect(page).toHaveURL(new RegExp(`${target}$`));
   }
   await page.goto('/credentials?credentialId=preview');
-  await expect(page).toHaveURL(/credentialId=preview$/);
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Credential details' })).toBeVisible();
+  await expect(page).toHaveURL(/\/credentials$/);
   await page.goto('/credentials/preview/ce-report?returnTo=%2Fdashboard');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('CE Report');
   await expect(page.getByRole('navigation')).toHaveCount(0);

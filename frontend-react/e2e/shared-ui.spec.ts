@@ -1,4 +1,4 @@
-import { test, expect, activateWithKeyboard, capture, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, activateWithKeyboard, expectOverlayClosed, capture, noOverflow, setTheme, signIn } from './helpers';
 
 test.beforeEach(async ({ page }) => { await signIn(page); });
 
@@ -41,8 +41,7 @@ for (const theme of ['light', 'dark'] as const) {
         if (close === 'escape') { await capture(page, `modal-${theme}-${width}`); await page.keyboard.press('Escape'); }
         else if (close === 'close') await page.getByRole('button', { name: 'Close', exact: true }).click();
         else await page.mouse.click(3, 3);
-        await expect(dialog).toHaveCount(0);
-        await expect(trigger).toBeFocused();
+        await expectOverlayClosed(page, dialog, trigger);
       }
       const drawerTrigger = page.getByRole('button', { name: 'Open drawer', exact: true });
       for (const close of ['escape', 'close', 'backdrop']) {
@@ -61,19 +60,20 @@ for (const theme of ['light', 'dark'] as const) {
           // backdrop handler directly, while real backdrop clicks run above.
           await page.locator('[data-overlay-layer="drawer"] > div').last().dispatchEvent('click');
         }
-        await expect(drawer).toHaveCount(0);
-        await expect(drawerTrigger).toBeFocused();
+        await expectOverlayClosed(page, drawer, drawerTrigger);
       }
-      await page.getByRole('button', { name: 'Open empty drawer' }).click();
+      const emptyDrawerTrigger = page.getByRole('button', { name: 'Open empty drawer' });
+      await activateWithKeyboard(page, emptyDrawerTrigger);
       await expect(page.getByRole('button', { name: 'Close drawer' })).toBeFocused();
       await page.keyboard.press('Tab');
       await expect(page.getByRole('button', { name: 'Close drawer' })).toBeFocused();
       await page.keyboard.press('Escape');
+      await expectOverlayClosed(page, page.getByRole('dialog', { name: 'Empty drawer preview' }), emptyDrawerTrigger);
       const confirmTrigger = page.getByRole('button', { name: 'Open confirmation' });
       await activateWithKeyboard(page, confirmTrigger);
       await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-      await expect(confirmTrigger).toBeFocused();
+      await expectOverlayClosed(page, page.getByRole('dialog', { name: 'Confirm preview action?' }), confirmTrigger);
       await activateWithKeyboard(page, confirmTrigger);
       await page.getByRole('button', { name: 'Confirm', exact: true }).click();
       await expect(page.getByRole('status').filter({ hasText: 'Preview confirmed' })).toBeVisible();

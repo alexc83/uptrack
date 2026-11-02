@@ -1,5 +1,5 @@
 import type { Page, Route } from '@playwright/test';
-import { test, expect, allowApi, capture, e2eToken, e2eUser, mockDashboard, noOverflow, signIn } from './helpers';
+import { test, expect, allowApi, capture, e2eToken, e2eUser, mockCredentialReads, mockDashboard, noOverflow, signIn } from './helpers';
 
 // All traffic below is mocked at the browser; the default fixture still fails the test on any undeclared /api call.
 const origin = 'http://localhost:5173';
@@ -21,7 +21,7 @@ async function mockLogin(page: Page, seen: Array<{ authorization: string | undef
 const dialogName = (name: string) => ({ name });
 
 // M08: /dashboard is the real page and makes one GET /api/dashboard; it is mocked (empty account) for every auth scenario.
-test.beforeEach(async ({ page }) => { await mockDashboard(page); });
+test.beforeEach(async ({ page }) => { await mockDashboard(page); await mockCredentialReads(page); });
 
 test('guest deep link opens the login dialog with a validated returnTo, then restores the page after login', async ({ page }) => {
   const seen = await mockLogin(page);
@@ -33,7 +33,8 @@ test('guest deep link opens the login dialog with a validated returnTo, then res
   await dialog.getByLabel('Email').fill('test.user@example.test');
   await dialog.getByLabel('Password').fill('secret');
   await dialog.getByLabel('Password').press('Enter');
-  await expect(page).toHaveURL(/\/credentials\?credentialId=abc#top$/);
+  await expect(page.getByRole('dialog', { name: 'Credential details' })).toBeVisible();
+  await expect(page).toHaveURL(/\/credentials#top$/);
   await expect(page.getByTestId('desktop-sidebar')).toBeVisible();
   expect(seen).toHaveLength(1);
   expect(seen[0]?.authorization, 'login must never carry a bearer token').toBeUndefined();
@@ -124,7 +125,8 @@ test('an authenticated user is redirected away from / and legacy URLs keep their
   await page.goto('/');
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.goto('/app/credentials?credentialId=preview');
-  await expect(page).toHaveURL(/\/credentials\?credentialId=preview$/);
+  await expect(page.getByRole('dialog', { name: 'Credential details' })).toBeVisible();
+  await expect(page).toHaveURL(/\/credentials$/);
   await page.goto('/credentials/preview/ce-report?returnTo=%2Fcredentials');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('CE Report');
   await expect(page.getByRole('navigation')).toHaveCount(0);
