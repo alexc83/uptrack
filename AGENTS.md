@@ -38,3 +38,11 @@ For React milestones after M03: `npm run typecheck`, `npm run lint`, `npm run te
 
 ## Cross-agent handoff
 Make all decisions durable in specs, tracker and verification files; do not depend on chat memory or agent-specific plans. At handoff report active step, branch, spec status, exact tests run, known issues, next action.
+
+
+## Git branch lifecycle (canonical)
+- Until M14, `main` is the stable integration branch and may contain legacy Angular and accepted React milestones. Integration is not deployment approval or authorization to switch production traffic; production cutover requires separate M14 approval.
+- Create one short-lived milestone branch from current main. Implement/test there; obtain milestone acceptance before integration. No long-lived React migration branch is required.
+- Prefer `git merge --ff-only`. If fast-forward is impossible, stop for an owner decision. Never automatically squash, rebase, reset, force-push or rewrite historical commits.
+- Commit, merge, push and branch deletion require owner authorization; an explicit authorization may cover the named sequence. After normal push, verify local main, origin/main and remote HEAD agree, ahead/behind is 0/0, and feature commits are ancestors of main.
+- Then safely delete the merged local milestone branch with `git branch -d`. Delete its remote counterpart only if it exists, is confirmed merged and owner authorization covers deletion. Prune obsolete tracking references as appropriate. Preserve unmerged, uncertain, active and Dependabot branches. Record actual integration and cleanup in the final handoff.
