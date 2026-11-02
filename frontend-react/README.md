@@ -21,6 +21,11 @@ The React frontend for UpTrack, replacing the legacy Angular 21 + PrimeNG client
 - `npm run lint` — run ESLint with JSX accessibility rules
 - `npm run test` — run Vitest unit and smoke tests in jsdom
 - `npm run e2e` — run Playwright E2E tests against local dev server
+- `npm run e2e:functional` — functional specs on Edge, Chrome, Firefox and WebKit; `e2e:edge`, `e2e:chrome`, `e2e:firefox`, `e2e:webkit` run one browser
+- `npm run e2e:visual` — Edge/macOS screenshot comparison only (never updates goldens)
+- `npm run e2e:install` / `e2e:install:linux` — install Playwright Firefox + WebKit (Linux adds Chromium and system deps); `npm run e2e:chromium-fallback` runs bundled Chromium + Firefox + WebKit where Edge/Chrome are unavailable (not Edge/Chrome coverage)
+- `npm run verify:local` — owner's full local sequence (typecheck, lint, unit, build, all Playwright projects)
+- Policy, targeted-run examples and reporting rules: `../context/testing-workflow.md`
 
 ## Milestone Status
 Established during **M03 — React Project Scaffold & Foundation**.
