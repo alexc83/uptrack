@@ -1,4 +1,5 @@
 import { test, expect, type Route } from '@playwright/test';
+import { startLocalServer } from './local-server';
 
 type FixtureWindow = Window & { cancelFixture?: () => void; replaceFixtureAuth?: () => void };
 const clientModule = '/src/core/api/api-fetch.ts';
@@ -51,25 +52,29 @@ test('native Fetch serializes JSON, query values and owned headers', async ({ pa
 });
 
 test('native FormData obtains its own boundary and uses the file part convention', async ({ page }) => {
-  let observed = false;
-  await page.route('**/api/uploads/certificates', async route => {
-    const request = route.request();
-    expect(request.method()).toBe('POST');
-    expect(request.headers()['content-type']).toMatch(/^multipart\/form-data; boundary=/);
-    const body = request.postDataBuffer()?.toString('utf8');
+  // A real loopback server records the bytes the browser actually transmits (engine-independent).
+  const server = await startLocalServer((_request, response) => {
+    // WebKit applies CORS to a URL-overridden request; the allow-origin header affects only response readability.
+    response.writeHead(201, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'http://localhost:5173' });
+    response.end(JSON.stringify({ resourceType: 'raw', originalFilename: 'fixture.pdf' }));
+  });
+  try {
+    await page.route('**/api/uploads/certificates', route => route.continue({ url: `${server.origin}/uploads/certificates` }));
+    const result = await page.evaluate(async modulePath => {
+      const { apiFetch } = await import(modulePath) as typeof import('../src/core/api/api-fetch');
+      const formData = new FormData();
+      formData.append('file', new File(['fixture certificate bytes'], 'fixture.pdf', { type: 'application/pdf' }));
+      return apiFetch('/uploads/certificates', { method: 'POST', formData, headers: { 'Content-Type': 'incorrect' } });
+    }, clientModule);
+    expect(result).toEqual({ resourceType: 'raw', originalFilename: 'fixture.pdf' });
+    expect(server.requests).toHaveLength(1);
+    const [received] = server.requests;
+    expect(received!.method).toBe('POST');
+    expect(received!.headers['content-type']).toMatch(/^multipart\/form-data; boundary=/);
+    const body = received!.body.toString('utf8');
     expect(body).toContain('name="file"; filename="fixture.pdf"');
     expect(body).toContain('fixture certificate bytes');
-    observed = true;
-    await route.fulfill({ status: 201, json: { resourceType: 'raw', originalFilename: 'fixture.pdf' } });
-  });
-  const result = await page.evaluate(async modulePath => {
-    const { apiFetch } = await import(modulePath) as typeof import('../src/core/api/api-fetch');
-    const formData = new FormData();
-    formData.append('file', new File(['fixture certificate bytes'], 'fixture.pdf', { type: 'application/pdf' }));
-    return apiFetch('/uploads/certificates', { method: 'POST', formData, headers: { 'Content-Type': 'incorrect' } });
-  }, clientModule);
-  expect(result).toEqual({ resourceType: 'raw', originalFilename: 'fixture.pdf' });
-  expect(observed).toBe(true);
+  } finally { await server.close(); }
 });
 
 test('native Fetch distinguishes expected 204, unexpected empty JSON and malformed successful JSON', async ({ page }) => {
@@ -129,19 +134,22 @@ test('native pre-abort and in-flight abort preserve cancellation instead of netw
     try { await apiFetch('/slow', { signal: controller.signal }); return { unexpected: true }; }
     catch (error) {
       const failure = error as Error;
-      return { preAbortIdentity, name: failure.name, sameReason: error === controller.signal.reason, apiError: 'kind' in failure };
+      return { preAbortIdentity, name: failure.name, signalAborted: controller.signal.aborted, apiError: 'kind' in failure };
     }
   }, clientModule);
   const route = await arrived;
   await page.evaluate(() => (window as FixtureWindow).cancelFixture?.());
-  expect(await pending).toEqual({ preAbortIdentity: true, name: 'AbortError', sameReason: true, apiError: false });
+  expect(await pending).toEqual({ preAbortIdentity: true, name: 'AbortError', signalAborted: true, apiError: false });
   await route.abort().catch(() => undefined);
 });
 
 test('origin/path overrides and API redirects cannot send bearer credentials elsewhere', async ({ page }) => {
   const externalRequests: string[] = [];
   page.on('request', request => { if (new URL(request.url()).origin !== 'http://localhost:5173') externalRequests.push(request.url()); });
-  await page.route('**/api/redirect', route => route.fulfill({ status: 302, headers: { Location: 'https://outside.fixture.invalid/' } }));
+  // Genuine HTTP redirect: the API answers 302 pointing at a second loopback origin that must never be contacted.
+  const destination = await startLocalServer((_request, response) => { response.writeHead(200); response.end('should never be reached'); });
+  const api = await startLocalServer((_request, response) => { response.writeHead(302, { Location: `${destination.origin}/leak` }); response.end(); });
+  await page.route('**/api/redirect', route => route.continue({ url: `${api.origin}/redirect` }));
   const result = await page.evaluate(async ({ clientModule, authModule }) => {
     const { apiFetch } = await import(clientModule) as typeof import('../src/core/api/api-fetch');
     const { registerApiAuth } = await import(authModule) as typeof import('../src/core/api/api-auth');
@@ -157,6 +165,9 @@ test('origin/path overrides and API redirects cannot send bearer credentials els
   }, { clientModule, authModule });
   expect(result).toEqual(['TypeError', 'TypeError', 'TypeError', { kind: 'network', status: 0 }]);
   expect(externalRequests).toEqual([]);
+  expect(api.requests).toHaveLength(1);
+  expect(destination.requests).toEqual([]); // the redirect target (and any bearer token) was never contacted
+  await Promise.all([api.close(), destination.close()]);
 });
 
 test('a delayed native 401 cannot notify a replacement adapter/session', async ({ page }) => {

@@ -10,7 +10,17 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:functional": "playwright test --project=msedge --project=chrome --project=firefox --project=webkit",
+    "e2e:edge": "playwright test --project=msedge",
+    "e2e:chrome": "playwright test --project=chrome",
+    "e2e:firefox": "playwright test --project=firefox",
+    "e2e:webkit": "playwright test --project=webkit",
+    "e2e:visual": "playwright test --project=visual-edge",
+    "e2e:chromium-fallback": "E2E_CHROMIUM_FALLBACK=1 playwright test --project=chromium --project=firefox --project=webkit",
+    "e2e:install": "playwright install firefox webkit",
+    "e2e:install:linux": "playwright install --with-deps chromium firefox webkit",
+    "verify:local": "npm run typecheck && npm run lint && npm run test && npm run build && npm run e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",
