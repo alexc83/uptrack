@@ -1,10 +1,12 @@
 # Current Feature
 
-## Current — M09 Credential CRUD checkpoint
+## Current — M09 accepted
 
-M09 automated acceptance **PASSED** (owner: unit **490/490**, Playwright **504/504** including Edge/Chrome/Firefox/WebKit and Edge visuals, typecheck/lint/production build PASS, `npm audit --omit=dev`: **0 vulnerabilities**). Branch `feature/react-credential-crud`; feature checkpoint `3b2a6c1a35754a4d551a49bd5ddd4e0717dee653`. **Live-backend acceptance and integration remain pending; M09 is not merged or complete.** Two checkpoint commits authorized; push, merge, deployment, database changes and M10 are not authorized.
+M09 Credential CRUD is **ACCEPTED by the owner (2026-11-02)**. Owner automated evidence: unit **490/490**, Playwright **504/504** including all four functional browsers and unchanged Edge/macOS visuals, typecheck/lint/production build PASS, production audit **0 vulnerabilities**. Authorized read-only live evidence: **245 + 11 = 256 recorded checks** passed against the verified local `uptrack_migration_test` target. These are assertion/field checks, not 256 separate test cases. Existing MockMvc/H2 integration evidence was reviewed, not rerun.
 
-Final owner evidence and prepared read-only live checklist: `migration/verification/m09-report.md`. This pass reviewed/staged/committed only approved M09 files; no backend requests or DB operations. Earlier status sections below are historical.
+The owner explicitly accepts deferring live React → Spring → PostgreSQL create/edit/delete acceptance to [M09-W01](migration/follow-ups/m09-w01-postgresql-crud-acceptance.md). Those writes are **NOT TESTED live** and are not implied by milestone acceptance. M10 CE workflows and M11 report rendering remain deferred. No database mutation, deployment or M10 work is authorized by this acceptance.
+
+Implementation `3b2a6c1a35754a4d551a49bd5ddd4e0717dee653`; checkpoint documentation `7b8873e342a315207dc60bc3aa1700cb5a1fc657`. Owner authorized acceptance documentation, fast-forward integration, normal push and safe merged-M09 branch cleanup. M10 remains DRAFT / not started; no implementation authorization. Canonical branch policy: [AGENTS.md](../AGENTS.md#git-branch-lifecycle-canonical). Earlier records below are historical and superseded.
 
 ## Status
 

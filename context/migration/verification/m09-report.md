@@ -1,10 +1,34 @@
 # M09 Credential CRUD — implementation and targeted verification
 
-**Status: AUTOMATED ACCEPTANCE PASSED — checkpoint; live-backend acceptance and integration PENDING. Not merged or complete.**
+**Status: OWNER ACCEPTED — automated and read-only live acceptance passed; PostgreSQL live CRUD writes explicitly deferred to M09-W01. Integration authorized.**
 Agent: OpenAI Codex. Date: 2026-11-02. Branch: `feature/react-credential-crud`.
 Initial baseline/HEAD/main/origin/main: `24ab6c0b49d3569d529c2e30017c1fff5e87b369` (no commits made).
 Owner accepted the planning report and authorized implementation/spec promotion, the branch override, validation/storage limits, M10/M11 deferrals, background-data retention, targeted tests and minimal existing-test changes. No integration permission.
 
+
+
+## Final owner acceptance and live evidence — 2026-11-02
+
+M09 Credential CRUD is **ACCEPTED by the owner (2026-11-02)**. Owner automated evidence: unit **490/490**, Playwright **504/504** including all four functional browsers and unchanged Edge/macOS visuals, typecheck/lint/production build PASS, production audit **0 vulnerabilities**. Authorized read-only live evidence: **245 + 11 = 256 recorded checks** passed against the verified local `uptrack_migration_test` target. These are assertion/field checks, not 256 separate test cases. Existing MockMvc/H2 integration evidence was reviewed, not rerun.
+
+The owner explicitly accepts deferring live React → Spring → PostgreSQL create/edit/delete acceptance to [M09-W01](../follow-ups/m09-w01-postgresql-crud-acceptance.md). Those writes are **NOT TESTED live** and are not implied by milestone acceptance. M10 CE workflows and M11 report rendering remain deferred. No database mutation, deployment or M10 work is authorized by this acceptance.
+
+### Read-only live target and results
+Before authentication, identified UpTrack backend PID 63729 on port 18080 in the repository backend directory. Effective JDBC URL `jdbc:postgresql://localhost:5432/uptrack_migration_test`, username `uptrack_m01`. Ten backend TCP client ports correlated with PostgreSQL JDBC sessions in that database/role. Frontend PID 63344 on 5174 proxies to `http://localhost:18080`, API base `/api`. Neither the hosted backend nor unrelated application on 8080 was contacted. Existing processes were not restarted or terminated.
+
+Fresh API counts: `demo-main@example.test` 4 (2 ACTIVE, 1 EXPIRING_SOON, 1 EXPIRED); `demo-empty@example.test` 0; `demo-second@example.test` 1 ACTIVE. UI matched fresh API fields/statuses/CE progress, dates/renewal and expiration ordering. Name/organization search, combined filters, Clear, empty/no-match, independently fetched details/linked CE summaries, consumed/repeated deep links preserving unrelated query/hash, Dashboard links, keyboard Add Credential, blur validation and cancellation passed. The focused Dashboard-link follow-up waited for panel data before checking links; both populated accounts passed repeated navigation and closing, and empty account correctly had none.
+
+Loading and error/Retry were tested using browser-only delayed/503 GET interception, not naturally occurring backend outages. A real main-account response was held across logout/login to empty account then released: no prior-account credential titles painted. Further switching among all accounts matched fresh data. No credential/CE write requests, unexpected API calls or unexpected console/page errors. Before/after row-content fingerprints matched for users 5, credentials 13 and ce_records 20. No DB writes, migrations or seeding.
+
+Navigation timeout recovery: original 10-second load timeout was not reproduced; historical cause remains undetermined. Fresh Edge contexts rendered React in 134–172 ms and completed document load. Only temporary acceptance scripts changed: bounded 30-second navigation, DOMContentLoaded plus rendered-heading assertions, destination-page readiness and overlay cleanup frames. Temporary internal-router probes were replaced with normal URL navigation; a diagnostic-only glob matching source module paths was restricted to actual `/api` requests. No production code or committed tests changed to recover acceptance. The read-only script passed 245 recorded checks and a focused Dashboard-link run passed 11 (both exit 0). These include repeated field/safety assertions, not 256 independent cases. Temporary evidence `/private/tmp/uptrack-m09-live-evidence/{results.json,dashboard-links.json,read-only-report.md}` is local-only; this committed summary is the durable evidence.
+
+### Backend contract evidence and explicit deferral
+Reviewed existing Surefire results: CredentialControllerIntegrationTest **12/12**, CrossUserAuthorizationIntegrationTest **47/47**, zero failures/errors/skips; not rerun during acceptance. Source uses MockMvc with real services/repositories and test-profile H2 in MySQL compatibility mode. Covered contracts include create 201, list/detail/update 200, delete 204 then 404, status/CE aggregates, unauthenticated 401, foreign ownership denial without victim mutation, and owner-scoped CE cascade.
+
+Those tests do not establish live React → Spring → PostgreSQL mutations or PostgreSQL-specific persistence behavior. The owner explicitly accepts M09 with that gap deferred to M09-W01; separate authorization is required before provisioning or writes. This supersedes earlier text making live-write evidence an integration gate. No claim of live create/edit/delete verification.
+
+### Acceptance and Git authorization
+Owner authorized final documentation, fast-forward integration, normal push and safe merged-feature-branch cleanup. Baseline main/origin/main `24ab6c0b49d3569d529c2e30017c1fff5e87b369`; accepted implementation `3b2a6c1a35754a4d551a49bd5ddd4e0717dee653`, checkpoint docs `7b8873e342a315207dc60bc3aa1700cb5a1fc657`. Final integration follows this acceptance record; no full regression rerun for documentation changes. Theme API fixture, Vitest overlay teardown and Playwright focus-cleanup issues are RESOLVED by owner final 490/490 and 504/504 results. No screenshot baseline updates. Historical statuses and restrictions below are superseded by this final acceptance. M10/M11 boundaries remain unchanged.
 
 ## Final owner automated acceptance and checkpoint — 2026-11-02
 

@@ -1,6 +1,6 @@
 # UpTrack React Migration — Master Plan
 
-Status: M01, S01, M02, S02, M03, M04, M05, M06, M07 and M08 are merged and pushed (M07: `8e9df82`, `efc5011`; M08: `d215667`, `054e7af`, `b150343`, fast-forwarded; main and origin/main were at `b1503435bd45e66b1e793f5c191042e56b7bd81a` at M08 merge). Verification and limitations are recorded in `verification/m07-report.md` and `verification/m08-report.md`. Current: M09 READY, owner automated acceptance passed (490/490 unit; 504/504 browser/visual), checkpoint on `feature/react-credential-crud` (`3b2a6c1a35754a4d551a49bd5ddd4e0717dee653`); live acceptance and integration pending. The externally hosted backend remains suspended and must not be contacted or deployed without separate authorization.
+Status: M01–M09 and S01/S02 are owner-accepted. M09 automated and read-only live acceptance passed; live PostgreSQL CRUD writes are explicitly deferred to M09-W01. M09 is authorized for fast-forward integration and normal push. See `verification/m09-report.md`. Hosted backend remains suspended; no deployment or cutover authorization.
 
 ## Objective
 Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript + Flowbite React + Tailwind CSS 4 frontend while preserving all user-visible behavior and existing Spring Boot APIs. This is an AI-agent refactoring experiment, not a portfolio rewrite.
@@ -20,6 +20,10 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 5. Check measured behavior against Angular and backend, not merely screenshots or agent assertions.
 6. Fail transparently: pass/fail/not-run for every verification; preserve failures.
 7. Plan all steps now; complete detailed spec for the next step only after dependency review.
+
+## Branch workflow
+
+Canonical policy: [AGENTS.md — Git branch lifecycle](../../AGENTS.md#git-branch-lifecycle-canonical). Main is the stable integration branch until M14; integration does not authorize production cutover.
 
 ## Milestones
 - **M01** Existing-app audit and baseline — `chore/react-audit` (human override: work done on `chore/react-migration-planning`); prerequisite: none. Verified 2026-10-31.
@@ -57,7 +61,7 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 - Human approves commit, merge and branch deletion separately; log hash/status after actions.
 
 ## Specification approach
-M01–M08 and S01/S02 are completed and merged. M09 is READY with automated acceptance passed and checkpointed pending live acceptance/integration; M10–M14 remain DRAFT outlines. Before each milestone, AI performs read-only source inspection and expands that spec to READY with endpoint contracts, behavior matrix, tests and exact acceptance criteria. Human approves READY before code changes. Never rewrite acceptance criteria merely to match generated code; request a change decision.
+M01–M09 and S01/S02 are accepted; M09 live-write evidence is deferred by explicit owner decision, tracked in `follow-ups/m09-w01-postgresql-crud-acceptance.md`. M10–M14 remain DRAFT outlines. Before each milestone, AI performs read-only source inspection and expands that spec to READY with endpoint contracts, behavior matrix, tests and exact acceptance criteria. Human approves READY before code changes. Never rewrite acceptance criteria merely to match generated code; request a change decision.
 
 ## Source-of-truth precedence
 Direct user request > `AGENTS.md` project workflow > approved active spec > `context/migration/architecture.md` > actual source code/config for observed behavior > README/legacy docs. When these disagree, document the discrepancy; do not guess.

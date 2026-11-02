@@ -1,9 +1,9 @@
 # M09 — Credential CRUD
 
-**Status: READY — implemented; owner automated acceptance PASSED; live acceptance/integration pending.**
+**Status: ACCEPTED — owner automated and read-only live acceptance passed; live PostgreSQL CRUD writes explicitly deferred to M09-W01.**
 **Branch:** `feature/react-credential-crud` (owner-approved replacement for outline branch).
 **Baseline:** main = origin/main = 24ab6c0b49d3569d529c2e30017c1fff5e87b369; M08 and T01 integrated.
-Only two M09 checkpoint commits are owner-authorized (feature + documentation). Push, merge, deployment, backend/Angular/database changes and M10 remain unauthorized.
+Owner authorized final documentation, fast-forward integration into main, normal push and safe merged-M09 branch cleanup. Deployment, backend/Angular/database changes and M10 remain unauthorized. See [M09-W01](../follow-ups/m09-w01-postgresql-crud-acceptance.md) for the explicitly deferred live-write follow-up; acceptance does not claim those writes were tested.
 
 ## Approved scope and source audit
 Angular references: features/credentials (page, form/dialog, utilities/styles), credential-detail-drawer and container, drawer.mappers, dashboard helpers, credential.service. Backend references: CredentialController, CredentialRequestDto, CredentialResponseDto, CredentialServiceImpl, Credential entity and GlobalExceptionHandler. Existing React M05/M06 APIs, query/session infrastructure and M08 dashboard are reused unchanged.
