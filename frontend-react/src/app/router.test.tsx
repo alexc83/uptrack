@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 import { routes } from './router';
 import { renderWithProviders } from '../test/render-with-providers';
 
-it.each(['/dashboard', '/credentials?credentialId=preview', '/ce-records', '/settings'])('renders labelled shell placeholders without consuming query strings: %s', async path => {
+it.each(['/credentials?credentialId=preview', '/ce-records', '/settings'])('renders labelled shell placeholders without consuming query strings: %s', async path => {
   const { router } = renderWithProviders(null, { routes, path, session: 'authenticated' });
   expect(await screen.findByText('Migration preview — feature not implemented.')).toBeVisible();
   expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();

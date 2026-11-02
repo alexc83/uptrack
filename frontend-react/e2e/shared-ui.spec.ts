@@ -7,7 +7,7 @@ for (const theme of ['light', 'dark'] as const) {
     test(`shared UI ${theme} ${width}: form associations, states, modals and drawers`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
       await setTheme(page, theme);
-      await page.goto('/dashboard');
+      await page.goto('/settings');
       await expect(page.getByRole('region', { name: 'Shared UI preview' })).toBeVisible();
       await noOverflow(page);
       const text = page.getByRole('textbox', { name: 'Example text' });
@@ -82,7 +82,7 @@ for (const theme of ['light', 'dark'] as const) {
 }
 
 test('nested dialog owns Escape and focus while drawer retains isolation and scroll lock', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('/settings');
   const trigger = page.getByRole('button', { name: 'Open drawer', exact: true });
   await trigger.click();
   const nested = page.getByRole('button', { name: 'Open nested modal' });

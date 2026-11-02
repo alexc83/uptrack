@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import type { Route } from '@playwright/test';
-import { test, expect, allowApi, capture, e2eToken, e2eUser, evidenceDirectory, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, allowApi, capture, e2eToken, e2eUser, evidenceDirectory, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
 
 const hero = 'Track credentials. Stay compliant. Own your career.';
 const viewports = [375, 640, 768, 769, 920, 1080, 1280] as const;
@@ -112,6 +112,7 @@ test('query-driven dialog keeps returnTo on close and restores it after mocked l
 
 test('authenticated visitor is redirected to the dashboard without a landing flash', async ({ page }) => {
   await signIn(page);
+  await mockDashboard(page);
   await page.goto('/');
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole('heading', { level: 1, name: hero })).toHaveCount(0);

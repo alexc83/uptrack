@@ -1,5 +1,5 @@
 import type { Page, Route } from '@playwright/test';
-import { test, expect, allowApi, capture, e2eToken, e2eUser, noOverflow, signIn } from './helpers';
+import { test, expect, allowApi, capture, e2eToken, e2eUser, mockDashboard, noOverflow, signIn } from './helpers';
 
 // All traffic below is mocked at the browser; the default fixture still fails the test on any undeclared /api call.
 const origin = 'http://localhost:5173';
@@ -19,6 +19,9 @@ async function mockLogin(page: Page, seen: Array<{ authorization: string | undef
   return seen;
 }
 const dialogName = (name: string) => ({ name });
+
+// M08: /dashboard is the real page and makes one GET /api/dashboard; it is mocked (empty account) for every auth scenario.
+test.beforeEach(async ({ page }) => { await mockDashboard(page); });
 
 test('guest deep link opens the login dialog with a validated returnTo, then restores the page after login', async ({ page }) => {
   const seen = await mockLogin(page);
@@ -108,10 +111,10 @@ test('reload restores a valid session with exactly one /auth/me and no flash of 
   await page.goto('/dashboard');
   await expect(page.getByText('Checking your session…')).toBeVisible();
   await expect(page.getByTestId('desktop-sidebar')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Live compliance overview' })).toBeVisible();
   expect(meCalls).toBe(1);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Live compliance overview' })).toBeVisible();
   expect(meCalls).toBe(2);
   await expect(page.getByText('Test User').first()).toBeVisible();
 });
@@ -153,7 +156,7 @@ test('server outage during startup keeps the token and offers Try again / Sign o
   expect(await page.evaluate(() => localStorage.getItem('uptrack_token'))).toBe(e2eToken);
   outage = false;
   await page.getByRole('button', { name: 'Try again' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Live compliance overview' })).toBeVisible();
 });
 
 test('logout asks for confirmation, clears the token and cannot be bypassed with Back', async ({ page }) => {
@@ -179,7 +182,7 @@ test('logout asks for confirmation, clears the token and cannot be bypassed with
 test('a protected 401 during use ends the session and returns to the login dialog for that page', async ({ page }) => {
   await signIn(page);
   await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Live compliance overview' })).toBeVisible();
   await mock(page, 'GET', '/credentials', route => json(route, 401, errorBody(401, 'Authentication is required.')));
   // Placeholders make no API calls, so drive the app's real transport module (same instance the session adapter is registered on).
   await page.evaluate(async modulePath => {
