@@ -30,3 +30,13 @@ Status: FINALIZED in M02 (`chore/react-architecture`). Replaces the previous "in
 - Flowbite gaps: custom-composition list in M02 spec §6.
 - Accessibility of the Angular implementation: F7/F8/F11/F12 fixed deliberately (decision above).
 - Dev environment and test accounts: isolated PostgreSQL DB `uptrack_migration_test` + role `uptrack_m01` retained with synthetic accounts A/B (passwords only in the git-ignored scratchpad); React runtime verification reuses them in M13.
+
+## M05 approved implementation clarification — 2026-11-01
+
+The active M05 spec defines the transport in `core/api/api-fetch.ts` and the sole production QueryClient in the existing providers module, initialized through `core/query/query-client.ts`. A factory creates isolated test clients; no second production provider/client is added.
+
+M03/M04's retry predicate included network/unknown failures. M05 restores M02: only classified HTTP 500–599 errors retry, at most twice (three attempts); 4xx, network, response-contract, programming and cancellation failures never retry. Mutations never retry. Keep global list/dashboard staleTime 30 seconds; credential and CE detail/report, auth/me and profile prefix defaults are zero. Other Query defaults remain unchanged.
+
+M06 owns storage, sessions, guards, redirect and cache clearing. M05 only offers an optional token/callback registration; transport reads no browser storage. Registration identity plus current-token comparison suppress stale 401 notifications. Public login/register/health requests neither read nor attach tokens nor notify. The older “any 401” session prose means current protected-session failures in M06, not public login errors or stale responses.
+
+Resolve relative resources only within the configured HTTP(S) API origin/base path; reject escapes and block Fetch redirects. JSON and empty-success modes are explicit. Distinguish HTTP, network and successful-response contract failures while retaining actual HTTP status when known. Cancellation remains the original abort rejection, including body reads; TanStack owns query cancellation/reversion when query functions consume its signal. TypeScript DTOs describe wire contracts without runtime schema validation. No pagination envelope, general CE-list adapter or feature query hooks are introduced.
