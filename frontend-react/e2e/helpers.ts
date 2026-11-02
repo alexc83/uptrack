@@ -2,23 +2,47 @@ import { test as base, expect, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+// Default-deny: every /api request is aborted and fails the test unless the test declared it with allowApi()
+// AND registered an explicit mock for it. M06 auth specs are the only ones that do so.
+const allowedApi = new WeakMap<Page, Set<string>>();
+export function allowApi(page: Page, method: string, path: string) {
+  const set = allowedApi.get(page) ?? new Set<string>();
+  set.add(`${method.toUpperCase()} ${path}`);
+  allowedApi.set(page, set);
+}
+export const e2eToken = 'e2e.fixture.token';
+export const e2eUser = { id: '00000000-0000-4000-8000-0000000000e2', name: 'Test User', email: 'test.user@example.test', createdAt: '2026-01-01T00:00:00Z' };
+/** Seeds a stored token once per browser tab and mocks the single permitted GET /api/auth/me. */
+export async function signIn(page: Page, user = e2eUser) {
+  await page.addInitScript(token => {
+    try {
+      if (sessionStorage.getItem('e2e-seeded')) return;
+      sessionStorage.setItem('e2e-seeded', '1');
+      localStorage.setItem('uptrack_token', token);
+    } catch { /* storage unavailable: the session simply starts as a guest */ }
+  }, e2eToken);
+  allowApi(page, 'GET', '/api/auth/me');
+  await page.route(/^http:\/\/localhost:5173\/api\/auth\/me$/, route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(user) }));
+}
+
 export const evidenceDirectory = resolve('test-results/evidence');
 export const test = base.extend<{ networkIsolation: void }>({
   networkIsolation: [async ({ page }, use) => {
     mkdirSync(evidenceDirectory, { recursive: true });
-    writeFileSync(resolve(evidenceDirectory, 'browser.json'), JSON.stringify({ browser: page.context().browser()?.version(), platform: process.platform, apiRequestsExpected: 0 }, null, 2) + '\n');
+    writeFileSync(resolve(evidenceDirectory, 'browser.json'), JSON.stringify({ browser: page.context().browser()?.version(), platform: process.platform, apiRequestsExpected: 'none unless declared with allowApi' }, null, 2) + '\n');
     const apiRequests: string[] = [];
     const errors: string[] = [];
     await page.route(/^http:\/\/localhost:5173\/api(?:\/|\?|$)/, async route => {
-      apiRequests.push(new URL(route.request().url()).pathname);
+      apiRequests.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`);
       await route.abort();
     });
     page.on('request', request => {
-      if (/^\/api(?:\/|$)/.test(new URL(request.url()).pathname)) apiRequests.push(new URL(request.url()).pathname);
+      if (/^\/api(?:\/|$)/.test(new URL(request.url()).pathname)) apiRequests.push(`${request.method()} ${new URL(request.url()).pathname}`);
     });
     page.on('pageerror', error => errors.push(error.message));
     await use();
-    expect(apiRequests, 'M04 must not contact an API').toEqual([]);
+    const allowed = allowedApi.get(page) ?? new Set<string>();
+    expect(apiRequests.filter(request => !allowed.has(request)), 'Unexpected API traffic (only declared, mocked auth calls are allowed)').toEqual([]);
     expect(errors, 'No uncaught browser errors').toEqual([]);
   }, { auto: true }],
 });

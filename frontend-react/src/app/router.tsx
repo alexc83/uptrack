@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { createBrowserRouter, Navigate, Link, type RouteObject } from 'react-router-dom';
 import { Button } from 'flowbite-react';
 import { AppShell } from '../shared/layout/app-shell';
+import { GuestOnly, RequireAuth } from '../core/auth/route-guards';
+import { RedirectPreservingSearch } from './redirect-preserving-search';
+import { AuthHost } from '../features/auth/auth-host';
 
 export function FoundationSmokeView() {
   useEffect(() => { document.title = 'UpTrack — Credential & CE Tracking'; }, []);
@@ -18,6 +21,7 @@ export function FoundationSmokeView() {
           Flowbite Button
         </Button>
       </div>
+      <AuthHost />
       <Link to="/dashboard" className="mt-5 inline-flex min-h-11 items-center rounded-lg px-3 text-ut-primary underline">Open migration shell preview</Link>
     </main>
   );
@@ -26,24 +30,28 @@ export function FoundationSmokeView() {
 export const routes: RouteObject[] = [
   {
     path: '/',
-    element: <FoundationSmokeView />,
+    element: <GuestOnly><FoundationSmokeView /></GuestOnly>,
   },
   ...['app', 'app/dashboard', 'app/credentials', 'app/ce-records'].map(path => ({
     path: `/${path}`,
-    element: <Navigate to={path === 'app' ? '/dashboard' : `/${path.slice(4)}`} replace />,
+    element: <RedirectPreservingSearch to={path === 'app' ? '/dashboard' : `/${path.slice(4)}`} />,
   })),
   {
-    element: <AppShell />,
+    element: <RequireAuth />,
     hydrateFallbackElement: <p role="status">Loading migration preview</p>,
-    children: ['dashboard', 'credentials', 'ce-records', 'settings'].map(path => ({
-      path: `/${path}`,
-      lazy: () => import('./preview/shell-placeholder').then(module => ({ Component: module.ShellPlaceholder })),
-    })),
-  },
-  {
-    path: '/credentials/:credentialId/ce-report',
-    hydrateFallbackElement: <p role="status">Loading report preview</p>,
-    lazy: () => import('./preview/report-placeholder').then(module => ({ Component: module.ReportPlaceholder })),
+    children: [
+      {
+        element: <AppShell />,
+        children: ['dashboard', 'credentials', 'ce-records', 'settings'].map(path => ({
+          path: `/${path}`,
+          lazy: () => import('./preview/shell-placeholder').then(module => ({ Component: module.ShellPlaceholder })),
+        })),
+      },
+      {
+        path: '/credentials/:credentialId/ce-report',
+        lazy: () => import('./preview/report-placeholder').then(module => ({ Component: module.ReportPlaceholder })),
+      },
+    ],
   },
   {
     path: '*',

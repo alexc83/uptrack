@@ -1,4 +1,6 @@
-import { test, expect, capture, noOverflow, setTheme } from './helpers';
+import { test, expect, capture, noOverflow, setTheme, signIn } from './helpers';
+
+test.beforeEach(async ({ page }) => { await signIn(page); });
 
 for (const theme of ['light', 'dark'] as const) {
   for (const width of [375, 768, 1280]) {
