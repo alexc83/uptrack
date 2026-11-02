@@ -111,14 +111,14 @@ describe('login dialog', () => {
 
   it('closes with Escape and returns focus to the opener (F11/F12)', async () => {
     const { user: person, router } = renderWithProviders(null, { routes, path: '/' });
-    const trigger = await screen.findByRole('button', { name: 'Log in' });
+    const trigger = await screen.findByRole('button', { name: 'Log In' });
     await person.click(trigger);
     await dialog('Log in');
     expect(router.state.location.search).toBe('?auth=login');
     await person.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(router.state.location.search).toBe('');
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Log in' })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Log In' })).toHaveFocus());
   });
 
   it('switches to sign-up and back', async () => {

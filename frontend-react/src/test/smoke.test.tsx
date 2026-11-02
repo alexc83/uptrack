@@ -2,15 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AppProviders } from '../app/providers';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import { FoundationSmokeView } from '../app/router';
+import { LandingPage } from '../features/landing/landing-page';
 
-describe('M03 Foundation Smoke Tests', () => {
-  it('renders root foundation component with Flowbite button', () => {
+describe('Root route smoke tests', () => {
+  it('renders the landing page with a Flowbite auth button', () => {
     const testRouter = createMemoryRouter(
       [
         {
           path: '/',
-          element: <FoundationSmokeView />,
+          element: <LandingPage />,
         },
       ],
       { initialEntries: ['/'] }
@@ -23,9 +23,9 @@ describe('M03 Foundation Smoke Tests', () => {
     );
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'UpTrack — React Foundation'
+      'Track credentials. Stay compliant. Own your career.'
     );
-    expect(screen.getByRole('button', { name: /Flowbite Button/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign Up' })).toBeInTheDocument();
   });
 
   it('verifies theme storage and class toggling logic', () => {

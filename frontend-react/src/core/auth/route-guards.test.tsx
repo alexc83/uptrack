@@ -112,14 +112,14 @@ describe('GuestOnly and redirects', () => {
     const authApi = createFakeAuthApi();
     authApi.me.mockReturnValue(gate.promise);
     renderWithProviders(null, { routes, path: '/', session: { token: testToken('t'), authApi } });
-    expect(screen.queryByRole('heading', { name: /UpTrack — React Foundation/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Track credentials\. Stay compliant\. Own your career\./ })).not.toBeInTheDocument();
     expect(await screen.findByText('Checking your session…')).toBeVisible();
   });
 
-  it('shows the temporary auth triggers to a guest', async () => {
+  it('shows the landing auth triggers to a guest', async () => {
     renderWithProviders(null, { routes, path: '/' });
-    expect(await screen.findByRole('button', { name: 'Log in' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Sign up' })).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Log In' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Sign Up' })).toBeVisible();
   });
 
   it.each([['/app/credentials?credentialId=abc#x', '/credentials', '?credentialId=abc', '#x'], ['/app?x=1', '/dashboard', '?x=1', '']])('legacy redirect %s keeps query and hash', async (path, pathname, query, hash) => {

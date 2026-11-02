@@ -27,6 +27,30 @@
 
   --ut-status-expired-bg: #fcebeb;
   --ut-status-expired-text: #791f1f;
+
+  /* Landing page tokens (matching Angular landing-page.component.scss) */
+  --ut-landing-bg: #ffffff;
+  --ut-landing-text: #1f2937;
+  --ut-landing-heading: #111827;
+  --ut-landing-muted: #5b677b;
+  --ut-landing-subtle: #4a5567;
+  --ut-landing-header-bg: #e9eff8;
+  --ut-landing-header-border: #c7d4e5;
+  --ut-landing-primary: #3766ad;
+  --ut-landing-primary-hover: #2f5a98;
+  --ut-landing-surface: #ffffff;
+  --ut-landing-surface-soft: #f7f9fc;
+  --ut-landing-card-border: #e4eaf2;
+  --ut-landing-preview-border: #dfe7f1;
+  --ut-landing-shadow: 0 22px 55px rgb(15 23 42 / 0.12);
+  --ut-landing-card-shadow: 0 10px 28px rgb(15 23 42 / 0.06);
+  --ut-landing-footer-border: #e7edf5;
+  --ut-landing-footer-copy: #6b7280;
+  --ut-landing-toggle-bg: rgb(241 245 249 / 0.88);
+  --ut-landing-toggle-border: #d9e3ef;
+  --ut-landing-compliance-bg: linear-gradient(180deg, #f8fbff 0%, #fff 82%);
+  --ut-landing-cta-shadow: 0 20px 46px rgb(55 102 173 / 0.22);
+  --ut-landing-check: #52b46f;
 }
 
 html.dark {
@@ -51,6 +75,29 @@ html.dark {
 
   --ut-status-expired-bg: #2d1515;
   --ut-status-expired-text: #f7c1c1;
+
+  --ut-landing-bg: #08111f;
+  --ut-landing-text: #d9e5f5;
+  --ut-landing-heading: #f7fbff;
+  --ut-landing-muted: #9db0c8;
+  --ut-landing-subtle: #b1c0d4;
+  --ut-landing-header-bg: rgb(8 17 31 / 0.92);
+  --ut-landing-header-border: rgb(112 140 177 / 0.22);
+  --ut-landing-primary: #4f80cb;
+  --ut-landing-primary-hover: #5d8fe0;
+  --ut-landing-surface: #0f1b30;
+  --ut-landing-surface-soft: #13233b;
+  --ut-landing-card-border: rgb(112 140 177 / 0.22);
+  --ut-landing-preview-border: rgb(112 140 177 / 0.22);
+  --ut-landing-shadow: 0 24px 60px rgb(2 6 23 / 0.42);
+  --ut-landing-card-shadow: 0 18px 38px rgb(2 6 23 / 0.28);
+  --ut-landing-footer-border: rgb(112 140 177 / 0.22);
+  --ut-landing-footer-copy: #8fa4c0;
+  --ut-landing-toggle-bg: rgb(18 31 52 / 0.9);
+  --ut-landing-toggle-border: rgb(112 140 177 / 0.28);
+  --ut-landing-compliance-bg: linear-gradient(180deg, #0d182c 0%, #08111f 82%);
+  --ut-landing-cta-shadow: 0 20px 46px rgb(55 102 173 / 0.22);
+  --ut-landing-check: #52b46f;
 }
 
 @keyframes ut-fade-in {
@@ -80,6 +127,11 @@ html.dark {
   --color-ut-muted: var(--ut-muted);
   --color-ut-border: var(--ut-border);
   --color-ut-hover: var(--ut-hover);
+  --color-ut-landing-primary: var(--ut-landing-primary);
+  --color-ut-landing-primary-hover: var(--ut-landing-primary-hover);
+  --color-ut-landing-heading: var(--ut-landing-heading);
+  --color-ut-landing-muted: var(--ut-landing-muted);
+  --color-ut-landing-subtle: var(--ut-landing-subtle);
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
