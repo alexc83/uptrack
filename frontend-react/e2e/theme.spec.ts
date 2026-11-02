@@ -29,8 +29,11 @@ for (const path of ['/', '/credentials', '/credentials/preview/ce-report']) {
   test(`pre-paint script works without React at ${path}`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await setTheme(page, 'dark');
-    await page.route('**/src/main.tsx', route => route.abort());
+    // Vite serves the entry as /src/main.tsx?t=<timestamp>; a plain glob would not match the query string.
+    let blocked = 0;
+    await page.route(/\/src\/main\.tsx(\?.*)?$/, route => { blocked += 1; return route.abort(); });
     await page.goto(path);
+    expect(blocked).toBeGreaterThan(0);
     await expect(page.locator('html')).toHaveClass('dark');
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(17, 17, 17)');
     await expect(page.locator('#root')).toBeEmpty();
