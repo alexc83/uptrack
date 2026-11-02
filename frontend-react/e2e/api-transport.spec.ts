@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
   await page.route(/^http:\/\/localhost:5173\/api(?:\/|\?|$)/, route => route.abort('blockedbyclient'));
   await page.route(/^https?:\/\/(?!localhost:5173(?:\/|$))/, route => route.abort('blockedbyclient'));
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('UpTrack — React Foundation');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Track credentials. Stay compliant. Own your career.');
 });
 
 test('imports, construction and registration do not initiate requests or store credentials', async ({ page }) => {

@@ -8,6 +8,7 @@ export const flowbiteTheme = createTheme({
       light: 'border-0 bg-transparent text-ut-muted hover:bg-ut-hover',
       blue: 'border border-transparent bg-ut-primary text-white hover:bg-ut-primary-hover',
       alternative: 'border border-ut-border bg-ut-surface text-ut-text hover:bg-ut-hover',
+      landing: 'border border-transparent bg-ut-landing-primary text-white hover:bg-ut-landing-primary-hover hover:-translate-y-px hover:shadow-[0_12px_24px_color-mix(in_srgb,var(--ut-landing-primary)_24%,transparent)]',
     },
     size: { sm: 'min-h-11 px-3 py-2 text-sm', md: 'min-h-11 px-4 py-2 text-sm' },
   },

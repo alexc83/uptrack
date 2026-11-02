@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('M03 Standalone React Foundation E2E', () => {
-  test('starts without backend and renders foundation view with styled Flowbite button', async ({ page }) => {
+test.describe('Standalone React landing smoke E2E', () => {
+  test('starts without backend and renders landing view with styled Flowbite button', async ({ page }) => {
     await page.goto('/');
 
     // Verify document title (fixes F8)
@@ -9,10 +9,10 @@ test.describe('M03 Standalone React Foundation E2E', () => {
 
     // Verify root heading
     const heading = page.getByRole('heading', { level: 1 });
-    await expect(heading).toHaveText('UpTrack — React Foundation');
+    await expect(heading).toHaveText('Track credentials. Stay compliant. Own your career.');
 
     // Verify Flowbite button is rendered and styled
-    const button = page.getByRole('button', { name: /Flowbite Button/i });
+    const button = page.getByRole('button', { name: 'Sign Up' });
     await expect(button).toBeVisible();
 
     // Verify computed style confirms Tailwind/Flowbite styling is active
@@ -20,8 +20,8 @@ test.describe('M03 Standalone React Foundation E2E', () => {
     expect(buttonBg).not.toBe('rgba(0, 0, 0, 0)');
     expect(buttonBg).not.toBe('transparent');
 
-    // Capture visual proof of rendered Flowbite button and styles
-    await page.screenshot({ path: 'e2e/screenshots/foundation-smoke.png' });
+    // Capture visual proof of rendered landing page and styles
+    await page.screenshot({ path: 'e2e/screenshots/landing-smoke.png' });
   });
 
   test('theme initialization applies dark mode class when stored', async ({ page }) => {
@@ -40,6 +40,6 @@ test.describe('M03 Standalone React Foundation E2E', () => {
   test('router wildcard redirects unknown path back to root', async ({ page }) => {
     await page.goto('/unknown-smoke-path');
     await expect(page).toHaveURL(/.*\/$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('UpTrack — React Foundation');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Track credentials. Stay compliant. Own your career.');
   });
 });
