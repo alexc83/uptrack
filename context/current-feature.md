@@ -2,7 +2,7 @@
 
 ## Status
 
-M06 — Authentication and route guards — implemented and locally verified on `feature/react-auth` (from `22ddf5e`); awaiting review. No commit, push or merge is authorized. Earlier text below is historical.
+M06 — Authentication and route guards — is merged and pushed (`dc12d35`, `13a9e00`; main and origin/main at `13a9e00146d815f04977f149ff614a6c0ca225d1`); `feature/react-auth` is retained. Next milestone: M07 — Public landing page — not yet authorized. Earlier text below is historical.
 
 M05 — Typed HTTP and server-state foundation — implemented on `feature/react-api-layer` from synchronized main/origin/main `249603f8a10eeda26e3d4ae55e7d099aea003fe0`. READY specification and implementation were authorized. Verification is complete: an explicitly approved test-only correction awaits initial drawer focus, verifies tooltip then drawer Escape dismissal, and restores opener focus. Five consecutive default parallel unit runs pass 177/177; browser suite passes 42/42 including eight unchanged visual baselines. Original failure and causal diagnosis remain in the M05 report. Typecheck/lint/build pass. Production audit zero; full audit fails with 16 deferred dev findings. See `migration/verification/m05-report.md`. Implementation/results and exactly two local commits are approved: application `ac720664bf05bfc28f626fbd5f490315a9b9cd55`, followed by the documentation commit containing this record. Stop after commit verification; no merge or push authorized. M06 has not started. Hosted backend remains suspended/uncontacted. Untracked duplicate helper remains untouched and excluded.
 
