@@ -1,7 +1,7 @@
 # M09 — Credential CRUD
 
-**Status: ACCEPTED — owner automated and read-only live acceptance passed; live PostgreSQL CRUD writes explicitly deferred to M09-W01.**
-**Branch:** `feature/react-credential-crud` (owner-approved replacement for outline branch).
+**Status: ACCEPTED, MERGED AND PUSHED — owner automated and read-only live acceptance passed; live PostgreSQL CRUD writes explicitly deferred to M09-W01.**
+**Branch:** `main`; `feature/react-credential-crud` was fast-forward merged, pushed and safely deleted locally. No remote M09 branch existed.
 **Baseline:** main = origin/main = 24ab6c0b49d3569d529c2e30017c1fff5e87b369; M08 and T01 integrated.
 Owner authorized final documentation, fast-forward integration into main, normal push and safe merged-M09 branch cleanup. Deployment, backend/Angular/database changes and M10 remain unauthorized. See [M09-W01](../follow-ups/m09-w01-postgresql-crud-acceptance.md) for the explicitly deferred live-write follow-up; acceptance does not claim those writes were tested.
 

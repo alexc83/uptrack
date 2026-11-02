@@ -1,6 +1,6 @@
 # UpTrack React Migration — Master Plan
 
-Status: M01–M09 and S01/S02 are owner-accepted. M09 automated and read-only live acceptance passed; live PostgreSQL CRUD writes are explicitly deferred to M09-W01. M09 is authorized for fast-forward integration and normal push. See `verification/m09-report.md`. Hosted backend remains suspended; no deployment or cutover authorization.
+Status: M01–M09 and S01/S02 are owner-accepted. M09 automated and read-only live acceptance passed; live PostgreSQL CRUD writes are explicitly deferred to M09-W01. M09 was fast-forward merged and pushed at `3324d09`; its local feature branch was safely deleted after synchronization. The documentation-only completion record follows that tip. See `verification/m09-report.md`. Hosted backend remains suspended; no deployment or cutover authorization.
 
 ## Objective
 Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript + Flowbite React + Tailwind CSS 4 frontend while preserving all user-visible behavior and existing Spring Boot APIs. This is an AI-agent refactoring experiment, not a portfolio rewrite.
