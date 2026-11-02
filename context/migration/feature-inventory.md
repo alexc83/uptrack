@@ -7,7 +7,7 @@ Status: M02 mapping decisions recorded 2026-10-31 (see bottom section). These ar
 | Landing/auth entry | `frontend/src/app/features/landing-page/` | M06–M07 | Not run | Not started | Login/register dialogs |
 | Route guards/session | `frontend/src/app/core/auth/` | M06 | Not run | Not started | Deep links and refresh |
 | Dashboard | `frontend/src/app/features/dashboard/` | M08 | Not run | Implemented, verified and merged (M08); see `verification/m08-report.md` | Counts, attention, overflow drawers; M09 credential details/Add Credential implemented; Add CE remains M10 |
-| Credentials | `frontend/src/app/features/credentials/` | M09 | Source audit + focused Edge/macOS mocked runtime | Owner ACCEPTED; automated + 256 read-only live checks passed; live PostgreSQL writes deferred to M09-W01 | CRUD, filters, independent detail, consumed deep links, linked CE summaries; M10 actions deferred; see verification/m09-report.md |
+| Credentials | `frontend/src/app/features/credentials/` | M09 | Source audit + focused Edge/macOS mocked runtime | Accepted, merged and pushed; automated + 256 read-only live checks passed; live PostgreSQL writes deferred to M09-W01 | CRUD, filters, independent detail, consumed deep links, linked CE summaries; M10 actions deferred; see verification/m09-report.md |
 | CE records | `frontend/src/app/features/ce-records/` | M10 | Not run | Not started | Desktop table/mobile cards |
 | Certificates | `frontend/src/app/services/upload.service.ts` | M10 | Not run | Not started | Cloudinary through backend |
 | CE report | `frontend/src/app/features/ce-report/` | M11 | Not run | Not started | Print and multi-page |

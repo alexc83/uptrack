@@ -1,11 +1,17 @@
 # M09 Credential CRUD — implementation and targeted verification
 
-**Status: OWNER ACCEPTED — automated and read-only live acceptance passed; PostgreSQL live CRUD writes explicitly deferred to M09-W01. Integration authorized.**
+**Status: OWNER ACCEPTED — automated and read-only live acceptance passed; PostgreSQL live CRUD writes explicitly deferred to M09-W01. Merged and pushed; local M09 branch safely deleted.**
 Agent: OpenAI Codex. Date: 2026-11-02. Branch: `feature/react-credential-crud`.
 Initial baseline/HEAD/main/origin/main: `24ab6c0b49d3569d529c2e30017c1fff5e87b369` (no commits made).
 Owner accepted the planning report and authorized implementation/spec promotion, the branch override, validation/storage limits, M10/M11 deferrals, background-data retention, targeted tests and minimal existing-test changes. No integration permission.
 
 
+
+## Integration and cleanup completed — 2026-11-02
+
+M09 was fast-forward merged from `24ab6c0` to `3324d0998e5b58257d0ce267762acad585996430` and pushed normally. Local main, origin/main and GitHub remote HEAD were verified equal, ahead/behind 0/0. Implementation `3b2a6c1`, checkpoint docs `7b8873e` and acceptance/policy `3324d09` are ancestors of main. The merged local `feature/react-credential-crud` branch was safely deleted with `git branch -d`; no corresponding remote branch existed. Only local main and remote main/HEAD plus the untouched remote Dependabot branch remain. Both unrelated untracked files match checkpoint hashes. This documentation-only completion record follows the verified integration tip; its final hash and remote synchronization are reported at handoff.
+
+GitHub push succeeded but emitted a repository-wide advisory summary (120 alerts: 4 critical, 40 high, 65 moderate, 11 low). This is not a fresh audit or classification of React production dependencies; the owner-reported React production audit remains zero. No dependency changes or remediation were attempted.
 
 ## Final owner acceptance and live evidence — 2026-11-02
 

@@ -1,10 +1,12 @@
 # Current Feature
 
-## Current — M09 accepted
+## Current — M09 accepted, merged and pushed
 
 M09 Credential CRUD is **ACCEPTED by the owner (2026-11-02)**. Owner automated evidence: unit **490/490**, Playwright **504/504** including all four functional browsers and unchanged Edge/macOS visuals, typecheck/lint/production build PASS, production audit **0 vulnerabilities**. Authorized read-only live evidence: **245 + 11 = 256 recorded checks** passed against the verified local `uptrack_migration_test` target. These are assertion/field checks, not 256 separate test cases. Existing MockMvc/H2 integration evidence was reviewed, not rerun.
 
 The owner explicitly accepts deferring live React → Spring → PostgreSQL create/edit/delete acceptance to [M09-W01](migration/follow-ups/m09-w01-postgresql-crud-acceptance.md). Those writes are **NOT TESTED live** and are not implied by milestone acceptance. M10 CE workflows and M11 report rendering remain deferred. No database mutation, deployment or M10 work is authorized by this acceptance.
+
+M09 was fast-forward merged from `24ab6c0` to `3324d0998e5b58257d0ce267762acad585996430` and pushed normally. Local main, origin/main and GitHub remote HEAD were verified equal, ahead/behind 0/0. Implementation `3b2a6c1`, checkpoint docs `7b8873e` and acceptance/policy `3324d09` are ancestors of main. The merged local `feature/react-credential-crud` branch was safely deleted with `git branch -d`; no corresponding remote branch existed. Only local main and remote main/HEAD plus the untouched remote Dependabot branch remain. Both unrelated untracked files match checkpoint hashes. This documentation-only completion record follows the verified integration tip; its final hash and remote synchronization are reported at handoff.
 
 Implementation `3b2a6c1a35754a4d551a49bd5ddd4e0717dee653`; checkpoint documentation `7b8873e342a315207dc60bc3aa1700cb5a1fc657`. Owner authorized acceptance documentation, fast-forward integration, normal push and safe merged-M09 branch cleanup. M10 remains DRAFT / not started; no implementation authorization. Canonical branch policy: [AGENTS.md](../AGENTS.md#git-branch-lifecycle-canonical). Earlier records below are historical and superseded.
 
