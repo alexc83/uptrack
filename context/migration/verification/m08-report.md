@@ -1,6 +1,6 @@
 # M08 verification report
 
-**Status: IMPLEMENTED; automated verification COMPLETE on macOS/Edge (112/112 browser tests incl. all 8 visual comparisons; 421/421 unit; typecheck/lint/build pass). Live backend/demo-account acceptance PENDING. Not merged; merge authorization withheld until the live demo check.** (Original cloud-sandbox status below is retained as history and is superseded by the "macOS/Edge verification results" section.)
+**Status: ACCEPTED, MERGED AND PUSHED. Automated macOS/Edge verification passed (unit 421/421; Edge 112/112 incl. all 8 visual comparisons; typecheck/lint/build pass) and live demo acceptance passed against `uptrack_migration_test` with no database changes. Integrated into `main` by fast-forward (`d215667`, `054e7af`, `b1503435bd45e66b1e793f5c191042e56b7bd81a`).** The earlier cloud-sandbox status, "NOT RUN" items and handoff steps below are historical and superseded by the "macOS/Edge verification results" and "Live acceptance and integration" sections.
 
 Agent / model / session: Claude Code (Claude Sonnet 5.5), cloud session, 2026-11-02.
 Branch: `claude/m08-dashboard-planning-u4ieuq` — **approved one-time exception.** The master plan and original spec name `feature/react-dashboard`; the cloud session is pinned to the harness-managed branch and cannot create/push the approved name, so the human approved this branch for M08 only (branch name only; every other requirement stands). Do not rename it. Later milestones return to the master-plan naming.
@@ -88,7 +88,7 @@ Compared with the Angular evidence (`baseline/screenshots/d1-*, u3-*, p-dashboar
 
 **BLOCKED.** No PostgreSQL (5432) or backend (8080/18080) is listening in the cloud container (only the e2e Vite server on 5173 and harness ports), so the isolated `uptrack_migration_test` target could not be confirmed and no request was made. No database, seed script, demo account or hosted backend was touched. Expected values for the three synthetic accounts and the reproducible procedure are below.
 
-## Local verification handoff (macOS/Edge and live demo)
+## Local verification handoff (macOS/Edge and live demo) — historical, completed; see the sections at the end
 
 1. `cd frontend-react && npm ci && npm run typecheck && npm run lint && npm run test && npm run build`.
 2. `npm run e2e` (Edge/macOS). Expect the 8 `visual.spec.ts` comparisons to fail against the old goldens for the reasons above; inspect each actual/expected pair, then (with separate approval) update with `npx playwright test e2e/visual.spec.ts --update-snapshots`. `app-shell.spec.ts:5` is corrected (approved); its ArrowDown assertion remains the known intermittent flake.
@@ -126,3 +126,23 @@ Initial macOS run: 107/112. Remaining failures and root causes (all test-only; n
 3. **`app-shell.spec.ts:5` ArrowDown (the known intermittent M04 flake; failed deterministically in the full macOS runs, 3/5 on a clean server).** Opening the account menu from the keyboard makes floating-ui asynchronously autofocus the first item (Settings). The old assertion (ArrowDown → Settings focused) only passed when the keypress beat the autofocus. It was valid pre-M06 because Log out was disabled; with Log out enabled (M06), ArrowDown correctly moves focus to it. Diagnosed with a scratch spec (focus after open = Settings; after ArrowDown = Log out, with and without a 300 ms delay). Not an accessibility defect. Fix: await Settings focused after open, ArrowDown → Log out focused, ArrowUp → Settings focused, then Enter navigates to `/settings`. The ArrowDown requirement is strengthened, with no sleeps. 15/15 passes on a clean Playwright-managed server.
 
 Test files changed: `e2e/theme.spec.ts`, `e2e/app-shell.spec.ts`, plus the seven PNGs. No application code, dependency, backend, Angular or demo-data change.
+
+## Live acceptance and integration (2026-11-02)
+
+**Database target.** Read-only check against the already-running local backend on `:18080` (repo `backend/`). Its environment had `DB_URL=jdbc:postgresql://localhost:5432/uptrack_migration_test`, `DB_USERNAME=uptrack_m01`, and all 10 pooled connections mapped to `pg_stat_activity` sessions in `uptrack_migration_test`. The `:8080` process is an unrelated local app with no Postgres connections and was not used. The backend was not restarted (so `ddl-auto: update` could not run), the seeder and migrations were not run, and the hosted/suspended backend was never contacted. A temporary Vite on `:5199` proxied to `:18080` and was stopped afterwards.
+
+**Results (UI vs a fresh `/api/dashboard`, 35/35 PASS; date-sensitive values compared with the live response, not seed-time counts).**
+- `demo-main`: 4 total / 2 active / 1 expiring soon / 1 expired; Upcoming: ACLS, 30d left (expires 2026-12-02), 4 CE hrs needed; CEs still needed: 2 items, ACLS 4/8 hrs 50% then RN License — Texas 15.5/20 hrs 78%; 4 of 6 activity items shown.
+- `demo-empty`: zeros, "No credentials yet" banner and empty text in all three panels.
+- `demo-second`: 1 credential; RRT License 12/15 hrs 80%; its 2 linked CE activities.
+- Isolation: main → empty → second → main switched inside the SPA without reload; a DOM observer for the other accounts' strings recorded none (positive control confirmed the detector fires). Delayed `/api/dashboard` (1.2 s) showed the loading skeleton with no previous-user data. No console/page errors; only `POST /api/auth/login` and `GET /api/dashboard`.
+- **No database changes:** row counts and content hashes identical before and after (users 5, credentials 13, ce_records 20; 3 tables).
+- The "See more" overflow drawers cannot be exercised by the demo accounts; the mocked drawer tests are accepted as sufficient for M08.
+
+**Integration.** Preconditions verified (branch `m08-review` at `b150343`, only the two unrelated untracked files, `origin/main` = `1f3d63f`). `main` was fast-forwarded to `b150343` (no squash, rebase, reset or force); this documentation update follows as a separate commit before the normal push.
+
+**ArrowDown flake: RESOLVED** by `b150343` (test-only, see root cause 3 above). The earlier "known intermittent flake" wording in this report and in `verification/m07-report.md` is historical.
+
+## Remaining limitations
+
+Edge/macOS only (no other engines/OS, no manual assistive-technology run); the remaining JWT risks and server quirks listed above are documented, not fixed; dashboard Add actions and the credential detail drawer arrive with M09/M10; two unrelated untracked local files are preserved and excluded.

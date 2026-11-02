@@ -6,7 +6,7 @@ Status: M02 mapping decisions recorded 2026-10-31 (see bottom section). These ar
 |---|---|---|---|---|---|
 | Landing/auth entry | `frontend/src/app/features/landing-page/` | M06–M07 | Not run | Not started | Login/register dialogs |
 | Route guards/session | `frontend/src/app/core/auth/` | M06 | Not run | Not started | Deep links and refresh |
-| Dashboard | `frontend/src/app/features/dashboard/` | M08 | Not run | Implemented (M08), awaiting review; see `verification/m08-report.md` | Counts, attention, overflow list drawers; credential detail drawer/Add actions deferred to M09/M10 |
+| Dashboard | `frontend/src/app/features/dashboard/` | M08 | Not run | Implemented, verified and merged (M08); see `verification/m08-report.md` | Counts, attention, overflow list drawers; credential detail drawer/Add actions deferred to M09/M10 |
 | Credentials | `frontend/src/app/features/credentials/` | M09 | Not run | Not started | CRUD, filters, detail |
 | CE records | `frontend/src/app/features/ce-records/` | M10 | Not run | Not started | Desktop table/mobile cards |
 | Certificates | `frontend/src/app/services/upload.service.ts` | M10 | Not run | Not started | Cloudinary through backend |
