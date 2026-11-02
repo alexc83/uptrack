@@ -6,7 +6,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: theme === 'light' ? 'dark' : 'light' });
     await setTheme(page, theme);
     await signIn(page);
-    await page.goto('/dashboard');
+    await page.goto('/settings');
     const expected = theme === 'light' ? 'rgb(24, 95, 165)' : 'rgb(55, 138, 221)';
     await expect(page.getByRole('button', { name: 'Primary action', exact: true })).toHaveCSS('background-color', expected);
     await expect(page.locator('main')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
@@ -63,7 +63,7 @@ for (const storage of ['absent', 'invalid', 'denied'] as const) {
 test('reduced motion disables skeleton and content animation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await signIn(page);
-  await page.goto('/dashboard');
+  await page.goto('/settings');
   await expect(page.locator('.animate-pulse')).toHaveCSS('animation-name', 'none');
   await page.evaluate(() => localStorage.removeItem('uptrack_token'));
   await page.goto('/');

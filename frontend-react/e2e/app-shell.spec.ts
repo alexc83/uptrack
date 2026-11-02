@@ -1,15 +1,15 @@
-import { test, expect, capture, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, capture, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
 
 test.beforeEach(async ({ page }) => { await signIn(page); });
 
 test('desktop geometry, persistence, navigation, account menu and independent scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await setTheme(page, 'light');
-  await page.goto('/dashboard');
+  await mockDashboard(page); // M08: the Dashboard step below renders the real page
+  await page.goto('/settings'); // M08: the dev-only shared-UI preview (scrollable content) now lives on /settings
   await expect(page.getByRole('heading', { name: 'Shared UI preview', exact: true })).toBeVisible();
   const sidebar = page.getByTestId('desktop-sidebar');
   await expect(sidebar).toHaveCSS('width', '272px');
-  await expect(page.getByRole('link', { name: 'Dashboard', exact: true })).toHaveAttribute('aria-current', 'page');
   await capture(page, 'shell-light-1280-expanded');
   const positions = await sidebar.boundingBox();
   await page.locator('main').evaluate(element => { element.scrollTop = 500; });
@@ -23,7 +23,7 @@ test('desktop geometry, persistence, navigation, account menu and independent sc
   await expect(sidebar).toHaveCSS('width', '88px');
   for (const name of ['Credentials', 'CE Records', 'Dashboard']) {
     await page.getByRole('link', { name, exact: true }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(name === 'Dashboard' ? 'Live compliance overview' : name);
     await expect(page.getByRole('link', { name, exact: true })).toHaveAttribute('aria-current', 'page');
   }
   await page.getByRole('button', { name: 'Open account menu' }).focus();
@@ -46,7 +46,7 @@ for (const width of [375, 768]) {
     test(`mobile ${width} ${theme}: dismissal, focus, target sizes and route completion`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
       await setTheme(page, theme);
-      await page.goto('/dashboard');
+      await page.goto('/settings');
       const trigger = page.getByRole('button', { name: 'Open navigation' });
       await expect(trigger).toHaveAttribute('aria-expanded', 'false');
       await expect(page.getByRole('navigation')).toHaveCount(0);
@@ -113,6 +113,7 @@ test('skip link and keyboard-visible focus reach semantic main content', async (
 });
 
 test('exact redirects, query preservation and standalone report route', async ({ page }) => {
+  await mockDashboard(page); // M08: the /dashboard redirect targets now render the real page
   for (const [path, target] of [['/app', '/dashboard'], ['/app/dashboard', '/dashboard'], ['/app/credentials', '/credentials'], ['/app/ce-records', '/ce-records']]) {
     await page.goto(path!);
     await expect(page).toHaveURL(new RegExp(`${target}$`));

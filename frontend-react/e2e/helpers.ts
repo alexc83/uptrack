@@ -25,6 +25,16 @@ export async function signIn(page: Page, user = e2eUser) {
   await page.route(/^http:\/\/localhost:5173\/api\/auth\/me$/, route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(user) }));
 }
 
+export const emptyDashboardResponse = {
+  stats: { totalCredentials: 0, activeCount: 0, expiringSoonCount: 0, expiredCount: 0, needsCEAttentionCount: 0 },
+  upcomingExpirations: [], ceAttention: [], recentActivity: [],
+};
+/** Declares and mocks the single GET /api/dashboard the dashboard route makes (default-deny stays in force for everything else). */
+export async function mockDashboard(page: Page, body: unknown = emptyDashboardResponse, status = 200) {
+  allowApi(page, 'GET', '/api/dashboard');
+  await page.route(/^http:\/\/localhost:5173\/api\/dashboard$/, route => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) }));
+}
+
 export const evidenceDirectory = resolve('test-results/evidence');
 export const test = base.extend<{ networkIsolation: void }>({
   networkIsolation: [async ({ page }, use) => {

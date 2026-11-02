@@ -8,7 +8,7 @@ for (const theme of ['light', 'dark'] as const) {
   test(`visual ${theme} desktop shell and collapsed navigation`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await setTheme(page, theme);
-    await page.goto('/dashboard');
+    await page.goto('/settings');
     await expect(page.getByRole('heading', { name: 'Shared UI preview', exact: true })).toBeVisible();
     await expect(page).toHaveScreenshot(`shell-${theme}-desktop.png`, { animations: 'disabled' });
     await page.getByRole('button', { name: 'Collapse sidebar' }).click();
@@ -17,7 +17,7 @@ for (const theme of ['light', 'dark'] as const) {
   test(`visual ${theme} mobile navigation and modal`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await setTheme(page, theme);
-    await page.goto('/dashboard');
+    await page.goto('/settings');
     await expect(page.getByRole('heading', { name: 'Shared UI preview', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Open navigation' }).click();
     await expect(page).toHaveScreenshot(`shell-${theme}-mobile-navigation.png`, { animations: 'disabled' });
