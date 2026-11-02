@@ -150,3 +150,11 @@ Explicit empty mode accepts 204/205 and other successful void responses. JSON mo
 Only HTTP 500–599 errors retry twice; all other failures and mutations have no retry. Lists/dashboard stay fresh 30 seconds; detail/report/auth/profile default to zero. This deliberately corrects the broader M03/M04 retry predicate and global freshness inherited by details. Key tuples in §4 are unchanged; credential-prefix invalidation also reaches CE lists/reports. CE mutations invalidate affected detail IDs and old/new credential contexts; credential deletion can additionally invalidate the CE-detail root if cascaded IDs are unknown. No automatic mutation hooks or cache clearing run in M05.
 
 The token registration is optional and storage-free. Transport owns Authorization, excludes login/register/health, confines requests to the configured target and blocks redirects. A protected 401 notification requires the same registration and unchanged token; M06 owns session effects. The public-path exception in §4 takes precedence over older broad “any 401” prose.
+
+
+## M06 clarifications (2026-11-01, human-approved)
+
+- Bootstrap: a 401 from `/auth/me` clears the token (expired notice); network, 5xx, 403 and other failures keep the token and show Retry / Sign out (supersedes the older "any failure clears" text in §4).
+- `/` accepts optional `auth=login|register` and `returnTo` parameters (dialog host until M07). `returnTo` must be an internal known protected route (path, query, hash kept); otherwise `/dashboard`.
+- Legacy `/app*` redirects preserve query string and hash. Explicit logout lands on plain `/`.
+- Session changes reset all cached server state; mutation callbacks must guard cache writes with the session guard (`captureSession().isCurrent()`).
