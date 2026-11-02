@@ -25,7 +25,7 @@ Guard semantics (all routes): unauthenticated access to a protected route → re
 ## 2. Shell and layout contract
 
 - Desktop: sidebar (Dashboard, Credentials, CE Records nav with lucide icons LayoutDashboard/FolderOpen/ClipboardList), collapsible via toggle, persisted in `uptrack-sidebar-collapsed`; account menu (avatar with initials, profile → `/settings`, logout with confirm dialog) in a footer area.
-- ≤768 px (`md:` breakpoint): sidebar off-canvas behind a hamburger; nav clicks close it.
+- ≤768 px inclusive (desktop >768 px; global Tailwind `md:` is unchanged): sidebar off-canvas behind a hamburger; nav clicks close it.
 - Theme toggle in shell; `.dark` on `<html>`; key `uptrack-theme`; default `prefers-color-scheme`; applied pre-paint via inline script in `index.html`.
 - Global `ut-fade-in` (0.18 s) on content replacing skeletons; theme-aware skeleton gradients.
 - Document title per page (fixes F8: Angular shows "Frontend" everywhere).
@@ -120,7 +120,7 @@ Counted from Angular source (imports + templates). "Custom" = shared wrapper in 
 
 - Strategy: `html.dark` class (Tailwind v4 `@custom-variant dark (&:where(.dark, .dark *))`); single key `uptrack-theme` (`dark`/`light`), applied pre-paint by inline script in `index.html`, fallback `prefers-color-scheme`.
 - Palette (must match Angular `styles.scss`): primary `#185FA5` light / `#378ADD` dark (hover `#134d87` / `#5499e3`); sidebar bg `#f8f9fa` / `#1a1a1a`; main bg `#eef0f3` / `#111111`; status tokens — Active `#EAF3DE`/`#27500A` (dark `#1e2d1a`/`#C0DD97`), Expiring Soon `#FAEEDA`/`#633806` (dark `#2d2010`/`#FAC775`), Expired `#FCEBEB`/`#791F1F` (dark `#2d1515`/`#F7C1C1`); primary-subtle `#e8f1fb` / `#172233`. Font: Inter stack.
-- Breakpoints: shell mobile ≤768 px = Tailwind `md:`; verified viewports 375 / 768 / 1280 px.
+- Breakpoints: shell mobile ≤768 px / desktop >768 px; use matching arbitrary media variants; verified viewports 375 / 768 / 1280 px.
 
 ## 8. Defect dispositions (records preserved in `baseline/defects.md`)
 
@@ -134,3 +134,9 @@ Counted from Angular source (imports + templates). "Custom" = shared wrapper in 
 - Unit/component: apiFetch (headers, public paths, error parsing, status 0), query-key invalidation, auth guard matrix, Zod schemas vs §3 rules, CE adapter, theme init.
 - E2E (Playwright, local backend + isolated DB `uptrack_migration_test`, synthetic accounts A/B): the M01/S01 scenario IDs (R1–R13, U/C/E/T/K/X series) re-run against React; screenshots compared with `baseline/screenshots/`; viewports 375/768/1280; print emulation for the report.
 - Every check recorded PASS/FAIL/NOT RUN with command + exit code in `verification/mxx-report.md`. Upload success path: NOT RUN without safe Cloudinary credentials.
+
+## M04 implementation clarification — approved 2026-11-01
+
+The human selected Angular's inclusive mobile boundary: mobile ≤768 px, desktop >768 px. Standard Tailwind md starts at 768 px and is not an exact match. M04 uses matching arbitrary media variants and matchMedia; it does not redefine global md. Apply the same inclusive boundary when M10 implements table/cards.
+
+M04 canonical routes are explicitly labelled migration placeholders with no authentication or API behavior. The final route/auth/query-param contract above remains unchanged and is implemented in its owning later milestones. The root foundation view remains until M07. Report placeholder stays outside AppShell.

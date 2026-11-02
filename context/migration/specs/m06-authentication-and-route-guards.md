@@ -38,3 +38,7 @@ Login/register dialogs, auth provider, route guards and tests.
 
 ## Completion report
 `context/migration/verification/m06-report.md`
+
+## Mandatory compatibility gate recorded by M04 — 2026-11-01
+
+Before implementing authentication forms, verify that the installed RHF resolver and Zod 4 return field errors for invalid input and parsed values for valid input, including async resolver use. M04 reproduced a failure: @hookform/resolvers 3.10.0 expects ZodError.errors while installed Zod 4.6.7 exposes issues; invalid input rejects with ZodError instead of returning field errors. See `verification/m04-report.md` for reproduction. A dependency update requires separate human approval; do not downgrade Zod, add an ad hoc resolver workaround, or assume compatibility from the M03 report. This is a prerequisite, not approval to start M06.
