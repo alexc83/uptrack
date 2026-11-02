@@ -1,10 +1,11 @@
-import { test, expect, capture, noOverflow, setTheme } from './helpers';
+import { test, expect, capture, noOverflow, setTheme, signIn } from './helpers';
 
 for (const theme of ['light', 'dark'] as const) {
   test(`theme ${theme}: tokens, Flowbite colors and persisted toggle`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.emulateMedia({ colorScheme: theme === 'light' ? 'dark' : 'light' });
     await setTheme(page, theme);
+    await signIn(page);
     await page.goto('/dashboard');
     const expected = theme === 'light' ? 'rgb(24, 95, 165)' : 'rgb(55, 138, 221)';
     await expect(page.getByRole('button', { name: 'Primary action', exact: true })).toHaveCSS('background-color', expected);
@@ -40,11 +41,15 @@ for (const storage of ['absent', 'invalid', 'denied'] as const) {
   for (const colorScheme of ['light', 'dark'] as const) {
     test(`OS ${colorScheme}, storage ${storage}: startup fallback and safe interaction`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
+      await signIn(page);
       await page.addInitScript(value => {
         if (value === 'invalid') localStorage.setItem('uptrack-theme', 'invalid');
         if (value === 'denied') {
-          Storage.prototype.getItem = () => { throw new Error('denied'); };
-          Storage.prototype.setItem = () => { throw new Error('denied'); };
+          // M06: only the theme key is denied so the (mocked) session can still start; the theme behaviour under test is unchanged.
+          const originalGet = Storage.prototype.getItem;
+          const originalSet = Storage.prototype.setItem;
+          Storage.prototype.getItem = function (key: string) { if (key === 'uptrack-theme') throw new Error('denied'); return originalGet.call(this, key); };
+          Storage.prototype.setItem = function (key: string, v: string) { if (key === 'uptrack-theme') throw new Error('denied'); return originalSet.call(this, key, v); };
         }
       }, storage);
       await page.goto('/credentials');
@@ -57,8 +62,10 @@ for (const storage of ['absent', 'invalid', 'denied'] as const) {
 
 test('reduced motion disables skeleton and content animation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await signIn(page);
   await page.goto('/dashboard');
   await expect(page.locator('.animate-pulse')).toHaveCSS('animation-name', 'none');
+  await page.evaluate(() => localStorage.removeItem('uptrack_token'));
   await page.goto('/');
   await expect(page.locator('.ut-fade-in')).toHaveCSS('animation-name', 'none');
 });

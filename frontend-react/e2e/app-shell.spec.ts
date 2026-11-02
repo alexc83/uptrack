@@ -1,4 +1,6 @@
-import { test, expect, capture, noOverflow, setTheme } from './helpers';
+import { test, expect, capture, noOverflow, setTheme, signIn } from './helpers';
+
+test.beforeEach(async ({ page }) => { await signIn(page); });
 
 test('desktop geometry, persistence, navigation, account menu and independent scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -26,8 +28,9 @@ test('desktop geometry, persistence, navigation, account menu and independent sc
   }
   await page.getByRole('button', { name: 'Open account menu' }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByText('Preview account — not signed in')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Log out/ })).toBeDisabled();
+  // M06: the placeholder account (disabled "Log out") is replaced by the signed-in identity and an enabled Log out.
+  await expect(page.getByRole('menu').getByText('Test User')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Log out/ })).toBeEnabled();
   await page.keyboard.press('ArrowDown');
   await expect(page.getByRole('link', { name: 'Settings', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');

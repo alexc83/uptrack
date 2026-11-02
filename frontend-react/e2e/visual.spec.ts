@@ -1,4 +1,6 @@
-import { test, expect, setTheme } from './helpers';
+import { test, expect, setTheme, signIn } from './helpers';
+
+test.beforeEach(async ({ page }) => { await signIn(page); });
 
 // Golden images are established only after inspecting the matching M04 evidence
 // against the M01 shell references. Test retries never update these baselines.
