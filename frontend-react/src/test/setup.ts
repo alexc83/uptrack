@@ -1,1 +1,24 @@
 import '@testing-library/jest-dom';
+import { transferableAbortController } from 'node:util';
+import { cleanup } from '@testing-library/react';
+import { afterEach, beforeEach, vi } from 'vitest';
+import { installMatchMedia } from './match-media';
+
+// jsdom does not implement inert; the browser suite verifies native isolation.
+if (!('inert' in HTMLElement.prototype)) Object.defineProperty(HTMLElement.prototype, 'inert', {
+  configurable: true,
+  get() { return this.hasAttribute('inert'); },
+  set(value: boolean) { this.toggleAttribute('inert', value); },
+});
+// React Router's native Request must receive a Node AbortSignal, not jsdom's realm.
+const NodeAbortController = transferableAbortController().constructor;
+beforeEach(() => { installMatchMedia(); vi.stubGlobal('AbortController', NodeAbortController); });
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+  document.documentElement.classList.remove('dark');
+  document.body.removeAttribute('style');
+  document.body.querySelectorAll('[inert]').forEach(element => element.removeAttribute('inert'));
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});

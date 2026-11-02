@@ -6,6 +6,12 @@
 
 /* UpTrack design tokens (matching Angular styles.scss) */
 :root {
+  color-scheme: light;
+  --ut-surface: #ffffff;
+  --ut-text: #111827;
+  --ut-muted: #64748b;
+  --ut-border: #d3dce8;
+  --ut-hover: #e7ebf0;
   --ut-primary: #185fa5;
   --ut-primary-dark: #134d87;
   --ut-primary-subtle: #e8f1fb;
@@ -24,6 +30,12 @@
 }
 
 html.dark {
+  color-scheme: dark;
+  --ut-surface: #171a21;
+  --ut-text: #f3f4f6;
+  --ut-muted: #a3adbd;
+  --ut-border: #303642;
+  --ut-hover: #252b35;
   --ut-primary: #378add;
   --ut-primary-dark: #5499e3;
   --ut-primary-subtle: #172233;
@@ -54,4 +66,31 @@ html.dark {
 
 .ut-fade-in {
   animation: ut-fade-in 0.18s ease-out both;
+}
+
+@theme inline {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --color-ut-primary: var(--ut-primary);
+  --color-ut-primary-hover: var(--ut-primary-dark);
+  --color-ut-primary-subtle: var(--ut-primary-subtle);
+  --color-ut-sidebar: var(--ut-sidebar-bg);
+  --color-ut-main: var(--ut-main-bg);
+  --color-ut-surface: var(--ut-surface);
+  --color-ut-text: var(--ut-text);
+  --color-ut-muted: var(--ut-muted);
+  --color-ut-border: var(--ut-border);
+  --color-ut-hover: var(--ut-hover);
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ut-primary);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
