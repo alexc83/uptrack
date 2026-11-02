@@ -96,3 +96,7 @@ Completion report: `context/migration/verification/m04-report.md`.
 ## Implementation completion
 
 Implemented and verified on the approved branch; READY acceptance criteria remain unchanged. See m04-report.md for commands, initial failures/fixes, 32 passing unit tests, 34 passing browser tests, eight inspected/compared visual baselines, and deferred tooling/form-compatibility risks. Post-verification approval: human approved implementation/results and authorized exactly two commits after final scope/evidence checks. React source: `9440d2160f74b43314dfa9519179290d709254dd`; the second commit records documentation/evidence. No push, merge, deployment, branch deletion or M05 work authorized.
+
+## Subsequent merge/push record
+
+After the implementation/verification and two commits above, the human separately authorized merge and push. `main` was fast-forwarded to `b47bd4226c83015139bf9e5a54cd4ad170f06bbd` and pushed to `origin/main`; live remote hash and clean local tree were verified. M04 is Merged. The original feature branch remains retained; no branch deletion, deployment, hosted-backend contact or M05 work was performed. The verification report remains preserved as the pre-merge record.
