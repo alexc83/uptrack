@@ -1,6 +1,6 @@
 # M08 — Dashboard
 
-**Status: READY — plan approved and implementation authorized by the human (2026-11-02). Commit, push, merge, deployment, branch deletion, reseeding, backend/Angular changes, M09 and screenshot-baseline updates are NOT authorized.**
+**Status: IMPLEMENTED, VERIFIED, MERGED AND PUSHED (fast-forward; `d215667`, `054e7af`, `b150343`). Historical authorization text follows. READY — plan approved and implementation authorized by the human (2026-11-02). Commit, push, merge, deployment, branch deletion, reseeding, backend/Angular changes, M09 and screenshot-baseline updates are NOT authorized.**
 **Branch (approved exception, M08 only):** `claude/m08-dashboard-planning-u4ieuq`. The master plan names `feature/react-dashboard`; the harness-managed cloud session cannot create or push that branch, so the human approved this single exception (branch name only). All other requirements stand. Do not rename the branch. Future milestones return to the master-plan naming.
 **Baseline:** `main` = `origin/main` = `1f3d63f1fa8a882a91b82014c503f15659b77471` (verified equal to the live remote; clean tree). `1f3d63f` is the separately committed local demo-tooling (`scripts/dev-demo/`, no application code) layered on the M07 handoff `6620340`; it is accepted as project history and is not rewritten.
 **Prerequisite:** M07 merged and pushed.
