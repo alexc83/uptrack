@@ -24,7 +24,7 @@ The React frontend for UpTrack, replacing the legacy Angular 21 + PrimeNG client
 
 ## Milestone Status
 Established during **M03 — React Project Scaffold & Foundation**.
-Feature modules (theme/shell, API layer, authentication, landing, dashboard, credentials, CE records, reports, settings) are added in subsequent milestones M04–M12.
+M04 provides theme/shell and shared presentation. M05 provides dormant HTTP/query infrastructure. Authentication and business features remain later milestones; current verification and limitations are in `../context/migration/verification/m05-report.md`.
 
 ## M04 shell and shared UI
 
@@ -42,3 +42,21 @@ Feature modules (theme/shell, API layer, authentication, landing, dashboard, cre
 Existing M03 smoke tests remain unchanged. New browser tests observe and block API requests and fail on any attempted `/api` contact or uncaught browser error. Visual baselines in `e2e/visual.spec.ts-snapshots` were inspected against M01 shell references; `npm run e2e` compares them without updating. Browser/OS/font differences require inspection, not automatic baseline replacement.
 
 Do not update validation dependencies during M04. Before M06 forms, the resolver/Zod 4 compatibility gate in the M06 spec must pass; installed resolver 3.10.0 currently rejects invalid Zod 4 data instead of returning field errors. Preserve the deepmerge-ts override and tracked tooling advisories.
+
+## M05 HTTP and query foundation
+
+`core/api/api-fetch.ts` exports inert `apiFetch` and `createApiClient({baseUrl, fetch, getAuth})` for deterministic testing. `VITE_API_BASE_URL` defaults to `/api`; Vite's existing proxy targets local port 8080 (`VITE_PROXY_TARGET` can override it). Configuration is build-time and is not a credential store. No M04 preview invokes the client; no backend is needed to render or test the shell.
+
+Use relative paths and `query` scalar values; null/undefined/empty strings are omitted, while zero/false and search whitespace are preserved. Requests stay under the configured origin/base path, and redirects are blocked. `json` and `formData` are mutually exclusive. The client owns Authorization and Content-Type: JSON gets application/json, native FormData supplies its own multipart boundary. No request retries occur in transport.
+
+JSON mode returns `Promise<T>` after JSON parsing, **without runtime DTO validation**. Select `{ response: 'empty' }` for void/delete/password responses. Unexpected empty/204/malformed JSON success throws `ApiError` kind `response` with actual HTTP status. Non-2xx throws kind `http` with actual status and unknown parsed/raw `details`; only a string backend message overrides the established fallback. Network failure is kind `network`, status 0. Do not log raw errors/details that may contain sensitive backend data. Native abort rejections/reasons are preserved, including body-read cancellation.
+
+`registerApiAuth({ getToken, onUnauthorized })` in `core/api/api-auth.ts` returns identity-safe cleanup. M06 supplies these synchronous callbacks; transport reads no storage, decodes no JWT and performs no session effects. Login/register/health never read or attach a token or notify unauthorized. A late protected 401 only notifies if registration and token are still current. M06 must re-register on replacement sessions and implement its own session generation and cache clearing. Caller Authorization overrides are discarded; redirects cannot forward bearer credentials elsewhere.
+
+Thin modules `auth-api`, `credentials-api`, `ce-records-api`, `dashboard-api`, `uploads-api`, `users-api` describe 19 callable endpoints with optional signal arguments. `lib/dto/` preserves Spring wire shapes, arrays, raw ratios and nullable certificate metadata. There is no invented pagination envelope or feature hook; CE flattening/client pagination belongs to M10. Registration/login bindings do not persist returned tokens.
+
+The existing provider owns one production QueryClient initialized by `createQueryClient`. Only HTTP 5xx gets at most two retries; 4xx, network, response, cancellation and unknown failures never retry. Mutations never retry. Lists/dashboard use 30-second freshness; credential/CE detail/report/auth/profile use zero. Leave other Query defaults unchanged. `query-keys.ts` provides canonical M02 keys; `invalidation.ts` invalidates lists/dashboard/affected credential prefixes and CE detail IDs. Future mutation callers supply old/new credential contexts; a cascading delete can also invalidate the CE-detail root. No optimistic update or session cache clearing is implemented here.
+
+Query functions must pass their context.signal into the endpoint binding. TanStack then owns cancellation/reversion; a separately aborted Fetch is a native abort, not a synthesized TanStack CancelledError. Isolate tests with factory-created clients and clear their caches afterward.
+
+New native browser fixtures use intercepted localhost requests; unmatched API/external requests are blocked. Existing M04 fixtures retain zero-API assertions. Captures now go to ignored `test-results/evidence/`; historical M04 evidence and the eight snapshot goldens are never overwritten. Browser coverage is Edge on macOS, not cross-engine/OS parity. The M05 report preserves the original intermittent Escape-test failure and its diagnosis: initial drawer focus opens the theme tooltip, whose first Escape dismissal precedes drawer dismissal. The approved test correction explicitly verifies both layers and focus restoration; five consecutive default parallel suites pass without worker/timeout changes.

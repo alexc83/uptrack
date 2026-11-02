@@ -2,19 +2,19 @@ import { test as base, expect, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export const evidenceDirectory = resolve('../context/migration/verification/m04-evidence');
+export const evidenceDirectory = resolve('test-results/evidence');
 export const test = base.extend<{ networkIsolation: void }>({
   networkIsolation: [async ({ page }, use) => {
     mkdirSync(evidenceDirectory, { recursive: true });
     writeFileSync(resolve(evidenceDirectory, 'browser.json'), JSON.stringify({ browser: page.context().browser()?.version(), platform: process.platform, apiRequestsExpected: 0 }, null, 2) + '\n');
     const apiRequests: string[] = [];
     const errors: string[] = [];
-    await page.route('**/api{,/**}', async route => {
+    await page.route(/^http:\/\/localhost:5173\/api(?:\/|\?|$)/, async route => {
       apiRequests.push(new URL(route.request().url()).pathname);
       await route.abort();
     });
     page.on('request', request => {
-      if (/\/api(?:\/|$)/.test(new URL(request.url()).pathname)) apiRequests.push(new URL(request.url()).pathname);
+      if (/^\/api(?:\/|$)/.test(new URL(request.url()).pathname)) apiRequests.push(new URL(request.url()).pathname);
     });
     page.on('pageerror', error => errors.push(error.message));
     await use();
