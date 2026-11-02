@@ -2,7 +2,7 @@
 
 ## Status
 
-M04 — Theme, shared UI and app shell. Implemented and verified; implementation/results approved and two commits authorized after final scope/evidence checks. Implementation authorized on `feature/react-app-shell` from `9e297f8`; see `migration/specs/m04-theme-shared-ui-and-app-shell.md` and `migration/verification/m04-report.md`. React source committed as `9440d2160f74b43314dfa9519179290d709254dd`; migration documentation records the approved second commit. No push/merge authorized. M05 has not started.
+M04 — Theme, shared UI and app shell — completed, approved, merged and pushed. React source: `9440d2160f74b43314dfa9519179290d709254dd`; documentation: `b47bd4226c83015139bf9e5a54cd4ad170f06bbd`. Local and live remote main were verified synchronized at `b47bd42` after the authorized fast-forward/push. The original feature branch is retained. M05 is not started or authorized. The post-merge documentation correction was prepared on `chore/m04-merge-status` and approved for commit/push to `main`; no application code changed. Await further human instructions. Hosted backend remains suspended and untouched.
 
 ## History
 
@@ -44,3 +44,5 @@ M04 — Theme, shared UI and app shell. Implemented and verified; implementation
 - **2026-03-25** — Completed Fix Auth Bootstrap Render-Blocking by removing `APP_INITIALIZER` from `app.config.ts`, making `AuthStore.bootstrap()` idempotent with a `bootstrapped` flag and shared promise deduplication, and moving the bootstrap call into `authGuard` and `landingRedirectGuard` so the landing page renders instantly and auth resolution happens just-in-time only when a protected route is accessed.
 
 - **2026-11-01** — Implemented and verified M04 React theme, shared presentation components, responsive shell and labelled route previews on `feature/react-app-shell`; 32 unit/component tests and 34 browser tests pass, including eight visual comparisons. Production audit clean; 16 deferred dev-tree findings and resolver/Zod 4 gate recorded. Implementation/results and two focused commits approved after scope/evidence checks; merge still requires separate authorization.
+
+- **Post-M04 merge** — After explicit human authorization, fast-forwarded `main` to `b47bd4226c83015139bf9e5a54cd4ad170f06bbd` and pushed `origin/main`; verified matching live remote hash and clean tree. M05 not started; hosted backend untouched; feature branch retained. A later unrelated untracked duplicate test helper was left untouched during the documentation correction.

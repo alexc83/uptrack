@@ -1,6 +1,6 @@
 # UpTrack React Migration — Master Plan
 
-Status: M01, S01, M02, S02 and M03 are merged and pushed. M03 reached `main` at `9e297f8b034575785cd4d6323464d34e6e8c8058` (`eb7948b`, `9e297f8`). M04 implementation is authorized on `feature/react-app-shell`; see its READY spec and verification report. The externally hosted backend remains suspended and must not be contacted or deployed without separate authorization.
+Status: M01, S01, M02, S02, M03 and M04 are merged and pushed. M04 reached `main` and live `origin/main` at `b47bd4226c83015139bf9e5a54cd4ad170f06bbd` (`9440d21`, `b47bd42`) after explicit merge/push authorization. M05 is DRAFT / Not started; no M05 implementation is authorized. The externally hosted backend remains suspended and must not be contacted or deployed without separate authorization.
 
 ## Objective
 Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript + Flowbite React + Tailwind CSS 4 frontend while preserving all user-visible behavior and existing Spring Boot APIs. This is an AI-agent refactoring experiment, not a portfolio rewrite.
@@ -27,7 +27,7 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 - **M02** Architecture and parity contract — `chore/react-architecture`; prerequisite: S01 merged (so the contract describes the fixed API).
 - **S02** Backend dependency remediation (inserted between M02 and M03; ID-preserving, no renumbering; M01–M14 and S01 unchanged) — branch `fix/backend-dependency-remediation`; prerequisite: M02 merged. Spec `specs/s02-backend-dependency-remediation.md` (READY; implemented, verified and merged: `cb74890`, `6e0ba0d`). Target is Scenario B+ of `dependency-security-assessment.md`, done in incremental groups with verification after each group and a final dependency-tree/advisory assessment; the projected advisory count is not a guaranteed result.
 - **M03** React/Flowbite foundation — `feature/react-foundation`; prerequisite: S02 merged and verified (React work must run against the patched backend).
-- **M04** Theme, shared UI and app shell — `feature/react-app-shell`; prerequisite: prior milestone merged.
+- **M04** Theme, shared UI and app shell — `feature/react-app-shell`; implemented, verified, merged and pushed (`9440d21`, `b47bd42`); feature branch retained.
 - **M05** Typed HTTP and server-state foundation — `feature/react-api-layer`; prerequisite: prior milestone merged.
 - **M06** Authentication and route guards — `feature/react-auth`; prerequisite: prior milestone merged.
 - **M07** Public landing page — `feature/react-landing`; prerequisite: prior milestone merged.
@@ -57,7 +57,7 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 - Human approves commit, merge and branch deletion separately; log hash/status after actions.
 
 ## Specification approach
-M01–M03 and S01/S02 are completed. M04 is READY and approved for implementation; later milestone specs remain DRAFT outlines. Before each milestone, AI performs read-only source inspection and expands that spec to READY with endpoint contracts, behavior matrix, tests and exact acceptance criteria. Human approves READY before code changes. Never rewrite acceptance criteria merely to match generated code; request a change decision.
+M01–M04 and S01/S02 are completed and merged. M05–M14 remain DRAFT outlines; M05 has not started. Before each milestone, AI performs read-only source inspection and expands that spec to READY with endpoint contracts, behavior matrix, tests and exact acceptance criteria. Human approves READY before code changes. Never rewrite acceptance criteria merely to match generated code; request a change decision.
 
 ## Source-of-truth precedence
 Direct user request > `AGENTS.md` project workflow > approved active spec > `context/migration/architecture.md` > actual source code/config for observed behavior > README/legacy docs. When these disagree, document the discrepancy; do not guess.
