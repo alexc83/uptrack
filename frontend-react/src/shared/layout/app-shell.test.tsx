@@ -25,8 +25,17 @@ it('uses mobile through 768 and restores saved desktop collapse above it', async
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Open navigation' }));
   expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument();
+  // The drawer focuses its first control on the next animation frame. That
+  // focus opens the theme tooltip, which owns the first Escape dismissal.
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Switch to dark mode' })).toHaveFocus());
+  const tooltip = screen.getByRole('tooltip');
+  await waitFor(() => expect(tooltip).not.toHaveClass('invisible'));
+  await user.keyboard('{Escape}');
+  await waitFor(() => expect(tooltip).toHaveClass('invisible'));
+  expect(screen.getByRole('dialog', { name: 'Navigation' })).toBeInTheDocument();
   await user.keyboard('{Escape}');
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Open navigation' })).toHaveFocus());
   act(() => resize(769));
   expect(screen.getByTestId('desktop-sidebar')).toHaveClass('w-[88px]');
   act(() => resize(767));
