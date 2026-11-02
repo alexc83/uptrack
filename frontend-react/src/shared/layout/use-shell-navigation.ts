@@ -11,6 +11,9 @@ export function useShellNavigation() {
     const query = window.matchMedia(mobileQuery);
     const update = () => { setMobile(query.matches); setOpen(false); };
     query.addEventListener('change', update);
+    // The viewport may have crossed the breakpoint between the initial render and this subscription;
+    // that change was never delivered to us, so adopt the current state (a no-op when unchanged).
+    setMobile(query.matches);
     return () => query.removeEventListener('change', update);
   }, []);
   function toggleCollapsed() {

@@ -1,4 +1,4 @@
-import { test, expect, capture, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, capture, mockDashboard, nextFocusableKey, noOverflow, setTheme, signIn } from './helpers';
 
 test.beforeEach(async ({ page }) => { await signIn(page); });
 
@@ -106,10 +106,10 @@ test('767/768/769 breakpoint transitions preserve desktop collapse and remove cl
   }
 });
 
-test('skip link and keyboard-visible focus reach semantic main content', async ({ page }) => {
+test('skip link and keyboard-visible focus reach semantic main content', async ({ page, browserName }) => {
   await page.goto('/credentials');
   await expect(page.getByRole('heading', { level: 1, name: 'Credentials' })).toBeVisible();
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(nextFocusableKey(browserName));
   await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('#main-content')).toBeFocused();

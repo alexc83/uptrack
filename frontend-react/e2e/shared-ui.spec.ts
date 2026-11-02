@@ -1,4 +1,4 @@
-import { test, expect, capture, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, activateWithKeyboard, capture, noOverflow, setTheme, signIn } from './helpers';
 
 test.beforeEach(async ({ page }) => { await signIn(page); });
 
@@ -28,7 +28,7 @@ for (const theme of ['light', 'dark'] as const) {
       await capture(page, `states-${theme}-${width}`);
       for (const close of ['escape', 'close', 'backdrop']) {
         const trigger = page.getByRole('button', { name: 'Open modal', exact: true });
-        await trigger.click();
+        await activateWithKeyboard(page, trigger);
         const dialog = page.getByRole('dialog', { name: 'Modal preview' });
         await expect(dialog).toBeVisible();
         await expect(page.getByRole('textbox', { name: 'Modal example field' })).toBeFocused();
@@ -46,7 +46,7 @@ for (const theme of ['light', 'dark'] as const) {
       }
       const drawerTrigger = page.getByRole('button', { name: 'Open drawer', exact: true });
       for (const close of ['escape', 'close', 'backdrop']) {
-        await drawerTrigger.click();
+        await activateWithKeyboard(page, drawerTrigger);
         const drawer = page.getByRole('dialog', { name: 'Drawer preview', exact: true });
         await expect(drawer).toBeVisible();
         const box = await drawer.boundingBox();
@@ -70,11 +70,11 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(page.getByRole('button', { name: 'Close drawer' })).toBeFocused();
       await page.keyboard.press('Escape');
       const confirmTrigger = page.getByRole('button', { name: 'Open confirmation' });
-      await confirmTrigger.click();
+      await activateWithKeyboard(page, confirmTrigger);
       await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
       await expect(confirmTrigger).toBeFocused();
-      await confirmTrigger.click();
+      await activateWithKeyboard(page, confirmTrigger);
       await page.getByRole('button', { name: 'Confirm', exact: true }).click();
       await expect(page.getByRole('status').filter({ hasText: 'Preview confirmed' })).toBeVisible();
     });
@@ -84,15 +84,16 @@ for (const theme of ['light', 'dark'] as const) {
 test('nested dialog owns Escape and focus while drawer retains isolation and scroll lock', async ({ page }) => {
   await page.goto('/settings');
   const trigger = page.getByRole('button', { name: 'Open drawer', exact: true });
-  await trigger.click();
+  await activateWithKeyboard(page, trigger);
   const nested = page.getByRole('button', { name: 'Open nested modal' });
-  await nested.click();
+  await activateWithKeyboard(page, nested);
   const modal = page.getByRole('dialog', { name: 'Nested modal preview' });
   await expect(modal).toBeVisible();
   await capture(page, 'nested-overlays');
   for (let index = 0; index < 8; index++) {
     await page.keyboard.press(index % 2 ? 'Shift+Tab' : 'Tab');
-    expect(await modal.evaluate(element => element.contains(document.activeElement))).toBe(true);
+    // Eventual: focus may rest briefly on a floating-ui focus guard before being returned into the modal.
+    await expect.poll(() => modal.evaluate(element => element.contains(document.activeElement))).toBe(true);
   }
   await page.keyboard.press('Escape');
   await expect(modal).toHaveCount(0);

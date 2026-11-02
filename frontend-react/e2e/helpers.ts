@@ -1,4 +1,4 @@
-import { test as base, expect, type Page } from '@playwright/test';
+import { test as base, expect, type Locator, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -69,4 +69,20 @@ export async function noOverflow(page: Page) {
 }
 export async function setTheme(page: Page, theme: 'light' | 'dark') {
   await page.addInitScript(value => localStorage.setItem('uptrack-theme', value), theme);
+}
+
+/**
+ * Opens an overlay the way a keyboard user does. Safari/WebKit does not focus a button on mouse click,
+ * so a mouse-opened overlay has no trigger to restore focus to there; keyboard activation is the
+ * path on which focus restoration is a meaningful guarantee in every engine.
+ */
+export async function activateWithKeyboard(page: Page, trigger: Locator) {
+  await trigger.focus();
+  await expect(trigger).toBeFocused();
+  await page.keyboard.press('Enter');
+}
+
+/** Key that moves focus to the next link/control: Safari/WebKit on macOS skips links on plain Tab (Option+Tab reaches them). */
+export function nextFocusableKey(browserName: string) {
+  return browserName === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab';
 }
