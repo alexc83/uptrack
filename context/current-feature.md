@@ -2,7 +2,7 @@
 
 ## Status
 
-Idle
+M04 — Theme, shared UI and app shell. Implemented and verified; implementation/results approved and two commits authorized after final scope/evidence checks. Implementation authorized on `feature/react-app-shell` from `9e297f8`; see `migration/specs/m04-theme-shared-ui-and-app-shell.md` and `migration/verification/m04-report.md`. React source committed as `9440d2160f74b43314dfa9519179290d709254dd`; migration documentation records the approved second commit. No push/merge authorized. M05 has not started.
 
 ## History
 
@@ -42,3 +42,5 @@ Idle
 - **2026-03-24** — Completed Settings Security - Change Password with a dedicated Security section on `/settings`, a focused password-change modal, JWT-scoped self-service password update endpoint, current-password verification, client and server validation, success and error feedback, and frontend/backend verification for password-change behavior.
 - **2026-03-25** — Completed Performance Polish with a global `ut-fade-in` transition applied to all loaded content (dashboard, credentials, CE records, settings, drawers), CE records summary card skeletons during load to prevent layout shift, and theme-aware skeleton gradients across all loading states replacing light-mode-only `color-mix(…, white)` values.
 - **2026-03-25** — Completed Fix Auth Bootstrap Render-Blocking by removing `APP_INITIALIZER` from `app.config.ts`, making `AuthStore.bootstrap()` idempotent with a `bootstrapped` flag and shared promise deduplication, and moving the bootstrap call into `authGuard` and `landingRedirectGuard` so the landing page renders instantly and auth resolution happens just-in-time only when a protected route is accessed.
+
+- **2026-11-01** — Implemented and verified M04 React theme, shared presentation components, responsive shell and labelled route previews on `feature/react-app-shell`; 32 unit/component tests and 34 browser tests pass, including eight visual comparisons. Production audit clean; 16 deferred dev-tree findings and resolver/Zod 4 gate recorded. Implementation/results and two focused commits approved after scope/evidence checks; merge still requires separate authorization.

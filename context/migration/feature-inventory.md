@@ -12,7 +12,7 @@ Status: M02 mapping decisions recorded 2026-10-31 (see bottom section). These ar
 | Certificates | `frontend/src/app/services/upload.service.ts` | M10 | Not run | Not started | Cloudinary through backend |
 | CE report | `frontend/src/app/features/ce-report/` | M11 | Not run | Not started | Print and multi-page |
 | Settings | `frontend/src/app/features/settings/` | M12 | Not run | Not started | Profile/password |
-| Responsive/theme | `frontend/src/app/layout/`, `context/screenshots/` | M04, M13 | Not run | Not started | Light/dark |
+| Responsive/theme | `frontend/src/app/layout/`, `context/screenshots/` | M04, M13 | M01 runtime + screenshots | M04 implementation; verification report authoritative | Light/dark, shell and shared UI only; M13 cross-feature checks pending |
 
 
 ## M01 expanded scenario matrix
@@ -62,3 +62,7 @@ Decisions from the approved M02 spec (`specs/m02-architecture-and-parity-contrac
 | Responsive/theme | Tailwind v4 class dark mode on `html.dark`; single `uptrack-theme` key, pre-paint inline script; `md:` = 768 px shell breakpoint; token palette per parity contract §7 | M04, M13 |
 
 Cross-feature refresh in React = mutation `onSuccess` query invalidation (parity contract §4), replacing Angular's `CredentialWriteEventsService.revision`.
+
+## M04 clarification — 2026-11-01
+
+M04 implements shared presentation and shell only. Canonical business routes are labelled migration previews; their feature/auth statuses above remain Not started. Mobile is ≤768 px inclusive, desktop >768 px (approved correction to the earlier md wording). M01 evidence is historical and unchanged. Current M04 browser results and screenshots are in `verification/m04-report.md` and `verification/m04-evidence/`.

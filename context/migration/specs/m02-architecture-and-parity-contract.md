@@ -176,3 +176,7 @@ Out of scope for M02: all code, scaffolding, dependency installs, backend change
 
 ## Completion report
 `context/migration/verification/m02-report.md`
+
+## Dated clarification — M04 approval, 2026-11-01
+
+The human approved preserving actual Angular mobile behavior at ≤768 px inclusive, with desktop >768 px. The original references equating this to standard Tailwind md were inaccurate at exactly 768 px. Use matching arbitrary media variants and matchMedia without changing the global md breakpoint. This dated clarification supersedes only that wording; the original approval record and historical verification report remain intact. M04 uses canonical labelled presentation placeholders until each later feature/auth milestone implements the final behavior.
