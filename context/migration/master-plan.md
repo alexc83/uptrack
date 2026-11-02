@@ -1,6 +1,6 @@
 # UpTrack React Migration — Master Plan
 
-Status: M01, S01, M02, S02, M03, M04, M05, M06 and M07 are merged and pushed (`8e9df82`, `efc5011`; main and origin/main at `efc5011072d21fd9a025aa295274a7b12414fb11`). Verification and limitations are recorded in `verification/m07-report.md`. M08 has not started. The externally hosted backend remains suspended and must not be contacted or deployed without separate authorization.
+Status: M01, S01, M02, S02, M03, M04, M05, M06 and M07 are merged and pushed (`8e9df82`, `efc5011`; main and origin/main at `efc5011072d21fd9a025aa295274a7b12414fb11`). Verification and limitations are recorded in `verification/m07-report.md`. M08 is implemented and awaiting review on the approved one-time branch exception `claude/m08-dashboard-planning-u4ieuq` (uncommitted; see `verification/m08-report.md`). The externally hosted backend remains suspended and must not be contacted or deployed without separate authorization.
 
 ## Objective
 Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript + Flowbite React + Tailwind CSS 4 frontend while preserving all user-visible behavior and existing Spring Boot APIs. This is an AI-agent refactoring experiment, not a portfolio rewrite.
@@ -31,7 +31,7 @@ Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript +
 - **M05** Typed HTTP and server-state foundation — `feature/react-api-layer`; prerequisite: prior milestone merged.
 - **M06** Authentication and route guards — `feature/react-auth`; prerequisite: prior milestone merged.
 - **M07** Public landing page — `feature/react-landing`; prerequisite: prior milestone merged.
-- **M08** Dashboard — `feature/react-dashboard`; prerequisite: prior milestone merged.
+- **M08** Dashboard — `feature/react-dashboard` (M08 only: human-approved exception, implemented on harness branch `claude/m08-dashboard-planning-u4ieuq`); prerequisite: prior milestone merged.
 - **M09** Credential CRUD — `feature/react-credentials`; prerequisite: prior milestone merged.
 - **M10** CE records and certificate workflows — `feature/react-ce-records`; prerequisite: prior milestone merged.
 - **M11** Compliance reporting and print — `feature/react-ce-report`; prerequisite: prior milestone merged.
