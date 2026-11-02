@@ -1,5 +1,7 @@
+import { credentialsApi } from '../../core/api/credentials-api';
+import { credential as credentialFixture } from '../../test/fixtures/api-fixtures';
 import { act, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { routes } from '../../app/router';
 import { ApiError, networkMessage } from '../../core/api/api-error';
 import { queryKeys } from '../../core/query/query-keys';
@@ -56,7 +58,9 @@ describe('login dialog', () => {
     expect(within(d).getByLabelText('Email')).toHaveAttribute('readonly');
     await act(async () => { gate.resolve(authResponseFor(testToken('n'), user)); await gate.promise; });
     await waitFor(() => expect(router.state.location.pathname).toBe('/credentials'));
-    expect(router.state.location.search).toBe('?credentialId=abc');
+    expect(await screen.findByRole('dialog', { name: 'Credential details' })).toBeVisible();
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(credentialsApi.get).toHaveBeenCalledWith('abc', expect.anything());
     expect(router.state.location.hash).toBe('#x');
     expect(client.getQueryData(queryKeys.dashboard())).toBeUndefined();
   });
@@ -176,4 +180,10 @@ describe('sign-up dialog', () => {
     expect(await within(d).findByRole('alert')).toHaveTextContent('Email is already in use.');
     expect(within(d).getByLabelText('Email')).not.toHaveAttribute('aria-invalid', 'true');
   });
+});
+
+// M09: these routing/auth tests now reach the real credential page.
+beforeEach(() => {
+  vi.spyOn(credentialsApi, 'list').mockResolvedValue([]);
+  vi.spyOn(credentialsApi, 'get').mockResolvedValue(credentialFixture);
 });

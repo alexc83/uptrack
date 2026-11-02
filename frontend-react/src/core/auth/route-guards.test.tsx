@@ -1,5 +1,7 @@
+import { credentialsApi } from '../../core/api/credentials-api';
+import { credential as credentialFixture } from '../../test/fixtures/api-fixtures';
 import { act, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { routes } from '../../app/router';
 import { ApiError, networkMessage } from '../api/api-error';
 import { getApiAuthRegistration } from '../api/api-auth';
@@ -89,10 +91,13 @@ describe('RequireAuth', () => {
 
   it('moves to the login dialog when a protected 401 expires a live session, and restores the page after login', async () => {
     const { router, store, authApi, user: person } = renderWithProviders(null, { routes, path: '/credentials?credentialId=z', session: 'authenticated' });
-    expect(await screen.findByText(placeholder)).toBeVisible();
+    expect(await screen.findByRole('dialog', { name: 'Credential details' })).toBeVisible();
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    // Wait for React Router to commit its replacement navigation before expiring the session.
+    await act(async () => { await new Promise<void>(resolve => requestAnimationFrame(() => resolve())); });
     act(() => store.handleUnauthorized());
     await waitFor(() => expect(router.state.location.pathname).toBe('/'));
-    expect(search(router).get('returnTo')).toBe('/credentials?credentialId=z');
+    expect(search(router).get('returnTo')).toBe('/credentials');
     expect(store.getSnapshot().notice).toBe('expired');
     const dialog = await screen.findByRole('dialog', { name: 'Log in' });
     expect(within(dialog).getByText('Your session expired. Please log in again.')).toBeVisible();
@@ -125,7 +130,11 @@ describe('GuestOnly and redirects', () => {
   it.each([['/app/credentials?credentialId=abc#x', '/credentials', '?credentialId=abc', '#x'], ['/app?x=1', '/dashboard', '?x=1', '']])('legacy redirect %s keeps query and hash', async (path, pathname, query, hash) => {
     const { router } = renderWithProviders(null, { routes, path, session: 'authenticated' });
     await waitFor(() => expect(router.state.location.pathname).toBe(pathname));
-    expect(router.state.location.search).toBe(query);
+    if (pathname === '/credentials') {
+      expect(await screen.findByRole('dialog', { name: 'Credential details' })).toBeVisible();
+      await waitFor(() => expect(router.state.location.search).toBe(''));
+      expect(credentialsApi.get).toHaveBeenCalledWith('abc', expect.anything());
+    } else expect(router.state.location.search).toBe(query);
     expect(router.state.location.hash).toBe(hash);
   });
 
@@ -192,4 +201,10 @@ describe('logout', () => {
     await screen.findByText(placeholder);
     expect(screen.getByText(user.email)).toBeVisible();
   });
+});
+
+// M09: these routing/auth tests now reach the real credential page.
+beforeEach(() => {
+  vi.spyOn(credentialsApi, 'list').mockResolvedValue([]);
+  vi.spyOn(credentialsApi, 'get').mockResolvedValue(credentialFixture);
 });

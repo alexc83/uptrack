@@ -21,7 +21,8 @@ export const routes: RouteObject[] = [
         element: <AppShell />,
         children: [
           { path: '/dashboard', lazy: () => import('../features/dashboard/dashboard-page').then(module => ({ Component: module.DashboardPage })) },
-          ...['credentials', 'ce-records', 'settings'].map(path => ({
+          { path: '/credentials', lazy: () => import('../features/credentials/credentials-page').then(module => ({ Component: module.CredentialsPage })) },
+          ...['ce-records', 'settings'].map(path => ({
             path: `/${path}`,
             lazy: () => import('./preview/shell-placeholder').then(module => ({ Component: module.ShellPlaceholder })),
           })),

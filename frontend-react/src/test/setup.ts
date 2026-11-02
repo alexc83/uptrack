@@ -13,8 +13,11 @@ if (!('inert' in HTMLElement.prototype)) Object.defineProperty(HTMLElement.proto
 // React Router's native Request must receive a Node AbortSignal, not jsdom's realm.
 const NodeAbortController = transferableAbortController().constructor;
 beforeEach(() => { installMatchMedia(); vi.stubGlobal('AbortController', NodeAbortController); });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // Overlay unmount queues scroll reconciliation and focus return before the next paint.
+  // Finish that frame before resetting the DOM or letting another test establish its styles.
+  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
   localStorage.clear();
   document.documentElement.classList.remove('dark');
   document.body.removeAttribute('style');

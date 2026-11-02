@@ -1,4 +1,4 @@
-import { test, expect, capture, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, allowApi, capture, e2eToken, noOverflow, setTheme, signIn } from './helpers';
 
 for (const theme of ['light', 'dark'] as const) {
   test(`theme ${theme}: tokens, Flowbite colors and persisted toggle`, async ({ page }) => {
@@ -45,6 +45,13 @@ for (const storage of ['absent', 'invalid', 'denied'] as const) {
     test(`OS ${colorScheme}, storage ${storage}: startup fallback and safe interaction`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
       await signIn(page);
+      // M09: the authenticated Credentials page now loads its list; keep this fixture GET-only and exact.
+      allowApi(page, 'GET', '/api/credentials');
+      await page.route('http://localhost:5173/api/credentials', route => {
+        if (route.request().method() !== 'GET') return route.fallback();
+        expect(route.request().headers()['authorization']).toBe(`Bearer ${e2eToken}`);
+        return route.fulfill({ status: 200, json: [] });
+      });
       await page.addInitScript(value => {
         if (value === 'invalid') localStorage.setItem('uptrack-theme', 'invalid');
         if (value === 'denied') {

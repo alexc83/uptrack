@@ -5,7 +5,6 @@ import { PageHeader } from '../../shared/layout/page-header';
 
 const SharedUiPreview = import.meta.env.DEV ? lazy(() => import('./shared-ui-preview').then(module => ({ default: module.SharedUiPreview }))) : null;
 const pages: Record<string, { title: string; milestone: string }> = {
-  '/credentials': { title: 'Credentials', milestone: 'M09' },
   '/ce-records': { title: 'CE Records', milestone: 'M10' },
   '/settings': { title: 'Settings', milestone: 'M12' },
 };

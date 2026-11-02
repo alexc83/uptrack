@@ -1,5 +1,7 @@
+import { credentialsApi } from '../../core/api/credentials-api';
+import { credential as credentialFixture } from '../../test/fixtures/api-fixtures';
 import { act, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, networkMessage } from '../../core/api/api-error';
 import { queryKeys } from '../../core/query/query-keys';
 import type { DashboardResponse } from '../../lib/dto/dashboard';
@@ -82,7 +84,8 @@ describe('success', () => {
     expect(within(activity).getAllByRole('listitem')).toHaveLength(4);
     expect(within(activity).getByText('Uploaded certificate')).toBeVisible();
     expect(within(activity).getByText('A Neonatal Program (PDF)')).toBeVisible();
-    expect(screen.queryByRole('button', { name: /Add (Credential|CE Record)/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Credential' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Add CE Record' })).not.toBeInTheDocument();
   });
   it('omits no panel copy for empty panels of a populated account', async () => {
     mockDashboard({ ...populatedDashboard(), upcomingExpirations: [], ceAttention: [], recentActivity: [] });
@@ -97,7 +100,9 @@ describe('success', () => {
     const row = await screen.findByRole('link', { name: /A ACLS Certification.*30d left/s });
     expect(row).toHaveAttribute('href', '/credentials?credentialId=A-acls');
     await user.click(row);
-    await waitFor(() => expect(router.state.location.pathname + router.state.location.search).toBe('/credentials?credentialId=A-acls'));
+    expect(await screen.findByRole('dialog', { name: 'Credential details' })).toBeVisible();
+    await waitFor(() => expect(router.state.location.pathname + router.state.location.search).toBe('/credentials'));
+    expect(credentialsApi.get).toHaveBeenCalledWith('A-acls', expect.anything());
   });
 });
 
@@ -176,4 +181,10 @@ describe('overflow drawer', () => {
     expect(within(drawer).getAllByRole('link')[0]).toHaveAccessibleName(/Soon 1/);
     expect(within(drawer).getAllByRole('progressbar')).toHaveLength(5);
   });
+});
+
+// M09: these routing/auth tests now reach the real credential page.
+beforeEach(() => {
+  vi.spyOn(credentialsApi, 'list').mockResolvedValue([]);
+  vi.spyOn(credentialsApi, 'get').mockResolvedValue(credentialFixture);
 });
