@@ -23,7 +23,7 @@ Angular 21 + PrimeNG in `frontend/`; new React + strict TS + Vite + Flowbite Rea
 2. Present READY spec to human and request approval. Do not start coding without approval.
 3. Check git status; create approved milestone branch.
 4. Implement only approved scope, write tests.
-5. Run relevant typecheck/lint/test/build and functional/browser parity checks; record output, failures and NOT RUN limitations.
+5. Run **targeted** tests plus typecheck/lint/build and focused browser checks for what you changed, per `context/testing-workflow.md`; record output, failures and NOT RUN/PENDING-OWNER limitations. Full regression suites are the project owner's by default.
 6. Fill `context/migration/verification/mxx-report.md`; update tracker and original current-feature record as appropriate.
 7. Explain changed files, evidence, deviations and blockers. Request permission before **each** commit, merge and branch deletion. Never push without user authorization.
 8. Advance to next milestone only after merge and tracker update.
@@ -32,6 +32,8 @@ Angular 21 + PrimeNG in `frontend/`; new React + strict TS + Vite + Flowbite Rea
 If tests cannot run, report blocker and do not claim parity. If 2–3 grounded fixes fail, stop rather than random retries. Ask before architecture changes, destructive operations, schema updates, dependency additions outside spec, modifying git history, deployments, and branch deletion.
 
 ## Verification
+**Testing policy (canonical: `context/testing-workflow.md`).** Agents run targeted tests, typecheck, lint, build and focused browser tests for their changes, investigate failures they introduce, and do not repeatedly run full suites unless the owner authorizes it, a regression needs diagnosing, or risk warrants it (state why). The owner runs the full unit/integration and four-browser Playwright suites, approves screenshot baselines (Edge/macOS only; agents never regenerate them) and performs live-backend acceptance. Report exactly which tests ran and which are pending; never call a milestone fully verified from targeted checks alone.
+
 For React milestones after M03: `npm run typecheck`, `npm run lint`, `npm run test -- --run`, `npm run build` (from `frontend-react/`, after scripts are set up). For backend-impacting changes: `./mvnw test` and appropriate package build from `backend/`. Verify relevant browser scenarios with test accounts and screenshots when accessible. Never claim a command exists until the scaffold defines it.
 
 ## Cross-agent handoff
