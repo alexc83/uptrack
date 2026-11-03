@@ -85,7 +85,21 @@ describe('success', () => {
     expect(within(activity).getByText('Uploaded certificate')).toBeVisible();
     expect(within(activity).getByText('A Neonatal Program (PDF)')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Add Credential' })).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Add CE Record' })).not.toBeInTheDocument();
+    // M13 parity fix: Angular's dashboard header offers Add CE Record (disabled until a credential exists).
+    expect(screen.getByRole('button', { name: 'Add CE Record' })).toBeVisible();
+  });
+  it('Add CE Record is disabled with no credentials and opens the CE dialog once credentials exist', async () => {
+    mockDashboard(populatedDashboard());
+    const { unmount } = renderDashboard();
+    expect(await screen.findByRole('button', { name: 'Add CE Record' })).toBeDisabled();
+    unmount();
+    vi.spyOn(credentialsApi, 'list').mockResolvedValue([credentialFixture]);
+    renderDashboard();
+    const button = await screen.findByRole('button', { name: 'Add CE Record' });
+    await waitFor(() => expect(button).toBeEnabled());
+    button.click();
+    const dialog = await screen.findByRole('dialog', { name: 'Add CE record' });
+    expect(within(dialog).getByLabelText('Credential', { exact: true })).toBeVisible();
   });
   it('omits no panel copy for empty panels of a populated account', async () => {
     mockDashboard({ ...populatedDashboard(), upcomingExpirations: [], ceAttention: [], recentActivity: [] });

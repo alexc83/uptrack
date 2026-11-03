@@ -31,7 +31,8 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(page.getByRole('region', { name: 'CEs Still Needed' })).toBeVisible();
       await expect(page.getByRole('region', { name: 'Recent Activity' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Add Credential' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Add CE Record' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Add CE Record' })).toBeVisible(); // M13 parity fix (disabled: mocked account has no credentials)
+      await expect(page.getByRole('button', { name: 'Add CE Record' })).toBeDisabled();
       await noOverflow(page);
       // Stat cards: 4 columns above 1200px, 2 up to 1200px, 1 up to 768px (Angular proportions).
       const boxes = await page.getByRole('group').evaluateAll(nodes => nodes.map(node => { const { x, y } = node.getBoundingClientRect(); return { x: Math.round(x), y: Math.round(y) }; }));

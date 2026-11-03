@@ -114,6 +114,7 @@ test('query-driven dialog keeps returnTo on close and restores it after mocked l
 test('authenticated visitor is redirected to the dashboard without a landing flash', async ({ page }) => {
   await signIn(page);
   await mockDashboard(page);
+  await mockCredentialReads(page); // M13: the dashboard header now reads the credential list for Add CE Record
   await page.goto('/');
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole('heading', { level: 1, name: hero })).toHaveCount(0);

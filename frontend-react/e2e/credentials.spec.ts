@@ -155,7 +155,7 @@ test('deep links consume only credentialId, retain hash/query, repeat and handle
   await expect(drawer.getByText('Fixture record', { exact: true })).toBeVisible();
 });
 
-test('dashboard Add Credential refreshes dashboard without loading the credential list', async ({ page }) => {
+test('dashboard Add Credential refreshes the dashboard; the header credential read feeds Add CE Record (M13)', async ({ page }) => {
   const api = await credentialApiFixture(page);
   await page.goto('/dashboard');
   await expect(page.getByRole('group', { name: 'Total Credentials: 1' })).toBeVisible();
@@ -165,8 +165,9 @@ test('dashboard Add Credential refreshes dashboard without loading the credentia
   await page.getByRole('button', { name: 'Save Credential' }).click();
   await expect(page.getByRole('group', { name: 'Total Credentials: 2' })).toBeVisible();
   expect(api.dashboardReads).toBe(initialReads + 1);
-  expect(api.queries).toHaveLength(0);
-  await expect(page.getByRole('button', { name: 'Add CE Record' })).toHaveCount(0);
+  // M13 parity fix: Add CE Record needs the credential list (Angular parity); it is an unfiltered caller-scoped read.
+  expect(api.queries.every(query => !query.has('userId') && !query.has('search'))).toBe(true);
+  await expect(page.getByRole('button', { name: 'Add CE Record' })).toBeEnabled();
 });
 
 for (const kind of ['create', 'edit', 'delete'] as const) {

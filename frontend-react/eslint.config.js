@@ -12,6 +12,11 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // M13 live-backend API checks run under plain Node (node:test), not in the browser.
+    files: ['e2e-live/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node } },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     plugins: {
       react: reactPlugin,

@@ -1,6 +1,6 @@
 # M09-W01 — Live PostgreSQL credential write acceptance
 
-Status: OPEN / DEFERRED by explicit owner acceptance on 2026-11-02. Does not block M09 acceptance or integration. No provisioning/write authorization granted. Owner assigns scheduling; do not silently add this to M10 scope.
+Status: **CLOSED in M13 (2026-11-03) — live React → Spring → PostgreSQL create/edit/delete PASSED** against disposable database `uptrack_m13_acceptance` (backend 18081); evidence and limitations in `../verification/m13-report.md`. (Original status: OPEN / DEFERRED by explicit owner acceptance on 2026-11-02. Does not block M09 acceptance or integration. No provisioning/write authorization granted. Owner assigns scheduling; do not silently add this to M10 scope.)
 
 Gap: existing React mutation tests use mocked APIs; backend integration evidence uses MockMvc/H2. Live read-only acceptance passed, but React → Spring → PostgreSQL create/edit/delete has NOT RUN.
 

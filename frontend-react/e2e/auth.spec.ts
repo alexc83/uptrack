@@ -124,6 +124,8 @@ test('an authenticated user is redirected away from / and legacy URLs keep their
   await signIn(page);
   await page.goto('/');
   await expect(page).toHaveURL(/\/dashboard$/);
+  // Let the dashboard's own reads finish: navigating away mid-flight makes WebKit log aborted-fetch "access control" errors.
+  await page.waitForLoadState('networkidle');
   await page.goto('/app/credentials?credentialId=preview');
   await expect(page.getByRole('dialog', { name: 'Credential details' })).toBeVisible();
   await expect(page).toHaveURL(/\/credentials$/);

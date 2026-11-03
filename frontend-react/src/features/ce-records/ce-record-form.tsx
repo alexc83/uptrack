@@ -1,3 +1,4 @@
+import { safeHttpUrl } from '../../lib/safe-url';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, FileInput, Select, TextInput } from 'flowbite-react';
 import { useForm } from 'react-hook-form';
@@ -58,8 +59,8 @@ export function CERecordForm({ initialValue, credentialOptions = [], showCredent
       <div className="col-span-full">
         <FormField label="Certificate" hint={CERTIFICATE_HELP}>{attributes => <FileInput {...attributes} accept={CERTIFICATE_ACCEPT} disabled={upload.pending || saving} onChange={event => { void handleFileSelected(event); }} />}</FormField>
         <div className="mt-2 space-y-2">
-          {upload.uploadedFileName && certificateUrl ? <div className="rounded-lg bg-[var(--ut-status-active-bg)] p-3 text-sm text-[var(--ut-status-active-text)]"><strong>Uploaded:</strong> {upload.uploadedFileName} <a className="underline" href={certificateUrl} target="_blank" rel="noreferrer">Open uploaded file</a> <Button size="xs" color="alternative" type="button" onClick={handleCertificateRemoved}>Remove certificate</Button></div>
-            : certificateUrl ? <div className="rounded-lg bg-ut-hover p-3 text-sm"><strong>Certificate attached.</strong> <a className="underline" href={certificateUrl} target="_blank" rel="noreferrer">Open current file</a> <Button size="xs" color="alternative" type="button" onClick={handleCertificateRemoved}>Remove certificate</Button></div>
+          {upload.uploadedFileName && certificateUrl ? <div className="rounded-lg bg-[var(--ut-status-active-bg)] p-3 text-sm text-[var(--ut-status-active-text)]"><strong>Uploaded:</strong> {upload.uploadedFileName} {safeHttpUrl(certificateUrl) ? <a className="underline" href={safeHttpUrl(certificateUrl) ?? undefined} target="_blank" rel="noreferrer">Open uploaded file</a> : <span className="text-ut-muted">(link unavailable)</span>} <Button size="xs" color="alternative" type="button" onClick={handleCertificateRemoved}>Remove certificate</Button></div>
+            : certificateUrl ? <div className="rounded-lg bg-ut-hover p-3 text-sm"><strong>Certificate attached.</strong> {safeHttpUrl(certificateUrl) ? <a className="underline" href={safeHttpUrl(certificateUrl) ?? undefined} target="_blank" rel="noreferrer">Open current file</a> : <span className="text-ut-muted">(link unavailable)</span>} <Button size="xs" color="alternative" type="button" onClick={handleCertificateRemoved}>Remove certificate</Button></div>
             : <p className="text-sm text-ut-muted">No certificate uploaded yet.</p>}
           {upload.status && <p role="status" className="text-sm text-ut-muted">{upload.status}</p>}
           {upload.error && <p role="alert" className="rounded-lg bg-[var(--ut-status-expired-bg)] p-3 text-sm text-[var(--ut-status-expired-text)]">{upload.error}</p>}

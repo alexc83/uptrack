@@ -175,7 +175,7 @@ describe('credential forms and deletion', () => {
     expect(await screen.findByText('No credentials yet')).toBeVisible();
     expect(remove).toHaveBeenCalledTimes(2);
   });
-  it('dashboard reuses the same create form and refreshes its dashboard query without a list request', async () => {
+  it('dashboard reuses the same create form and refreshes its dashboard query (M13: header credential read feeds Add CE Record)', async () => {
     const get = vi.spyOn(dashboardApi, 'get').mockResolvedValue(emptyDashboard);
     vi.spyOn(credentialsApi, 'create').mockResolvedValue(credential);
     const { user } = renderWithProviders(null, { routes, path: '/dashboard', session: 'authenticated' });
@@ -184,7 +184,6 @@ describe('credential forms and deletion', () => {
     await fill(user);
     await user.click(screen.getByRole('button', { name: 'Save Credential' }));
     await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
-    expect(credentialsApi.list).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'Add CE Record' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add CE Record' })).toBeVisible();
   });
 });

@@ -172,6 +172,6 @@ describe('StrictMode and observers', () => {
     const { client } = renderDashboard();
     await screen.findByRole('group', { name: 'Total Credentials: 4' });
     expect(client.getMutationCache().getAll()).toHaveLength(0);
-    expect(client.getQueryCache().getAll().map(query => query.queryKey)).toEqual([queryKeys.dashboard()]);
+    expect(client.getQueryCache().getAll().map(query => query.queryKey)).toContainEqual(queryKeys.dashboard()); // plus the header's credential list read (M13)
   });
 });

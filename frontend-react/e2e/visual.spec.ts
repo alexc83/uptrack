@@ -10,6 +10,7 @@ for (const theme of ['light', 'dark'] as const) {
     await setTheme(page, theme);
     await page.goto('/preview');
     await expect(page.getByRole('heading', { name: 'Shared UI preview', exact: true })).toBeVisible();
+    await expect(page.getByText('Loading presentation preview')).toHaveCount(0); // lazy preview chunk must be mounted before capture
     await expect(page).toHaveScreenshot(`shell-${theme}-desktop.png`, { animations: 'disabled' });
     await page.getByRole('button', { name: 'Collapse sidebar' }).click();
     await expect(page).toHaveScreenshot(`shell-${theme}-collapsed.png`, { animations: 'disabled' });
@@ -19,6 +20,7 @@ for (const theme of ['light', 'dark'] as const) {
     await setTheme(page, theme);
     await page.goto('/preview');
     await expect(page.getByRole('heading', { name: 'Shared UI preview', exact: true })).toBeVisible();
+    await expect(page.getByText('Loading presentation preview')).toHaveCount(0); // lazy preview chunk must be mounted before capture
     await page.getByRole('button', { name: 'Open navigation' }).click();
     await expect(page).toHaveScreenshot(`shell-${theme}-mobile-navigation.png`, { animations: 'disabled' });
     await page.keyboard.press('Escape');

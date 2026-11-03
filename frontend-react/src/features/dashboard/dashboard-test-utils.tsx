@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, vi } from 'vitest';
 import { routes } from '../../app/router';
+import { credentialsApi } from '../../core/api/credentials-api';
 import { dashboardApi } from '../../core/api/dashboard-api';
 import type { DashboardResponse } from '../../lib/dto/dashboard';
 import { dashboardNow } from '../../test/fixtures/dashboard-fixtures';
@@ -9,7 +10,8 @@ export type DashboardGet = typeof dashboardApi.get;
 
 /** Fixes only Date so waitFor/timers keep working; restores every spy between tests. */
 export function installDashboardTestEnvironment() {
-  beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(dashboardNow); });
+  // M13: the header's Add CE Record action reads the (default empty) credential list, like Angular's dashboard.
+  beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(dashboardNow); vi.spyOn(credentialsApi, 'list').mockResolvedValue([]); });
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 }
 
