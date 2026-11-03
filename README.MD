@@ -362,3 +362,11 @@ SELECT BIN_TO_UUID(id) AS id, title, BIN_TO_UUID(credential_id) AS credential_id
 - `DELETE /api/credentials/{id}` cascades to linked CE records
 - certificate uploads are handled through the backend and stored in Cloudinary
 - CE records now persist certificate URL plus asset metadata so replace/remove/delete flows can clean up old hosted files
+
+## S05R security limits and rollout
+
+JWT configuration now fails at startup unless the signing secret is nonblank and at least 32 UTF-8 bytes and `AUTH_JWT_EXPIRATION_SECONDS` is between 1 and 3600. Use a generated secret. All sessions from before S05R must sign in once after a coordinated backend rollout; password changes sign out every device. No database schema change is required.
+
+Passwords are limited to 72 UTF-8 bytes (multibyte characters count by their encoded size). Certificates are limited to 5 MiB per file: plain PDF or supported JPEG/PNG/GIF/WebP images. Active/encrypted/forms PDFs must be exported to a simple PDF. The API limits login, registration and per-user uploads and returns 429 with Retry-After when exhausted. Uploads remain publicly delivered Cloudinary URLs; private delivery and durable orphan cleanup are separate owner decisions.
+
+See the [S05R finding matrix, verification and deployment requirements](context/migration/verification/s05r-security-remediation.md), especially the trusted-proxy, multi-instance, storage-quota and historical document considerations.

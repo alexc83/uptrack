@@ -1,5 +1,7 @@
 # UpTrack React Migration — Master Plan
 
+Current security insertion: **S05R** is implemented and locally verified on `fix/s05r-security-remediation` from `75d6eec` (merged S05 PR #15). The owner's implementation brief authorizes these backend/frontend security changes and draft-PR preparation. See [spec](specs/s05r-application-security-remediation.md) and [verification/rollout matrix](verification/s05r-security-remediation.md). No hosted deployment, main merge or Cloudinary privacy migration is authorized. The prior migration chronology below is retained.
+
 Status: M01–M13 and S01/S02/S03 are merged on `main` (M13 CONDITIONALLY READY, Gate D passed — see `verification/m13-report.md`). **M14 cutover is in progress on `feature/react-cutover`**: React (`frontend-react/`) is the canonical frontend in all documentation, environment examples and Dependabot scope; the legacy Angular `frontend/` is preserved as a historical reference (deletion requires separate approval and is out of scope). Hosted backend remains suspended; no deployment or cutover to production authorized.
 
 ## Objective
