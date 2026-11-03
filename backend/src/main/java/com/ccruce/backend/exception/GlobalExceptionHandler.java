@@ -99,6 +99,19 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Certificate files must be 5 MiB or smaller.");
     }
 
+    @ExceptionHandler(RequestBodyTooLargeException.class)
+    public ResponseEntity<ErrorResponse> handleRequestBodyTooLarge(RequestBodyTooLargeException exception) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, exception.getMessage());
+    }
+
+    @ExceptionHandler(UploadBusyException.class)
+    public ResponseEntity<ErrorResponse> handleUploadBusy(UploadBusyException exception) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header("Retry-After", "5")
+                .body(new ErrorResponse(HttpStatus.SERVICE_UNAVAILABLE.value(),
+                        HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(), exception.getMessage(), Instant.now()));
+    }
+
     @ExceptionHandler({org.springframework.dao.DataIntegrityViolationException.class,
             org.springframework.dao.OptimisticLockingFailureException.class})
     public ResponseEntity<ErrorResponse> handleDataConflict(Exception exception) {

@@ -15,10 +15,12 @@ import java.time.Instant;
 // Registered only in the security chain (not as a servlet filter bean).
 public class RequestRateLimitFilter extends OncePerRequestFilter {
     private final RequestRateLimiter limiter;
+    private final ClientIpResolver clientIpResolver;
     private final ObjectMapper mapper;
 
-    public RequestRateLimitFilter(RequestRateLimiter limiter, ObjectMapper mapper) {
+    public RequestRateLimitFilter(RequestRateLimiter limiter, ClientIpResolver clientIpResolver, ObjectMapper mapper) {
         this.limiter = limiter;
+        this.clientIpResolver = clientIpResolver;
         this.mapper = mapper;
     }
 
@@ -27,7 +29,7 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String path = request.getServletPath().isEmpty() ? request.getRequestURI() : request.getServletPath();
         String scope = null;
-        String identity = request.getRemoteAddr();
+        String identity = clientIpResolver.resolve(request);
         if (request.getMethod().equals("POST")) {
             if (path.equals("/api/auth/login")) scope = "login";
             if (path.equals("/api/auth/register")) scope = "register";

@@ -1,12 +1,21 @@
 server:
   port: ${SERVER_PORT:8080}
+  # The container never trusts client-supplied forwarding headers; client identity for
+  # rate limiting is resolved only through the explicit app.trusted-proxies allowlist.
   forward-headers-strategy: none
+  error:
+    include-message: never
+    include-stacktrace: never
   tomcat:
     # Drain ordinary rejected requests so clients receive 413 instead of a reset.
     # Keep this bounded: a reverse proxy must cap larger bodies before forwarding.
     max-swallow-size: 8MB
 
 spring:
+  autoconfigure:
+    # The app uses its own JWT filter chain; do not create or log Spring's generated
+    # default development user/password.
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   servlet:
     multipart:
       max-file-size: 5MB
@@ -43,3 +52,14 @@ cloudinary:
 app:
   cors:
     allowed-origin-patterns: ${ALLOWED_ORIGIN_PATTERNS:http://localhost:4200,http://127.0.0.1:4200}
+  # Comma-separated IPs/CIDRs of reverse proxies whose X-Forwarded-For/Forwarded headers
+  # may be trusted when resolving the client identity for rate limiting. EMPTY by default:
+  # then only the direct peer address is used and all forwarding headers are ignored.
+  # When set, block direct (non-proxy) access to the backend at the network level.
+  trusted-proxies: ${TRUSTED_PROXIES:}
+  security:
+    # Cap for non-multipart request bodies (multipart is capped separately above).
+    max-request-body-bytes: ${MAX_REQUEST_BODY_BYTES:1048576}
+  upload:
+    # Concurrent certificate validate+upload operations; excess requests get 503, never queue.
+    max-concurrent: ${MAX_CONCURRENT_UPLOADS:4}
