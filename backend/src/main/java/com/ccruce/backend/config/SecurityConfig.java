@@ -1,10 +1,13 @@
 package com.ccruce.backend.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ccruce.backend.security.ClientIpResolver;
 import com.ccruce.backend.security.RequestRateLimitFilter;
 import com.ccruce.backend.security.RequestRateLimiter;
 import com.ccruce.backend.security.JwtAuthenticationFilter;
+import com.ccruce.backend.security.RequestSizeLimitFilter;
 import com.ccruce.backend.security.RestAuthenticationEntryPoint;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,7 +35,9 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter,
             RestAuthenticationEntryPoint restAuthenticationEntryPoint,
             RequestRateLimiter rateLimiter,
-            ObjectMapper objectMapper
+            ClientIpResolver clientIpResolver,
+            ObjectMapper objectMapper,
+            @Value("${app.security.max-request-body-bytes:1048576}") long maxRequestBodyBytes
     )
             throws Exception {
         http
@@ -46,7 +51,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(new RequestRateLimitFilter(rateLimiter, objectMapper),
+                .addFilterBefore(new RequestSizeLimitFilter(maxRequestBodyBytes, objectMapper),
+                        JwtAuthenticationFilter.class)
+                .addFilterAfter(new RequestRateLimitFilter(rateLimiter, clientIpResolver, objectMapper),
                         JwtAuthenticationFilter.class);
 
         return http.build();

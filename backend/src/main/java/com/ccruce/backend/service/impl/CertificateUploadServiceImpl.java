@@ -3,12 +3,14 @@ package com.ccruce.backend.service.impl;
 import com.ccruce.backend.validation.CertificateFileValidator;
 import com.ccruce.backend.dto.response.CertificateUploadResponseDto;
 import com.ccruce.backend.exception.UnauthorizedException;
+import com.ccruce.backend.exception.UploadBusyException;
 import com.ccruce.backend.exception.UploadFailedException;
 import com.ccruce.backend.security.AuthenticatedUser;
 import com.ccruce.backend.service.CertificateUploadService;
 import com.cloudinary.Cloudinary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
 
 @Service
 public class CertificateUploadServiceImpl implements CertificateUploadService {
@@ -26,15 +29,33 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
 
     private final Cloudinary cloudinary;
     private final CertificateFileValidator fileValidator;
+    // Bounds concurrent decode+upload work (image decode can use ~160 MB per 40 Mpx
+    // frame). tryAcquire never queues: when all slots are busy the request is rejected
+    // with 503 instead of letting one client block everyone else.
+    private final Semaphore uploadSlots;
 
     public CertificateUploadServiceImpl(Cloudinary cloudinary,
-            CertificateFileValidator fileValidator) {
+            CertificateFileValidator fileValidator,
+            @Value("${app.upload.max-concurrent:4}") int maxConcurrentUploads) {
+        if (maxConcurrentUploads < 1) throw new IllegalStateException("Upload concurrency must be positive.");
         this.cloudinary = cloudinary;
         this.fileValidator = fileValidator;
+        this.uploadSlots = new Semaphore(maxConcurrentUploads);
     }
 
     @Override
     public CertificateUploadResponseDto uploadCertificate(MultipartFile file) {
+        if (!uploadSlots.tryAcquire()) {
+            throw new UploadBusyException();
+        }
+        try {
+            return doUploadCertificate(file);
+        } finally {
+            uploadSlots.release();
+        }
+    }
+
+    private CertificateUploadResponseDto doUploadCertificate(MultipartFile file) {
         byte[] bytes = fileValidator.validate(file);
 
         UUID userId = getAuthenticatedUserId();

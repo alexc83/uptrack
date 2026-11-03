@@ -21,7 +21,13 @@ import java.util.Set;
 @Component
 public class CertificateFileValidator {
     public static final long MAX_BYTES = 5L * 1024 * 1024;
-    private static final long MAX_PIXELS = 25_000_000;
+    // 40 Mpx covers common full-page scans (e.g. 7000x4000 = 28 Mpx) while bounding one
+    // decoded frame to ~160 MB; concurrent decodes are additionally capped by a semaphore
+    // in CertificateUploadServiceImpl. Decompression bombs stay rejected by this cap.
+    static final long MAX_PIXELS = 40_000_000;
+    // %%EOF must appear within the final 4 KiB; some generators append trailing data.
+    // PDFBox parsing plus the active-content scan remain the actual security gate.
+    private static final int PDF_EOF_TAIL_WINDOW = 4096;
     private static final Map<String, String> TYPES = Map.of(
             "pdf", "application/pdf", "jpg", "image/jpeg", "jpeg", "image/jpeg",
             "png", "image/png", "webp", "image/webp", "gif", "image/gif");
@@ -57,8 +63,7 @@ public class CertificateFileValidator {
 
     private void validatePdf(byte[] bytes) throws IOException {
         String prefix = new String(bytes, 0, Math.min(bytes.length, 8), StandardCharsets.US_ASCII);
-        String tail = new String(bytes, Math.max(0, bytes.length - 32), Math.min(32, bytes.length), StandardCharsets.US_ASCII);
-        if (!prefix.startsWith("%PDF-") || !tail.stripTrailing().endsWith("%%EOF")) {
+        if (!prefix.startsWith("%PDF-") || !hasEofMarkerInTail(bytes)) {
             throw new IOException("Invalid PDF envelope");
         }
         try (PDDocument document = Loader.loadPDF(bytes)) {
@@ -71,6 +76,20 @@ public class CertificateFileValidator {
                 checkDictionary(value, seen, 0);
             }
         }
+    }
+
+    private static boolean hasEofMarkerInTail(byte[] bytes) {
+        byte[] marker = "%%EOF".getBytes(StandardCharsets.US_ASCII);
+        int from = Math.max(0, bytes.length - PDF_EOF_TAIL_WINDOW);
+        outer:
+        for (int i = bytes.length - marker.length; i >= from; i--) {
+            if (i < 0) break;
+            for (int j = 0; j < marker.length; j++) {
+                if (bytes[i + j] != marker[j]) continue outer;
+            }
+            return true;
+        }
+        return false;
     }
 
     private void checkDictionary(org.apache.pdfbox.cos.COSBase value, Set<org.apache.pdfbox.cos.COSBase> seen, int depth)
@@ -102,14 +121,19 @@ public class CertificateFileValidator {
                 if (!expected.equalsIgnoreCase(reader.getFormatName())) throw new IOException("Mismatched image");
                 reader.setInput(input, false, true);
                 int frames = reader.getNumImages(true);
-                if (frames < 1 || frames > 100) throw new IOException("Image frame count exceeds limit");
+                if (frames < 1 || frames > 100) {
+                    throw new BadRequestException("Certificate images may have at most 100 frames.");
+                }
                 long pixels = 0;
                 for (int frame = 0; frame < frames; frame++) {
                     int width = reader.getWidth(frame);
                     int height = reader.getHeight(frame);
                     pixels += (long) width * height;
                     if (width < 1 || height < 1 || pixels > MAX_PIXELS) {
-                        throw new IOException("Image dimensions exceed limit");
+                        // Checked from the header before decoding, so oversized or bomb
+                        // images are rejected without allocating their raster.
+                        throw new BadRequestException(
+                                "Certificate image dimensions exceed the supported limit of 40 megapixels.");
                     }
                     if (reader.read(frame) == null) throw new IOException("Malformed image");
                 }
