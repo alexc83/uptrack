@@ -1,6 +1,10 @@
 # UpTrack — React Frontend (`frontend-react/`)
 
-The React frontend for UpTrack, replacing the legacy Angular 21 + PrimeNG client.
+The React frontend for UpTrack — the **canonical frontend since the M14 cutover**. The legacy Angular 21 + PrimeNG client remains in `../frontend/` as a historical reference only; it is not built, tested, or tracked by any active workflow.
+
+## Environment
+
+Copy `.env.example` to `.env.local` for local overrides. Defaults are documented there: `VITE_API_BASE_URL=/api` (same-origin, proxied) and `VITE_PROXY_TARGET=http://localhost:8080` (Spring Boot default).
 
 ## Technology Stack
 - **Framework**: React 19 + TypeScript (strict mode)

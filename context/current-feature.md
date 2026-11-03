@@ -1,6 +1,10 @@
 # Current Feature
 
-## Current — M09 accepted, merged and pushed
+## Current — M14 React cutover on `feature/react-cutover` (2026-11-03)
+
+M13 comprehensive parity/security regression is merged on `main` (`3351209`, CONDITIONALLY READY; live React → Spring Boot → PostgreSQL acceptance passed on a disposable database, see `migration/verification/m13-report.md`). M14 makes `frontend-react/` the canonical frontend in all docs, environment examples and dependency tracking; the legacy Angular `frontend/` is preserved as a historical reference and is not removed. No backend, schema or dependency changes. See `migration/verification/m14-report.md`.
+
+## Historical — M09 accepted, merged and pushed
 
 M09 Credential CRUD is **ACCEPTED by the owner (2026-11-02)**. Owner automated evidence: unit **490/490**, Playwright **504/504** including all four functional browsers and unchanged Edge/macOS visuals, typecheck/lint/production build PASS, production audit **0 vulnerabilities**. Authorized read-only live evidence: **245 + 11 = 256 recorded checks** passed against the verified local `uptrack_migration_test` target. These are assertion/field checks, not 256 separate test cases. Existing MockMvc/H2 integration evidence was reviewed, not rerun.
 

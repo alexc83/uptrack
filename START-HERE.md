@@ -39,12 +39,12 @@ This repository's state, not the previous AI's chat, is authoritative. First rea
 ## Useful starting commands
 ```bash
 git status
-# in existing Angular frontend
-cd frontend && npm ci && npm run build && npm test
+# active React frontend (canonical since the M14 cutover)
+cd frontend-react && npm ci && npm run typecheck && npm run lint && npm run test && npm run build
 # in existing backend; requires local env vars / DB
 cd ../backend && ./mvnw test
 ```
-Commands above are suggestions for M01 baseline; actual test behavior/environment constraints must be recorded. React commands do not exist until M03 creates them.
+The legacy Angular app in `frontend/` is preserved as a historical reference only and is no longer part of any supported workflow. Historical M01-baseline note: the original audit used `cd frontend && npm start && npm test`; those commands applied to the legacy Angular client only.
 
 ## Useful implementation docs
 - Flowbite React Vite: https://flowbite-react.com/docs/guides/vite

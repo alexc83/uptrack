@@ -1,5 +1,7 @@
 # Coding Standards
 
+> **M14 cutover note (2026-11-03):** the active frontend is the React + TypeScript app in `frontend-react/`; the sections below describing Angular apply only to the legacy `frontend/` directory, which is preserved as a historical reference and is no longer built or modified. For new frontend work, follow the React standards in `frontend-react/README.md` and `migration/architecture.md`.
+
 These standards apply to the UpTrack repository across both the Angular frontend and Spring Boot backend. The goal is to keep the codebase consistent, readable, scalable, and easy to maintain as the project grows.
 
 ## Core Principles

@@ -102,11 +102,15 @@ Review AI-generated code periodically, especially for:
 
 Use the relevant commands based on what changed.
 
-### Frontend (`/frontend`)
+### Frontend (`/frontend-react` — canonical since the M14 cutover)
 
-- `npm start` - start Angular dev server
+- `npm run dev` - start Vite dev server (http://localhost:5173, `/api` proxied to the backend)
 - `npm run build` - run production build
-- `npm test` - run frontend tests
+- `npm run test` - run Vitest tests
+- `npm run typecheck` / `npm run lint` - static checks
+- `npx playwright test` - browser e2e (see `testing-workflow.md`)
+
+The legacy Angular app in `/frontend` is a historical reference only; do not use it for new work.
 
 ### Backend (`/backend`)
 

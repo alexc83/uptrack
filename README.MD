@@ -34,7 +34,7 @@ UpTrack brings those pieces together into one dashboard so you can quickly see w
 
 ## If You're Trying The App As A User
 
-You do not need to understand Angular, Spring Boot, JWT, or databases to try UpTrack. If you are opening this locally just to see what the product does, the simplest way to think about it is:
+You do not need to understand React, Spring Boot, JWT, or databases to try UpTrack. If you are opening this locally just to see what the product does, the simplest way to think about it is:
 
 - the dashboard tells you what needs attention
 - credentials are the licenses/certifications you need to keep active
@@ -56,16 +56,25 @@ If all you want is a product feel test, that flow will show you the main value o
 
 ### 1. Start the backend
 
+The backend needs local environment variables (database, JWT secret, Cloudinary placeholders). Copy the template and fill in local-only values:
+
 ```bash
+cp scripts/dev-demo/env.example backend/.env.local   # then edit backend/.env.local
 cd backend
+set -a; . ./.env.local; set +a
 ./mvnw spring-boot:run
 ```
 
+The backend listens on `http://localhost:8080` by default (`SERVER_PORT` can override it).
+
 ### 2. Start the frontend
 
+The active frontend is the React application in `frontend-react/`:
+
 ```bash
-cd frontend
-npm start
+cd frontend-react
+npm ci
+npm run dev
 ```
 
 ### 3. Open the app
@@ -73,14 +82,16 @@ npm start
 Visit:
 
 ```text
-http://localhost:4200
+http://localhost:5173
 ```
+
+The Vite dev server proxies `/api` requests to the backend (`http://localhost:8080` by default; override with `VITE_PROXY_TARGET`), so no CORS configuration is needed for local development. See `frontend-react/.env.example`.
 
 ### 4. Sign up or use seed data
 
 The easiest way to try the app is to create a new account through the real sign-up flow on the landing page.
 
-If you already loaded local seed SQL into MySQL, you can also use those users. Optional seed files currently in the repo root:
+If you already loaded local seed SQL into PostgreSQL, you can also use those users. Optional seed files currently in the repo root:
 
 - `test_data.sql`
 - `test_data_v2.sql`
@@ -104,7 +115,7 @@ Important:
 
 ### Start with the dashboard
 
-After logging in, go to [`/dashboard`](/Users/alexc/Documents/UpTrack/frontend/src/app/features/dashboard/dashboard-page/dashboard-page.component.ts). This is the main at-a-glance view for:
+After logging in, go to [`/dashboard`](frontend-react/src/features/dashboard/dashboard-page.tsx). This is the main at-a-glance view for:
 
 - credential counts
 - upcoming expirations
@@ -113,7 +124,7 @@ After logging in, go to [`/dashboard`](/Users/alexc/Documents/UpTrack/frontend/s
 
 ### Add your first credential
 
-Use the `Add Credential` action from the dashboard or go to [`/credentials`](/Users/alexc/Documents/UpTrack/frontend/src/app/features/credentials/credentials.component.ts).
+Use the `Add Credential` action from the dashboard or go to [`/credentials`](frontend-react/src/features/credentials/credentials-page.tsx).
 
 Each credential includes:
 
@@ -131,7 +142,7 @@ UpTrack automatically derives whether a credential is active, expiring soon, or 
 Once a credential exists, add CE records either:
 
 - from the credential drawer
-- from the CE Records page at [`/ce-records`](/Users/alexc/Documents/UpTrack/frontend/src/app/features/ce-records/ce-records.component.ts)
+- from the CE Records page at [`/ce-records`](frontend-react/src/features/ce-records/ce-records-page.tsx)
 
 Each CE record tracks:
 
@@ -217,16 +228,19 @@ UpTrack is already a working authenticated local app with live frontend/backend 
 
 ## Technical Details
 
-UpTrack is a full-stack Angular + Spring Boot application with a typed frontend service layer and a JWT-secured REST API. The current architecture keeps business logic in the backend while the frontend focuses on presentation, typed forms, and live data interactions.
+UpTrack is a full-stack React + Spring Boot application with a typed frontend API layer and a JWT-secured REST API. The current architecture keeps business logic in the backend while the frontend focuses on presentation, typed forms, and live data interactions.
 
-### Frontend
+### Frontend (canonical since M14)
 
-- Angular 21
-- TypeScript
-- PrimeNG
-- Angular Signals
-- Angular Reactive Forms
-- Vitest
+The active frontend is `frontend-react/`:
+
+- React 19 with TypeScript (strict mode)
+- Vite 7 (dev server on port 5173 with an `/api` proxy to the backend)
+- Tailwind CSS 4 + Flowbite React
+- React Router v7, TanStack Query, React Hook Form + Zod
+- Vitest + React Testing Library (unit), Playwright (e2e)
+
+The legacy Angular 21 + PrimeNG application remains in `frontend/` as a historical reference only. It is no longer part of the development, build, test, or CI workflow and is not built by any supported command.
 
 ### Backend
 
@@ -234,7 +248,7 @@ UpTrack is a full-stack Angular + Spring Boot application with a typed frontend 
 - Java 21
 - Spring Security with JWT
 - Spring Data JPA
-- MySQL
+- PostgreSQL
 - JUnit 5 and Spring Boot Test
 
 ### Current backend capabilities
@@ -252,34 +266,40 @@ UpTrack is a full-stack Angular + Spring Boot application with a typed frontend 
 ## Project Structure
 
 ```text
-frontend/   Angular application
-backend/    Spring Boot REST API
-context/    feature specs, screenshots, and working docs
+frontend-react/   active React application (canonical frontend)
+frontend/         legacy Angular application (historical reference only; not built)
+backend/          Spring Boot REST API
+context/          feature specs, screenshots, and working docs
 ```
 
 ## Local Development
 
-### Frontend
+### Frontend (React)
 
 ```bash
-cd frontend
-npm start
+cd frontend-react
+npm ci
+npm run dev        # http://localhost:5173, proxies /api to the backend
 ```
+
+Other useful commands (run from `frontend-react/`): `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`, `npm run e2e`. See `frontend-react/README.md` and `context/testing-workflow.md`.
 
 ### Backend
 
 ```bash
 cd backend
+set -a; . ./.env.local; set +a   # local env vars; see scripts/dev-demo/env.example
 ./mvnw spring-boot:run
 ```
 
 ## Testing
 
-### Frontend tests
+### Frontend tests (React)
 
 ```bash
-cd frontend
-npm test -- --watch=false
+cd frontend-react
+npm run test                 # Vitest unit/component tests
+npx playwright test          # Playwright e2e (see context/testing-workflow.md for browser projects)
 ```
 
 ### Backend tests
@@ -291,12 +311,18 @@ cd backend
 
 ## Build Notes
 
-### Frontend production build
+### Frontend production build (React)
 
 ```bash
-cd frontend
-npm run build
+cd frontend-react
+npm run build    # outputs frontend-react/dist/
 ```
+
+Hosting notes for the production build:
+
+- any static host must serve `index.html` as the fallback for all client-side routes (React Router deep links such as `/dashboard` or `/credentials/:id/ce-report`)
+- the development-only `/preview` route is gated behind `import.meta.env.DEV` and is excluded from the production build
+- configure the API origin at build time with `VITE_API_BASE_URL` (default `/api`, same-origin); for local cross-origin setups set `VITE_PROXY_TARGET` (dev proxy) or the backend's `ALLOWED_ORIGIN_PATTERNS`
 
 ### Backend package build
 
@@ -315,9 +341,10 @@ Current note:
 
 - the app no longer depends on frontend mock data for dashboard, credentials, or CE reads
 - credential and CE write flows are live and JWT-scoped
-- backend tests run against an isolated H2 profile and do not require your local MySQL database
-- local app usage expects MySQL data if you want persistent users and records between runs
-- backend configuration now uses `application.yml`
+- backend tests run against an isolated H2 profile and do not require your local PostgreSQL database
+- local app usage expects PostgreSQL data if you want persistent users and records between runs
+- backend configuration uses `application.yml`, with environment variables for all secrets (copy `scripts/dev-demo/env.example` to the git-ignored `backend/.env.local`)
+- local development serves the React app on `http://localhost:5173` and proxies `/api` to the backend on `http://localhost:8080`, so the backend CORS defaults do not apply in the standard dev flow; if you call the API cross-origin, set `ALLOWED_ORIGIN_PATTERNS` to include the frontend origin
 - Cloudinary PDF delivery must be enabled in your Cloudinary environment security settings if you want uploaded PDFs to open directly in the browser
 
 Helpful SQL checks:

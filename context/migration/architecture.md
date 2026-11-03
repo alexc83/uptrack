@@ -4,7 +4,7 @@ Status: FINALIZED in M02 (`chore/react-architecture`). Replaces the previous "in
 
 ## Decisions
 
-- React 19 with TypeScript strict mode and Vite in sibling `frontend-react/`; Angular `frontend/` remains read-only and is never deleted during the migration.
+- React 19 with TypeScript strict mode and Vite in sibling `frontend-react/` — **the canonical frontend since the M14 cutover**. Angular `frontend/` is preserved as a historical reference only: it is read-only, never deleted, and no longer part of any development, build, test or CI workflow.
 - Flowbite **React** for interactive components; Tailwind CSS v4 (`@tailwindcss/vite`) for layout and design tokens. Prefer Flowbite primitives first; custom composition only for the gaps listed in the M02 spec §6 (right-side drawer shell with focus return, form dialogs with server-error banner, token-driven status badges/progress, debounced search, confirm dialogs, print styles).
 - React Router (data router, lazy routes) for routing; TanStack Query for **all** server state; React context/providers for auth and local UI state; native `fetch` centralized in one client (`core/api/apiFetch`); React Hook Form + Zod for forms; `lucide-react` icons. **No Redux/Zustand or any other state/UI library.**
 - Preserve Angular URL paths exactly, including the `/app`, `/app/dashboard`, `/app/credentials`, `/app/ce-records` redirects, the standalone `/credentials/:credentialId/ce-report` route (outside the shell, `?returnTo=`), `?credentialId=` drawer deep-linking on `/credentials`, and `**` → `/`.
@@ -30,6 +30,10 @@ Status: FINALIZED in M02 (`chore/react-architecture`). Replaces the previous "in
 - Flowbite gaps: custom-composition list in M02 spec §6.
 - Accessibility of the Angular implementation: F7/F8/F11/F12 fixed deliberately (decision above).
 - Dev environment and test accounts: isolated PostgreSQL DB `uptrack_migration_test` + role `uptrack_m01` retained with synthetic accounts A/B (passwords only in the git-ignored scratchpad); React runtime verification reuses them in M13.
+
+## M14 cutover addendum — 2026-11-03
+
+Gate D passed with M13 (CONDITIONALLY READY; live React → Spring Boot → PostgreSQL acceptance green, see `verification/m13-report.md`). M14 cut over the repository to React as the canonical frontend: root and context documentation, environment examples (`frontend-react/.env.example`), and Dependabot scope (`/frontend-react`, `/backend`) all target React; there are no GitHub Actions workflows to repoint. The Angular `frontend/` tree is retained untouched as a historical reference — its removal requires separate explicit approval and was not performed. The Vite dev proxy remains the CORS solution; no backend change was made. Deployment of the hosted backend (including the merged S01–S03 fixes) remains suspended and is a separate owner decision; no deployment was performed.
 
 ## M05 approved implementation clarification — 2026-11-01
 

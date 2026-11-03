@@ -1,6 +1,6 @@
 # UpTrack React Migration — Master Plan
 
-Status: M01–M09 and S01/S02 are owner-accepted. M09 automated and read-only live acceptance passed; live PostgreSQL CRUD writes are explicitly deferred to M09-W01. M09 was fast-forward merged and pushed at `3324d09`; its local feature branch was safely deleted after synchronization. The documentation-only completion record follows that tip. See `verification/m09-report.md`. Hosted backend remains suspended; no deployment or cutover authorization.
+Status: M01–M13 and S01/S02/S03 are merged on `main` (M13 CONDITIONALLY READY, Gate D passed — see `verification/m13-report.md`). **M14 cutover is in progress on `feature/react-cutover`**: React (`frontend-react/`) is the canonical frontend in all documentation, environment examples and Dependabot scope; the legacy Angular `frontend/` is preserved as a historical reference (deletion requires separate approval and is out of scope). Hosted backend remains suspended; no deployment or cutover to production authorized.
 
 ## Objective
 Replace the existing Angular 21 + PrimeNG UI with a sibling React + TypeScript + Flowbite React + Tailwind CSS 4 frontend while preserving all user-visible behavior and existing Spring Boot APIs. This is an AI-agent refactoring experiment, not a portfolio rewrite.
@@ -41,7 +41,7 @@ Canonical policy: [AGENTS.md — Git branch lifecycle](../../AGENTS.md#git-branc
 - **M11** Compliance reporting and print — `feature/react-ce-report`; prerequisite: prior milestone merged.
 - **M12** Settings and security UI — `feature/react-settings`; prerequisite: prior milestone merged.
 - **M13** Cross-feature parity and security regression — `chore/react-parity`; prerequisite: prior milestone merged.
-- **M14** Cutover and documentation — `chore/react-cutover`; prerequisite: prior milestone merged.
+- **M14** Cutover and documentation — `feature/react-cutover` (owner brief of 2026-11-03 names this branch; spec outline said `chore/react-cutover`); prerequisite: Gate D (M13) passed. React is canonical; Angular `frontend/` retained as historical reference.
 
 ## Gates
 - Gate A after M02: inventory and architecture approved, and S01 merged and verified (S01 must be merged before M02 is marked READY).

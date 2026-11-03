@@ -25,7 +25,7 @@ This results in missed deadlines, last-minute stress, and difficulty producing d
 
 This is a **single-user personal portfolio project** — no monetization, multi-tenancy, or billing. The goal is to demonstrate real-world, production-style full-stack development skills:
 
-1. **Clean full-stack architecture** — Angular 21 frontend communicating with a Spring Boot REST API
+1. **Clean full-stack architecture** — React 19 frontend (`frontend-react/`, canonical since the M14 cutover; the legacy Angular app in `frontend/` is preserved as a historical reference only) communicating with a Spring Boot REST API
 2. **Thoughtful domain modeling** — healthcare-focused data design for credentials, CE records, and audit-ready documentation
 3. **Polished SaaS-style UX** — responsive layouts, strong visual hierarchy, and clear status communication inspired by Linear, Notion, and Stripe Dashboard
 
