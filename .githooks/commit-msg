@@ -1,0 +1,13 @@
+#!/bin/sh
+# .githooks/commit-msg
+# Opt-in hook to validate Git authorship and commit message attribution
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+VALIDATOR="$REPO_ROOT/scripts/validate-git-attribution.sh"
+
+if [ -f "$VALIDATOR" ]; then
+  exec "$VALIDATOR" --commit-msg "$@"
+else
+  echo "WARNING: [git-attribution] $VALIDATOR not found; skipping commit-msg attribution check." >&2
+fi
