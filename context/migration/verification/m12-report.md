@@ -80,6 +80,39 @@ Authorized by owner brief of 2026-11-03 ("Begin M12 implementation now").
 - Duplicate file check: verified 0 files ending in ` 2.ts`, ` 2.tsx`, or ` 2.md`.
 - Attribution check: git author and committer are `alexc83 <alexc83@users.noreply.github.com>`, no AI co-authors.
 
+## Post-acceptance Playwright correction (2026-11-03)
+
+### Root cause
+Owner acceptance found 41 failures in the 4-browser Playwright suite.
+1. When M12 replaced the shell placeholder at `/settings` with the real Settings page, the dev presentation preview was relocated to `/preview`. However, `e2e/shared-ui.spec.ts` and `e2e/theme.spec.ts` still navigated to `/settings`.
+2. On `/settings`, the real Settings component mounts and executes `GET /api/users/me`. Because these tests did not declare or mock `/api/users/me` (as they are presentation tests), Playwright's strict default-deny network isolation guard aborted the request and failed the tests with `Unexpected API traffic (only declared, mocked auth calls are allowed): ['GET /api/users/me']`.
+3. In addition, the presentation DOM elements (e.g. `Shared UI preview` region, `Primary action` button, `Active` badge, preview form controls, modal, and drawer) were missing on `/settings`, and `theme.spec.ts` reduced-motion test encountered a strict-mode violation on `.animate-pulse` (matching 4 skeleton elements instead of 1).
+4. These 10 failing tests accounted for 40 of the 41 owner failures (10 tests × 4 browsers).
+5. The remaining WebKit failure (`e2e/auth.spec.ts:123`) was investigated: `auth.spec.ts:123` and all 16 tests in `e2e/auth.spec.ts` passed cleanly in repeated isolated runs (1 + 5 = 6 consecutive passes for line 123; 16/16 for full file). The access-control message occurs when Playwright aborts an undeclared request in WebKit, not an application CORS or route defect. No M12 defect existed in `auth.spec.ts`.
+6. Stale references to the old Settings placeholder were also cleaned up in `shell-placeholder.tsx` (which still listed `/settings` in `pages`) and `e2e/visual.spec.ts` (which navigated to `/settings` expecting `Shared UI preview`).
+7. `/preview` was conditionally mounted in `router.tsx` via `import.meta.env.DEV`, ensuring it is completely stripped from production builds.
+
+### Files modified
+- `frontend-react/e2e/shared-ui.spec.ts` (updated preview navigation to `/preview` at lines 10 and 85)
+- `frontend-react/e2e/theme.spec.ts` (updated preview navigation to `/preview` at lines 9 and 76)
+- `frontend-react/e2e/visual.spec.ts` (updated preview navigation to `/preview` at lines 11 and 20)
+- `frontend-react/src/app/preview/shell-placeholder.tsx` (removed obsolete `/settings` entry from `pages` map and pathname check)
+- `frontend-react/src/app/router.tsx` (mounted `/preview` dev-only via `import.meta.env.DEV`)
+- `context/migration/verification/m12-report.md` (recorded owner acceptance correction)
+
+### Verification results after correction
+- Chromium (fallback): `shared-ui.spec.ts`, `theme.spec.ts`, `auth.spec.ts` — **35/35 PASS**
+- Microsoft Edge: `shared-ui.spec.ts`, `theme.spec.ts`, `auth.spec.ts` — **35/35 PASS**
+- Google Chrome: `shared-ui.spec.ts`, `theme.spec.ts`, `auth.spec.ts` — **35/35 PASS**
+- Mozilla Firefox: `shared-ui.spec.ts`, `theme.spec.ts`, `auth.spec.ts` — **35/35 PASS**
+- WebKit (Safari engine): `shared-ui.spec.ts`, `theme.spec.ts`, `auth.spec.ts` — **35/35 PASS**
+- Four-browser total for affected specs: **140/140 PASS** (0 failures).
+- Settings E2E: `settings.spec.ts` — **3/3 PASS**
+- Unit tests: `npm run test` — **39 test files, 543/543 PASS**
+- Typecheck: `npm run typecheck` — **PASS** (`tsc -b --noEmit`)
+- Lint: `npm run lint` — **PASS** (0 warnings, 0 errors)
+- Production build: `npm run build` — **PASS** (verified `shell-placeholder` and `shared-ui-preview` excluded from production bundle)
+
 ## Deferred acceptance checks (owner scope)
 - Full four-browser Playwright suite (msedge, chrome, firefox, webkit).
 - Visual snapshot approval (`visual-edge` macOS).

@@ -24,7 +24,9 @@ export const routes: RouteObject[] = [
           { path: '/credentials', lazy: () => import('../features/credentials/credentials-page').then(module => ({ Component: module.CredentialsPage })) },
           { path: '/ce-records', lazy: () => import('../features/ce-records/ce-records-page').then(module => ({ Component: module.CERecordsPage })) },
           { path: '/settings', lazy: () => import('../features/settings/settings-page').then(module => ({ Component: module.SettingsPage })) },
-          { path: '/preview', lazy: () => import('./preview/shell-placeholder').then(module => ({ Component: module.ShellPlaceholder })) },
+          ...(import.meta.env.DEV
+            ? [{ path: '/preview', lazy: () => import('./preview/shell-placeholder').then(module => ({ Component: module.ShellPlaceholder })) }]
+            : []),
         ],
       },
       {
