@@ -92,6 +92,11 @@ Frontend-react (@hookform/resolvers 7.0.2), from `frontend-react/`:
 - Consolidated branch `chore/s04-1-dependabot-review` pushed once; a single PR to `main` was opened for owner review. Not merged.
 - Original Dependabot PRs #4–#9 left open. After the owner merges the consolidated PR, #4/#5/#6/#7 are superseded and can be closed with owner authorization; #8/#9 stay open (deferred).
 
-## 8. Git attribution
+## 8. Favicon fix (S04.1 add-on, isolated from the dependency upgrades)
+
+- The React `index.html` still pointed at `/favicon.ico` (the retired Angular app's icon in `frontend/public/favicon.ico`; no such file exists in `frontend-react/public/`). Replaced with a new standalone `frontend-react/public/favicon.svg` that replicates the exact top-navigation brand from `src/shared/layout/sidebar-header.tsx`: lucide `Shield` (white, size 21, exact 0.475.0 path) centered in a 34×34 `rounded-lg` square of `--ut-primary` (#185fa5 light / #378add dark via `prefers-color-scheme`). `index.html` now has `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />`; no `favicon.ico` references remain in `frontend-react`. The retired Angular `frontend/` was not touched.
+- Verified: `npm run build` copies `dist/favicon.svg` and emits the new link in `dist/index.html`; dev server returns 200 `image/svg+xml` for `/favicon.svg`; real-browser check (msedge) confirmed `link[rel=icon]` → `/favicon.svg` loading the Shield SVG; typecheck/lint PASS, unit 556/556, msedge smoke 3/3.
+
+## 9. Git attribution
 
 Commits on `chore/s04-1-dependabot-review` use the repository owner identity `alexc83 <alexc83@users.noreply.github.com>`; `.githooks` attribution hooks active; no AI author/committer attribution or AI trailers. No merge, no history rewrite, no main push.
