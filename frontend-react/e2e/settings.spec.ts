@@ -111,7 +111,9 @@ test('change password dialog: validation, rejection, and success flow', async ({
   await updateButton.click();
 
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole('status')).toHaveText('Password updated');
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('heading', { level: 1, name: 'Track credentials. Stay compliant. Own your career.' })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('uptrack_token'))).toBeNull();
   expect(passwordCallCount).toBe(2);
 
   await noOverflow(page);

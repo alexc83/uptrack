@@ -87,6 +87,19 @@ describe('login dialog', () => {
     await waitFor(() => expect(within(d).queryByText('Invalid email or password.')).not.toBeInTheDocument());
   });
 
+  it('shows HTTP 429 without clearing inputs or starting automatic retries', async () => {
+    const authApi = createFakeAuthApi();
+    authApi.login.mockRejectedValue(new ApiError('http', 429, 'Too many requests. Please try again later.', errorBody(429)));
+    const { user: person, store } = renderWithProviders(null, { routes, path: '/?auth=login', session: { authApi } });
+    const d = await dialog('Log in');
+    await person.type(within(d).getByLabelText('Email'), 'a@example.test');
+    await person.type(within(d).getByLabelText('Password'), 'wrong{Enter}');
+    expect(await within(d).findByRole('alert')).toHaveTextContent('Too many requests. Please try again later.');
+    expect(within(d).getByLabelText('Email')).toHaveValue('a@example.test');
+    expect(authApi.login).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot().status).toBe('unauthenticated');
+  });
+
   it('shows the network message when the server is unreachable', async () => {
     const authApi = createFakeAuthApi();
     authApi.login.mockRejectedValue(new ApiError('network', 0, networkMessage));

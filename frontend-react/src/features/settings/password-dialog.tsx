@@ -86,7 +86,7 @@ export function PasswordDialog({ open, onClose, onSuccess, returnFocusRef }: Pas
       open={open}
       onClose={handleClose}
       title="Change Password"
-      description="Update your password with a secure confirmation step."
+      description="Changing your password signs you out on all devices. Sign in again with your new password."
       error={serverError ?? undefined}
       initialFocusRef={currentPasswordInputRef}
       returnFocusRef={returnFocusRef}

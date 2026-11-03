@@ -69,6 +69,24 @@ test('invalid credentials show the server message and keep the dialog open', asy
   expect(await page.evaluate(() => localStorage.getItem('uptrack_token'))).toBeNull();
 });
 
+test('rate-limited login keeps the dialog usable and does not retry automatically', async ({ page }) => {
+  let attempts = 0;
+  await mock(page, 'POST', '/auth/login', route => {
+    attempts += 1;
+    return json(route, 429, errorBody(429, 'Too many requests. Please try again later.'));
+  });
+  await page.goto('/?auth=login');
+  const dialog = page.getByRole('dialog', { name: 'Log in' });
+  await dialog.getByLabel('Email').fill('test.user@example.test');
+  await dialog.getByLabel('Password').fill('secret');
+  await dialog.getByLabel('Password').press('Enter');
+  await expect(dialog.getByRole('alert')).toHaveText('Too many requests. Please try again later.');
+  await expect(dialog.getByLabel('Email')).toHaveValue('test.user@example.test');
+  await expect(dialog.getByRole('button', { name: 'Log in', exact: true })).toBeEnabled();
+  expect(attempts).toBe(1);
+  expect(await page.evaluate(() => localStorage.getItem('uptrack_token'))).toBeNull();
+});
+
 test('registration: client validation, then success; duplicate email is a banner', async ({ page }) => {
   let attempt = 0;
   await mock(page, 'POST', '/auth/register', route => {
