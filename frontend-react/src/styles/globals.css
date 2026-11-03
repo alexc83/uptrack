@@ -51,6 +51,16 @@
   --ut-landing-compliance-bg: linear-gradient(180deg, #f8fbff 0%, #fff 82%);
   --ut-landing-cta-shadow: 0 20px 46px rgb(55 102 173 / 0.22);
   --ut-landing-check: #52b46f;
+
+  /* P01 roadmap section accents */
+  --ut-roadmap-now: #185fa5;
+  --ut-roadmap-now-bg: #e8f1fb;
+  --ut-roadmap-next: #6d4fc4;
+  --ut-roadmap-next-bg: #f0ebfb;
+  --ut-roadmap-later: #9a6206;
+  --ut-roadmap-later-bg: #faeeda;
+  --ut-roadmap-done: #27500a;
+  --ut-roadmap-done-bg: #eaf3de;
 }
 
 html.dark {
@@ -98,6 +108,16 @@ html.dark {
   --ut-landing-compliance-bg: linear-gradient(180deg, #0d182c 0%, #08111f 82%);
   --ut-landing-cta-shadow: 0 20px 46px rgb(55 102 173 / 0.22);
   --ut-landing-check: #52b46f;
+
+  /* P01 roadmap section accents */
+  --ut-roadmap-now: #378add;
+  --ut-roadmap-now-bg: #172233;
+  --ut-roadmap-next: #b9a3ec;
+  --ut-roadmap-next-bg: #241d3d;
+  --ut-roadmap-later: #fac775;
+  --ut-roadmap-later-bg: #2d2010;
+  --ut-roadmap-done: #c0dd97;
+  --ut-roadmap-done-bg: #1e2d1a;
 }
 
 @keyframes ut-fade-in {

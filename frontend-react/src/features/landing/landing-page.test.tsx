@@ -29,6 +29,7 @@ describe('LandingPage', () => {
     // Footer (technology reference corrected to React per approved decision)
     expect(screen.getByText('Designed for healthcare professionals, powered by React and Spring Boot')).toBeVisible();
     expect(screen.getByText('© 2026 UpTrack')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Roadmap' })).toHaveAttribute('href', '/roadmap');
     expect(document.title).toBe('UpTrack — Credential & CE Tracking');
   });
 
