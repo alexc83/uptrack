@@ -26,6 +26,7 @@ export function LandingPage() {
 
   useEffect(() => {
     document.title = 'UpTrack — Credential & CE Tracking';
+    window.scrollTo(0, 0);
   }, []);
 
   const update = (change: (next: URLSearchParams) => void) =>

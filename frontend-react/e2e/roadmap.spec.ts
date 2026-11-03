@@ -1,4 +1,4 @@
-import { test, expect, capture, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, capture, mockCredentialReads, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
 
 const entryTitles = [
   'Public Product Roadmap', 'Help Center',
@@ -30,9 +30,33 @@ test('landing footer Roadmap link navigates a guest to /roadmap', async ({ page 
   await expect(page.getByRole('heading', { level: 1, name: 'Product Roadmap' })).toBeVisible();
 });
 
+test('landing footer Roadmap link opens /roadmap at the top of the page', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.getByRole('link', { name: 'Roadmap' }).click();
+  await expect(page).toHaveURL(/\/roadmap$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Product Roadmap' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+});
+
+test('sidebar Roadmap link opens /roadmap at the top of the page', async ({ page }) => {
+  await signIn(page);
+  await mockDashboard(page);
+  await mockCredentialReads(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/dashboard');
+  await expect(page.getByRole('heading', { level: 1, name: 'Live compliance overview' })).toBeVisible();
+  await page.getByRole('link', { name: 'Roadmap' }).click();
+  await expect(page).toHaveURL(/\/roadmap$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Product Roadmap' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+});
+
 test('signed-in user reaches /roadmap from the sidebar link and keeps the session', async ({ page }) => {
   await signIn(page);
   await mockDashboard(page);
+  await mockCredentialReads(page);
   await page.goto('/dashboard');
   await expect(page.getByRole('heading', { level: 1, name: 'Live compliance overview' })).toBeVisible();
   await page.getByRole('link', { name: 'Roadmap' }).click();
