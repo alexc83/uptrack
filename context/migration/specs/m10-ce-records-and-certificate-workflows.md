@@ -1,6 +1,6 @@
 # M10 — CE records and certificate workflows
 
-**Status:** DRAFT OUTLINE — not approved for coding.  
+**Status:** IMPLEMENTED on `feature/react-ce-records` per the owner brief of 2026-11-03 ("Begin M10 implementation now"); pending owner acceptance. Evidence: `../verification/m10-report.md`.  
 **Branch:** `feature/react-ce-records`  
 **Dependency:** Previous milestone approved and merged
 
