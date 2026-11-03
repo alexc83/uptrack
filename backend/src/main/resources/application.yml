@@ -1,7 +1,16 @@
 server:
   port: ${SERVER_PORT:8080}
+  forward-headers-strategy: none
+  tomcat:
+    # Drain ordinary rejected requests so clients receive 413 instead of a reset.
+    # Keep this bounded: a reverse proxy must cap larger bodies before forwarding.
+    max-swallow-size: 8MB
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
   application:
     name: uptrack-backend
   datasource:

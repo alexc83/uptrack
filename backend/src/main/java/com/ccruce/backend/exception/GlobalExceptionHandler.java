@@ -80,9 +80,37 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "The request method is not supported for this resource.");
     }
 
+    @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.web.multipart.MultipartException.class})
+    public ResponseEntity<ErrorResponse> handleInvalidRequest(Exception exception) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "The request contains invalid or malformed data.");
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedMedia(Exception exception) {
+        return buildResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "The request content type is not supported.");
+    }
+
+    @ExceptionHandler({org.springframework.web.multipart.MaxUploadSizeExceededException.class,
+            UploadTooLargeException.class})
+    public ResponseEntity<ErrorResponse> handleUploadTooLarge(Exception exception) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Certificate files must be 5 MiB or smaller.");
+    }
+
+    @ExceptionHandler({org.springframework.dao.DataIntegrityViolationException.class,
+            org.springframework.dao.OptimisticLockingFailureException.class})
+    public ResponseEntity<ErrorResponse> handleDataConflict(Exception exception) {
+        return buildResponse(HttpStatus.CONFLICT, "The request conflicts with stored data.");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnhandled(Exception exception) {
-        log.error("Unhandled exception caught by global exception handler", exception);
+        // Exception messages/causes may contain SQL values or request data. Record type and
+        // call sites, without logging their messages or sensitive argument values.
+        log.error("Unhandled server failure: {} at {}", exception.getClass().getName(),
+                java.util.Arrays.stream(exception.getStackTrace()).limit(12).map(StackTraceElement::toString).toList());
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
     }
 

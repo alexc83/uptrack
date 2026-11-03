@@ -43,7 +43,7 @@ class UploadControllerIntegrationTest extends AbstractControllerIntegrationTest 
                 "file",
                 "acls-cert.pdf",
                 "application/pdf",
-                "fake-pdf-content".getBytes()
+                com.ccruce.backend.CertificateFixtures.pdf()
         );
 
         mockMvc.perform(multipart("/api/uploads/certificates").file(file))
@@ -102,12 +102,13 @@ class UploadControllerIntegrationTest extends AbstractControllerIntegrationTest 
                 "file",
                 "acls-cert.pdf",
                 "application/pdf",
-                "fake-pdf-content".getBytes()
+                com.ccruce.backend.CertificateFixtures.pdf()
         );
 
         when(uploader.upload(any(), argThat(options ->
                 "raw".equals(options.get("resource_type"))
-                        && "acls-cert.pdf".equals(options.get("filename_override"))
+                        && Boolean.FALSE.equals(options.get("use_filename"))
+                        && !options.containsKey("filename_override")
         ))).thenReturn(Map.of(
                 "secure_url", "https://res.cloudinary.com/demo/raw/upload/v1/uptrack/users/%s/certificates/acls-cert.pdf".formatted(session.userId()),
                 "public_id", "uptrack/users/%s/certificates/acls-cert".formatted(session.userId()),
@@ -132,7 +133,7 @@ class UploadControllerIntegrationTest extends AbstractControllerIntegrationTest 
                 "file",
                 "credential.png",
                 "image/png",
-                "image-content".getBytes()
+                com.ccruce.backend.CertificateFixtures.image("png")
         );
 
         when(uploader.upload(any(), anyMap())).thenThrow(new RuntimeException("Cloudinary unavailable"));

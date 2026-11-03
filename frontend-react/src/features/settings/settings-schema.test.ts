@@ -43,6 +43,9 @@ describe('passwordSchema', () => {
     });
   });
 
+  it.each([['é'.repeat(36), true], ['é'.repeat(37), false]])('enforces the UTF-8 byte limit', (password, valid) => {
+    expect(passwordSchema.safeParse({ currentPassword: 'previousPassword', newPassword: password, confirmPassword: password }).success).toBe(valid);
+  });
   it('rejects passwords shorter than 8 characters', () => {
     const result = passwordSchema.safeParse({
       currentPassword: 'oldPassword123',

@@ -45,6 +45,7 @@ export function useChangePassword() {
         throw new DOMException('Session changed', 'AbortError');
       }
       await usersApi.changePassword(payload);
+      if (guard.isCurrent()) session.logout();
     },
   });
 }

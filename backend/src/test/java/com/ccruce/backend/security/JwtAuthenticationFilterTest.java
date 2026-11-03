@@ -37,7 +37,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void invalidTokenLeavesRequestUnauthenticatedAndStillContinuesTheChain() throws Exception {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new JwtService(new AuthProperties(SECRET, 3600)));
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtService());
         MockHttpServletRequest request = requestWithBearer("not.a.valid.jwt");
         AtomicInteger chainCalls = new AtomicInteger();
 
@@ -51,7 +51,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void validTokenAuthenticatesTheRequest() throws Exception {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new JwtService(new AuthProperties(SECRET, 3600)));
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtService());
         UUID userId = UUID.randomUUID();
         MockHttpServletRequest request = requestWithBearer(token(SECRET, userId.toString(), Instant.now().plusSeconds(600)));
 
@@ -63,16 +63,17 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void misconfiguredSigningKeyIsNotReportedAsAnInvalidToken() {
-        // A secret shorter than 256 bits is a server configuration error, not a client token problem.
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new JwtService(new AuthProperties("too-short", 3600)));
-
-        assertThrows(WeakKeyException.class,
+        assertThrows(IllegalStateException.class, () -> new AuthProperties("too-short", 3600));
+        JwtService broken = org.mockito.Mockito.mock(JwtService.class);
+        org.mockito.Mockito.when(broken.parseToken("a.b.c")).thenThrow(new IllegalStateException("configuration"));
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(broken);
+        assertThrows(IllegalStateException.class,
                 () -> filter.doFilter(requestWithBearer("a.b.c"), new MockHttpServletResponse(), new MockFilterChain()));
     }
 
     @Test
     void exceptionsThrownByTheRestOfTheChainAreNotSwallowed() {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new JwtService(new AuthProperties(SECRET, 3600)));
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtService());
         MockHttpServletRequest request = requestWithBearer(token(SECRET, UUID.randomUUID().toString(), Instant.now().plusSeconds(600)));
         IllegalArgumentException downstreamBug = new IllegalArgumentException("bug in a controller");
 
@@ -90,11 +91,32 @@ class JwtAuthenticationFilterTest {
         return request;
     }
 
+    private JwtService jwtService() {
+        var repository = org.mockito.Mockito.mock(com.ccruce.backend.repository.UserRepository.class);
+        org.mockito.Mockito.when(repository.findById(org.mockito.ArgumentMatchers.any(UUID.class))).thenAnswer(invocation -> {
+            var user = new com.ccruce.backend.entity.User();
+            user.setId(invocation.getArgument(0));
+            user.setEmail("filter-test@example.test");
+            user.setName("Filter Test");
+            user.setPassword("stored-password-hash");
+            return java.util.Optional.of(user);
+        });
+        return new JwtService(new AuthProperties(SECRET, 3600), repository);
+    }
+
     private String token(String secret, String uid, Instant expiresAt) {
+        var user = new com.ccruce.backend.entity.User();
+        user.setId(UUID.fromString(uid));
+        user.setEmail("filter-test@example.test");
+        user.setPassword("stored-password-hash");
+        String generated = jwtService().generateToken(user);
+        String marker = Jwts.parser().verifyWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+                .build().parseSignedClaims(generated).getPayload().get("cv", String.class);
         return Jwts.builder()
                 .subject("filter-test@example.test")
                 .claim("uid", uid)
                 .claim("name", "Filter Test")
+                .claim("cv", marker)
                 .issuedAt(new Date())
                 .expiration(Date.from(expiresAt))
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)))

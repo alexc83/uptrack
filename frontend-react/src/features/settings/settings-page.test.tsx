@@ -144,7 +144,7 @@ describe('SettingsPage', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Change Password' });
     expect(dialog).toBeVisible();
-    expect(screen.getByText('Update your password with a secure confirmation step.')).toBeVisible();
+    expect(screen.getByText('Changing your password signs you out on all devices. Sign in again with your new password.')).toBeVisible();
 
     const cancelButton = screen.getByRole('button', { name: 'Cancel' });
     await user.click(cancelButton);
@@ -187,9 +187,9 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('Confirm password must match the new password.')).toBeVisible();
   });
 
-  it('submits valid password change, closes modal, and shows success banner', async () => {
+  it('submits valid password change and signs out the initiating session', async () => {
     const user = userEvent.setup();
-    renderWithProviders(null, { routes, path: '/settings', session: 'authenticated' });
+    const { store } = renderWithProviders(null, { routes, path: '/settings', session: 'authenticated' });
 
     await user.click(await screen.findByRole('button', { name: 'Change Password' }));
     await screen.findByRole('dialog', { name: 'Change Password' });
@@ -218,7 +218,8 @@ describe('SettingsPage', () => {
       expect(screen.queryByRole('dialog', { name: 'Change Password' })).not.toBeInTheDocument();
     });
 
-    expect(await screen.findByText('Password updated')).toBeVisible();
+    expect(store.getSnapshot().status).toBe('unauthenticated');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Track credentials. Stay compliant. Own your career.' })).toBeVisible();
   });
 
   it('shows server error when password update fails and keeps dialog open', async () => {

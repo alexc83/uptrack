@@ -1,5 +1,11 @@
 # Current Feature
 
+## Current — S05R application security remediation (2026-11-03)
+
+Task-authorized implementation on `fix/s05r-security-remediation` from main `75d6eec` after S05 PR #15 merged. Core authentication/upload/JWT/error fixes are implemented and locally verified. Backend 132 tests including 47 cross-user regressions, frontend checks, four focused system Chromium cases and isolated PostgreSQL token revocation passed. No schema migration; all pre-S05R sessions must sign in once at rollout. Cloudinary delivery remains public; privacy migration, durable orphan cleanup and deployment decisions are deferred. No deployment or merge. See [S05R report](migration/verification/s05r-security-remediation.md).
+
+The earlier milestone record below is historical.
+
 ## Current — M14 React cutover on `feature/react-cutover` (2026-11-03)
 
 M13 comprehensive parity/security regression is merged on `main` (`3351209`, CONDITIONALLY READY; live React → Spring Boot → PostgreSQL acceptance passed on a disposable database, see `migration/verification/m13-report.md`). M14 makes `frontend-react/` the canonical frontend in all docs, environment examples and dependency tracking; the legacy Angular `frontend/` is preserved as a historical reference and is not removed. No backend, schema or dependency changes. See `migration/verification/m14-report.md`.
