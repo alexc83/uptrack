@@ -29,8 +29,9 @@
 | M12 | DRAFT | — | Not run | Pending | — | Not started |
 | M13 | DRAFT | — | Not run | Pending | — | Not started |
 | M14 | DRAFT | — | Not run | Pending | — | Not started |
+| S03 | Task-authorized (brief of 2026-11-03; no separate spec) | chore/s03-dependency-remediation (from `052db4a`) | FE `ng test` 38/38 PASS, `ng build` PASS; npm audit full 51→16 (prod 6→0); 113/114 Angular Dependabot alerts predicted resolved; React/backend read-only | Owner ACCEPTED 2026-11-03; ff-merge/push/cleanup authorized | see `verification/s03-report.md` | Accepted — ready for integration |
 
-Note: S01 (between M01 and M02) and S02 (between M02 and M03) are ID-preserving insertions; M01–M14 are not renumbered.
+Note: S01 (between M01 and M02), S02 (between M02 and M03) and S03 (after M09) are ID-preserving insertions; M01–M14 are not renumbered.
 
 Allowed status values: Not started, Spec ready, In progress, Blocked, Verified, Merged. Never mark Verified when essential tests are Not run.
 
