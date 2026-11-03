@@ -22,6 +22,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final String dummyPasswordHash;
 
     public AuthServiceImpl(
             UserRepository userRepository,
@@ -31,6 +32,7 @@ public class AuthServiceImpl implements AuthService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.dummyPasswordHash = passwordEncoder.encode(java.util.UUID.randomUUID().toString());
     }
 
     @Override
@@ -54,9 +56,11 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponseDto login(AuthLoginRequestDto requestDto) {
         String normalizedEmail = normalizeEmail(requestDto.email());
 
-        User user = userRepository.findByEmail(normalizedEmail)
-                .filter(existingUser -> passwordEncoder.matches(requestDto.password(), existingUser.getPassword()))
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password."));
+        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
+        boolean matches = passwordEncoder.matches(requestDto.password(), user == null ? dummyPasswordHash : user.getPassword());
+        if (user == null || !matches) {
+            throw new UnauthorizedException("Invalid email or password.");
+        }
 
         return buildAuthResponse(user);
     }

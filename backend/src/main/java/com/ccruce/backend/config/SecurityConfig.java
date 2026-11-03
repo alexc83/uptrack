@@ -1,5 +1,8 @@
 package com.ccruce.backend.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ccruce.backend.security.RequestRateLimitFilter;
+import com.ccruce.backend.security.RequestRateLimiter;
 import com.ccruce.backend.security.JwtAuthenticationFilter;
 import com.ccruce.backend.security.RestAuthenticationEntryPoint;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -27,7 +30,9 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            RestAuthenticationEntryPoint restAuthenticationEntryPoint
+            RestAuthenticationEntryPoint restAuthenticationEntryPoint,
+            RequestRateLimiter rateLimiter,
+            ObjectMapper objectMapper
     )
             throws Exception {
         http
@@ -40,7 +45,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new RequestRateLimitFilter(rateLimiter, objectMapper),
+                        JwtAuthenticationFilter.class);
 
         return http.build();
     }
@@ -56,7 +63,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(corsProperties.allowedOriginPatterns());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

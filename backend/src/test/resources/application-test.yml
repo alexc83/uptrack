@@ -1,3 +1,9 @@
+# Shared integration fixtures create many synthetic accounts. Dedicated limiter tests use production limits.
+app:
+  rate-limit:
+    login-per-minute: 10000
+    registration-per-hour: 10000
+    upload-per-hour: 10000
 spring:
   datasource:
     url: jdbc:h2:mem:uptrack-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE

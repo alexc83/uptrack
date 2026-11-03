@@ -175,6 +175,18 @@ public class CERecordServiceImpl implements CERecordService {
         String certificatePublicId = normalizeCertificateValue(requestDto.certificatePublicId());
         String certificateResourceType = normalizeCertificateValue(requestDto.certificateResourceType());
 
+        if (certificateUrl != null) {
+            try {
+                java.net.URI uri = java.net.URI.create(certificateUrl);
+                if (!("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                        || uri.getHost() == null || uri.getUserInfo() != null) {
+                    throw new IllegalArgumentException();
+                }
+            } catch (IllegalArgumentException exception) {
+                throw new BadRequestException("Certificate URL must be an HTTP(S) URL without credentials.");
+            }
+        }
+
         if (certificatePublicId == null && certificateResourceType == null) {
             return;
         }
@@ -185,6 +197,11 @@ public class CERecordServiceImpl implements CERecordService {
 
         if (!certificatePublicId.startsWith("uptrack/users/%s/certificates/".formatted(userId))) {
             throw new BadRequestException("Certificate asset does not belong to the authenticated user.");
+        }
+
+        String assetName = certificatePublicId.substring(("uptrack/users/%s/certificates/".formatted(userId)).length());
+        if (!assetName.matches("[A-Za-z0-9][A-Za-z0-9._-]*") || assetName.contains("..")) {
+            throw new BadRequestException("Certificate asset identifier is invalid.");
         }
 
         if (!ALLOWED_CERTIFICATE_RESOURCE_TYPES.contains(certificateResourceType)) {

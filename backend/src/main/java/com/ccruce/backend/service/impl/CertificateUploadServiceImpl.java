@@ -1,7 +1,7 @@
 package com.ccruce.backend.service.impl;
 
+import com.ccruce.backend.validation.CertificateFileValidator;
 import com.ccruce.backend.dto.response.CertificateUploadResponseDto;
-import com.ccruce.backend.exception.BadRequestException;
 import com.ccruce.backend.exception.UnauthorizedException;
 import com.ccruce.backend.exception.UploadFailedException;
 import com.ccruce.backend.security.AuthenticatedUser;
@@ -17,7 +17,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -25,32 +24,18 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
 
     private static final Logger log = LoggerFactory.getLogger(CertificateUploadServiceImpl.class);
 
-    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
-            "application/pdf",
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "image/gif"
-    );
-
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-            "pdf",
-            "jpg",
-            "jpeg",
-            "png",
-            "webp",
-            "gif"
-    );
-
     private final Cloudinary cloudinary;
+    private final CertificateFileValidator fileValidator;
 
-    public CertificateUploadServiceImpl(Cloudinary cloudinary) {
+    public CertificateUploadServiceImpl(Cloudinary cloudinary,
+            CertificateFileValidator fileValidator) {
         this.cloudinary = cloudinary;
+        this.fileValidator = fileValidator;
     }
 
     @Override
     public CertificateUploadResponseDto uploadCertificate(MultipartFile file) {
-        validateFile(file);
+        byte[] bytes = fileValidator.validate(file);
 
         UUID userId = getAuthenticatedUserId();
         String originalFilename = file.getOriginalFilename();
@@ -59,8 +44,8 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
-                    buildUploadOptions(userId, originalFilename, resourceType)
+                    bytes,
+                    buildUploadOptions(userId, resourceType)
             );
 
             String returnedResourceType = getRequiredString(uploadResult, "resource_type");
@@ -72,10 +57,10 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
                     returnedResourceType
             );
         } catch (IOException exception) {
-            log.error("Cloudinary certificate upload failed while reading file bytes for user {}", userId, exception);
+            log.warn("Cloudinary certificate upload failed (I/O).");
             throw new UploadFailedException("Certificate upload failed.");
         } catch (RuntimeException exception) {
-            log.error("Cloudinary certificate upload failed for user {}", userId, exception);
+            log.warn("Cloudinary certificate upload failed (provider).");
             throw new UploadFailedException("Certificate upload failed.");
         }
     }
@@ -95,44 +80,23 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
                     )
             );
         } catch (IOException exception) {
-            log.error("Cloudinary certificate delete failed for asset {}", publicId, exception);
+            log.warn("Cloudinary certificate cleanup failed (provider).");
             throw new UploadFailedException("Certificate cleanup failed.");
         } catch (RuntimeException exception) {
-            log.error("Cloudinary certificate delete failed for asset {}", publicId, exception);
+            log.warn("Cloudinary certificate cleanup failed (provider).");
             throw new UploadFailedException("Certificate cleanup failed.");
         }
     }
 
-    private Map<String, Object> buildUploadOptions(UUID userId, String originalFilename, String resourceType) {
+    private Map<String, Object> buildUploadOptions(UUID userId, String resourceType) {
         return Map.of(
                 "folder", "uptrack/users/%s/certificates".formatted(userId),
                 "resource_type", resourceType,
-                "use_filename", true,
+                "use_filename", false,
                 "unique_filename", true,
                 "overwrite", false,
-                "filename_override", originalFilename == null ? "certificate-upload" : originalFilename
+                "allowed_formats", java.util.List.of("pdf", "jpg", "jpeg", "png", "webp", "gif")
         );
-    }
-
-    private void validateFile(MultipartFile file) {
-        if (file == null) {
-            throw new BadRequestException("Certificate file is required.");
-        }
-
-        if (file.isEmpty()) {
-            throw new BadRequestException("Certificate file must not be empty.");
-        }
-
-        String originalFilename = file.getOriginalFilename();
-        String contentType = file.getContentType();
-        String extension = extractExtension(originalFilename);
-
-        boolean allowedContentType = contentType != null && ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT));
-        boolean allowedExtension = extension != null && ALLOWED_EXTENSIONS.contains(extension);
-
-        if (!allowedContentType && !allowedExtension) {
-            throw new BadRequestException("Unsupported certificate file type. Allowed types: PDF, JPG, JPEG, PNG, WEBP, GIF.");
-        }
     }
 
     private UUID getAuthenticatedUserId() {

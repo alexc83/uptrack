@@ -40,7 +40,10 @@ public class UserServiceImpl implements UserService {
         ensureEmailAvailable(requestDto.email(), user.getId());
         applyProfileUpdate(user, requestDto);
 
-        return toResponse(userRepository.save(user));
+        if (userRepository.updateProfile(user.getId(), user.getName(), user.getEmail()) != 1) {
+            throw new ConflictException("The account changed. Please sign in again.");
+        }
+        return toResponse(user);
     }
 
     @Override
@@ -55,8 +58,9 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("New password must be different from the current password.");
         }
 
-        user.setPassword(passwordEncoder.encode(requestDto.newPassword()));
-        userRepository.save(user);
+        if (userRepository.changePassword(user.getId(), user.getPassword(), passwordEncoder.encode(requestDto.newPassword())) != 1) {
+            throw new ConflictException("The account changed. Please sign in again.");
+        }
     }
 
     private User getExistingUser(UUID id) {
