@@ -1,6 +1,6 @@
 # S05R — Application security remediation
 
-Status: **Implemented and locally verified; not deployed or merged.** Git publication outcome is recorded in the final handoff. Date: 2026-11-03.
+Status: **Implemented, locally verified and pushed; not deployed or merged. Draft PR creation is blocked by cloud network access to api.github.com.** Date: 2026-11-03.
 
 ## Executive summary and baseline
 
@@ -114,3 +114,13 @@ Earlier failed checks were investigated, not hidden: the first full backend run 
 Review the credential-marker/rollout choice, fixed-window thresholds and conservative PDF restrictions independently before release. No schema changes are required, but deployment config must use a generated ≥32-byte secret, JWT expiration 1–3600 and a coordinated all-replica rollout. Frontend/backend changes should ship together; keep the hosted backend suspended until separately approved.
 
 Outstanding owner decisions: public vs authenticated delivery and historical migration; durable orphan cleanup/quota/retry policy; registration-enumeration UX; trusted edge proxy/rate limits/body caps; production schema-migration policy; SPA headers; CI/rulesets and supported Spring lifecycle. A separate controlled non-production Cloudinary verification should exercise genuine PDF/raster upload, provider options, public access and deletion semantics. None of these external decisions was silently implemented.
+
+## Git publication and remaining external blocker
+
+Focused commits: `a17dc0f` (backend security and regressions), `89f7740` (React handling and regressions), `bf17a9e` (verification/rollout documentation), followed by this publication handoff update. All use `alexc83 <alexc83@users.noreply.github.com>` with no AI attribution. The feature branch was pushed normally; remote HEAD was verified equal to local HEAD. Main was not changed or merged.
+
+`gh pr create --repo alexc83/uptrack --base main --head fix/s05r-security-remediation --draft ...` returned `Post "https://api.github.com/graphql": Forbidden`. A public API probe also failed at the proxy's CONNECT boundary with HTTP 403. Git HTTPS read/push succeeded, so this is not evidence that a Git token is missing. The current restricted domain policy does not include api.github.com.
+
+An additive allowlist draft save for **api.github.com** was attempted while preserving all existing custom rules/presets, but the configuration tool returned **draft_not_editable** (published/publishing draft), so **no network update was confirmed or applied**. The owner can enable that domain in cloud environment settings, then resume PR creation; API permission must be rechecked afterward. No secret value is requested. Alternatively, open the prepared branch's GitHub compare view and manually create a **draft**, using [the prepared PR description](s05r-pull-request.md). No PR URL/number is claimed.
+
+Compare/create view: https://github.com/alexc83/uptrack/compare/main...fix/s05r-security-remediation
