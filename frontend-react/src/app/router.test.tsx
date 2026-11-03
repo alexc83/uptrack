@@ -1,12 +1,19 @@
 import { credentialsApi } from '../core/api/credentials-api';
-import { ceReport, credential as credentialFixture } from '../test/fixtures/api-fixtures';
+import { usersApi } from '../core/api/users-api';
+import { ceReport, credential as credentialFixture, user as userFixture } from '../test/fixtures/api-fixtures';
 import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { routes } from './router';
 import { renderWithProviders } from '../test/render-with-providers';
 
-it('renders the labelled shell placeholder without consuming query strings: /settings', async () => {
+it('renders the M12 Settings page at /settings', async () => {
   const { router } = renderWithProviders(null, { routes, path: '/settings', session: 'authenticated' });
+  expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
+  expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
+  expect(router.state.location.search).toBe('');
+});
+it('renders the labelled shell placeholder without consuming query strings: /preview', async () => {
+  const { router } = renderWithProviders(null, { routes, path: '/preview', session: 'authenticated' });
   expect(await screen.findByText('Migration preview — feature not implemented.')).toBeVisible();
   expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
   expect(router.state.location.search).toBe('');
@@ -29,8 +36,9 @@ it('keeps the M11 CE report outside the shell and leaves returnTo untouched', as
   expect(router.state.location.search).toBe('?returnTo=%2Fdashboard');
 });
 
-// M09: these routing/auth tests now reach the real credential page.
+// M09, M12: these routing/auth tests now reach the real credential and settings pages.
 beforeEach(() => {
   vi.spyOn(credentialsApi, 'list').mockResolvedValue([]);
   vi.spyOn(credentialsApi, 'get').mockResolvedValue(credentialFixture);
+  vi.spyOn(usersApi, 'getProfile').mockResolvedValue(userFixture);
 });

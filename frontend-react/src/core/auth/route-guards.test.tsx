@@ -1,4 +1,5 @@
 import { credentialsApi } from '../../core/api/credentials-api';
+import { usersApi } from '../../core/api/users-api';
 import { credential as credentialFixture } from '../../test/fixtures/api-fixtures';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -40,7 +41,7 @@ describe('RequireAuth', () => {
     const gate = deferred<UserResponse>();
     const authApi = createFakeAuthApi();
     authApi.me.mockReturnValue(gate.promise);
-    const { store } = renderWithProviders(null, { routes, path: '/settings', session: { token: testToken('t'), authApi } });
+    const { store } = renderWithProviders(null, { routes, path: '/preview', session: { token: testToken('t'), authApi } });
     expect(await screen.findByText('Checking your session…')).toBeVisible();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.queryByText(placeholder)).not.toBeInTheDocument();
@@ -63,7 +64,7 @@ describe('RequireAuth', () => {
   it('keeps the token and offers Retry / Sign out when the server cannot be reached', async () => {
     const authApi = createFakeAuthApi();
     authApi.me.mockRejectedValueOnce(new ApiError('network', 0, networkMessage));
-    const { storage, user: person } = renderWithProviders(null, { routes, path: '/settings', session: { token: testToken('t'), authApi } });
+    const { storage, user: person } = renderWithProviders(null, { routes, path: '/preview', session: { token: testToken('t'), authApi } });
     expect(await screen.findByText("We couldn't verify your session")).toBeVisible();
     expect(storage.current()).toBe(testToken('t'));
     authApi.me.mockResolvedValue(user);
@@ -82,7 +83,7 @@ describe('RequireAuth', () => {
   });
 
   it.each([403, 404])('does not sign the user out when a protected view later receives %i', async (status) => {
-    const { store } = renderWithProviders(null, { routes, path: '/settings', session: 'authenticated' });
+    const { store } = renderWithProviders(null, { routes, path: '/preview', session: 'authenticated' });
     expect(await screen.findByText(placeholder)).toBeVisible();
     // the transport never calls onUnauthorized for these; assert the guard keeps rendering
     expect(status).toBeGreaterThan(400);
@@ -155,7 +156,7 @@ describe('GuestOnly and redirects', () => {
 
 describe('provider lifecycle', () => {
   it('under StrictMode issues exactly one /auth/me and keeps a single live adapter', async () => {
-    const { authApi, store } = renderWithProviders(null, { routes, path: '/settings', session: 'authenticated', strict: true });
+    const { authApi, store } = renderWithProviders(null, { routes, path: '/preview', session: 'authenticated', strict: true });
     expect(await screen.findByText(placeholder)).toBeVisible();
     expect(authApi.me).toHaveBeenCalledTimes(1);
     expect(getApiAuthRegistration()?.adapter.getToken()).toBe(testToken('auth'));
@@ -163,7 +164,7 @@ describe('provider lifecycle', () => {
   });
 
   it('unregisters the transport adapter on unmount', async () => {
-    const { unmount } = renderWithProviders(null, { routes, path: '/settings', session: 'authenticated' });
+    const { unmount } = renderWithProviders(null, { routes, path: '/preview', session: 'authenticated' });
     await screen.findByText(placeholder);
     expect(getApiAuthRegistration()).toBeDefined();
     unmount();
@@ -173,7 +174,7 @@ describe('provider lifecycle', () => {
 
 describe('logout', () => {
   it('confirms, clears token and cache, and lands on plain /', async () => {
-    const { user: person, router, client, storage, store } = renderWithProviders(null, { routes, path: '/settings', session: 'authenticated' });
+    const { user: person, router, client, storage, store } = renderWithProviders(null, { routes, path: '/preview', session: 'authenticated' });
     await screen.findByText(placeholder);
     client.setQueryData(queryKeys.credentials(), ['A']);
     expect(screen.getByText(user.name)).toBeVisible();
@@ -197,14 +198,15 @@ describe('logout', () => {
   });
 
   it('shows the signed-in identity in the account menu', async () => {
-    renderWithProviders(null, { routes, path: '/settings', session: 'authenticated' });
+    renderWithProviders(null, { routes, path: '/preview', session: 'authenticated' });
     await screen.findByText(placeholder);
     expect(screen.getByText(user.email)).toBeVisible();
   });
 });
 
-// M09: these routing/auth tests now reach the real credential page.
+// M09, M12: these routing/auth tests now reach the real credential and settings pages.
 beforeEach(() => {
   vi.spyOn(credentialsApi, 'list').mockResolvedValue([]);
   vi.spyOn(credentialsApi, 'get').mockResolvedValue(credentialFixture);
+  vi.spyOn(usersApi, 'getProfile').mockResolvedValue(user);
 });

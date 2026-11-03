@@ -26,7 +26,7 @@
 | M09 | ACCEPTED | main (M09 safely deleted after FF/push) | Owner unit 490/490, browser/visual 504/504, typecheck/lint/build PASS, production audit 0; 256 read-only live checks PASS | Owner accepted; live PostgreSQL writes deferred to M09-W01 | `3b2a6c1`, `7b8873e`, `3324d09` merged and pushed; documentation-only completion follows | Merged |
 | M10 | Implemented per owner brief 2026-11-03 (spec was DRAFT) | feature/react-ce-records | Unit 505/505 PASS, lint PASS, tsc (scoped) PASS, vite build PASS, Chromium e2e 128/128 incl. 3 new CE tests; cross-browser/visual/live NOT RUN | Pending owner acceptance | — (unmerged) | In progress |
 | M11 | Implemented per owner brief 2026-11-03 (spec was DRAFT) | feature/react-ce-report | Unit 523/523 PASS, lint/typecheck/build PASS, e2e 393/393 (chromium/firefox/webkit); edge/chrome/visual/live NOT RUN | Pending owner acceptance | — (unmerged) | In progress |
-| M12 | DRAFT | — | Not run | Pending | — | Not started |
+| M12 | Implemented per owner brief 2026-11-03 | feature/react-settings | Unit 543/543 PASS, lint/typecheck/build PASS, targeted e2e 11/11 PASS; Edge/Chrome/visual/live NOT RUN | Pending owner acceptance | — (unmerged) | In progress |
 | M13 | DRAFT | — | Not run | Pending | — | Not started |
 | M14 | DRAFT | — | Not run | Pending | — | Not started |
 | S03 | Task-authorized (brief of 2026-11-03; no separate spec) | chore/s03-dependency-remediation (from `052db4a`) | FE `ng test` 38/38 PASS, `ng build` PASS; npm audit full 51→16 (prod 6→0); 113/114 Angular Dependabot alerts predicted resolved; React/backend read-only | Owner ACCEPTED 2026-11-03; ff-merge/push/cleanup authorized | see `verification/s03-report.md` | Accepted — ready for integration |

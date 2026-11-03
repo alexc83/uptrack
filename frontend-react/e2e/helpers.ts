@@ -36,6 +36,17 @@ export async function mockDashboard(page: Page, body: unknown = emptyDashboardRe
   await page.route(/^http:\/\/localhost:5173\/api\/dashboard$/, route => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) }));
 }
 
+/** Declares and mocks GET /api/users/me for the Settings page. */
+export async function mockSettings(page: Page, user = e2eUser) {
+  allowApi(page, 'GET', '/api/users/me');
+  await page.route(/^http:\/\/localhost:5173\/api\/users\/me$/, route => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(user) });
+    }
+    return route.fallback();
+  });
+}
+
 /** Routing-only fixtures: permit only explicit credential list/detail GET handlers. */
 export async function mockCredentialReads(page: Page) {
   allowApi(page, 'GET', '/api/credentials');

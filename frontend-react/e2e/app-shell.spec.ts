@@ -1,13 +1,13 @@
-import { test, expect, capture, mockCredentialReads, mockDashboard, nextFocusableKey, noOverflow, setTheme, signIn } from './helpers';
+import { test, expect, capture, mockCredentialReads, mockDashboard, mockSettings, nextFocusableKey, noOverflow, setTheme, signIn } from './helpers';
 
-test.beforeEach(async ({ page }) => { await signIn(page); await mockCredentialReads(page); });
+test.beforeEach(async ({ page }) => { await signIn(page); await mockCredentialReads(page); await mockSettings(page); });
 
 test('desktop geometry, persistence, navigation, account menu and independent scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await setTheme(page, 'light');
   await mockDashboard(page); // M08: the Dashboard step below renders the real page
-  await page.goto('/settings'); // M08: the dev-only shared-UI preview (scrollable content) now lives on /settings
-  await expect(page.getByRole('heading', { name: 'Shared UI preview', exact: true })).toBeVisible();
+  await page.goto('/preview'); // the dev-only shared-UI preview (scrollable content)
+  await expect(page.getByRole('region', { name: 'Shared UI preview' })).toBeVisible();
   const sidebar = page.getByTestId('desktop-sidebar');
   await expect(sidebar).toHaveCSS('width', '272px');
   await capture(page, 'shell-light-1280-expanded');
