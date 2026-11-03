@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 
-export function LandingFooter() {
+export function LandingFooter({ showRoadmapLink = true }: { showRoadmapLink?: boolean }) {
   return (
     <footer className="border-t border-[var(--ut-landing-footer-border)] bg-[var(--ut-landing-surface-soft)] pb-[1.1rem] pt-[1.55rem]">
       <div className="mx-auto flex w-[min(100%-2rem,76rem)] flex-col items-center gap-[0.45rem] text-center">
@@ -14,9 +14,11 @@ export function LandingFooter() {
         <p className="m-0 text-[1.05rem] leading-[1.7] text-[var(--ut-landing-muted)]">
           Designed for healthcare professionals, powered by React and Spring Boot
         </p>
-        <nav aria-label="Public pages" className="mt-[0.35rem] inline-flex items-center gap-[1.25rem]">
-          <Link to="/roadmap" className="inline-flex min-h-11 items-center rounded-[0.6rem] px-2 text-[1.02rem] font-semibold text-[var(--ut-landing-subtle)] no-underline underline-offset-4 hover:underline">Roadmap</Link>
-        </nav>
+        {showRoadmapLink && (
+          <nav aria-label="Public pages" className="mt-[0.35rem] inline-flex items-center gap-[1.25rem]">
+            <Link to="/roadmap" className="inline-flex min-h-11 items-center rounded-[0.6rem] px-2 text-[1.02rem] font-semibold text-[var(--ut-landing-subtle)] no-underline underline-offset-4 hover:underline">Roadmap</Link>
+          </nav>
+        )}
         <small className="mt-[0.35rem] block w-full text-[var(--ut-landing-footer-copy)]">© 2026 UpTrack</small>
       </div>
     </footer>

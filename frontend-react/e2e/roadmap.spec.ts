@@ -20,7 +20,7 @@ test('guest can open the public roadmap and all 12 frozen entries render in orde
   }
   await expect(page.getByText('Priorities may change as UpTrack develops. Planned features are not guaranteed, and no release dates are implied.')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Back to UpTrack' })).toHaveAttribute('href', '/');
-  await expect(page.getByRole('link', { name: 'Roadmap' })).toHaveAttribute('href', '/roadmap');
+  await expect(page.getByRole('link', { name: 'Roadmap' })).toHaveCount(0);
 });
 
 test('landing footer Roadmap link navigates a guest to /roadmap', async ({ page }) => {

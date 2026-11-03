@@ -37,7 +37,7 @@ describe('RoadmapPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Product Roadmap' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'UpTrack home' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Back to UpTrack' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Roadmap' })).toHaveAttribute('href', '/roadmap');
+    expect(screen.queryByRole('link', { name: 'Roadmap' })).not.toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Roadmap' })).toBeVisible();
   });
 
