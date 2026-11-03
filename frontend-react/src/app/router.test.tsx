@@ -1,5 +1,5 @@
 import { credentialsApi } from '../core/api/credentials-api';
-import { credential as credentialFixture } from '../test/fixtures/api-fixtures';
+import { ceReport, credential as credentialFixture } from '../test/fixtures/api-fixtures';
 import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { routes } from './router';
@@ -21,9 +21,10 @@ it.each([['/app', '/dashboard'], ['/app/dashboard', '/dashboard'], ['/app/creden
   const { router } = renderWithProviders(null, { routes, path, session: 'authenticated' });
   await waitFor(() => expect(router.state.location.pathname).toBe(destination));
 });
-it('keeps the report preview outside the shell and leaves returnTo untouched', async () => {
+it('keeps the M11 CE report outside the shell and leaves returnTo untouched', async () => {
+  vi.spyOn(credentialsApi, 'getCEReport').mockResolvedValue(structuredClone(ceReport));
   const { router } = renderWithProviders(null, { routes, path: '/credentials/preview/ce-report?returnTo=%2Fdashboard', session: 'authenticated' });
-  expect(await screen.findByRole('heading', { level: 1, name: 'CE Report' })).toBeVisible();
+  expect(await screen.findByRole('heading', { level: 1, name: credentialFixture.name })).toBeVisible();
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   expect(router.state.location.search).toBe('?returnTo=%2Fdashboard');
 });

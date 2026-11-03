@@ -127,7 +127,7 @@ test('exact redirects, query preservation and standalone report route', async ({
   await expect(page.getByRole('dialog', { name: 'Credential details' })).toBeVisible();
   await expect(page).toHaveURL(/\/credentials$/);
   await page.goto('/credentials/preview/ce-report?returnTo=%2Fdashboard');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('CE Report');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Fixture credential');
   await expect(page.getByRole('navigation')).toHaveCount(0);
   await expect(page).toHaveURL(/returnTo=%2Fdashboard$/);
 });

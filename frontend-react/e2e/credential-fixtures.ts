@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { allowApi, emptyDashboardResponse } from './helpers';
 import { credential } from '../src/test/fixtures/api-fixtures';
 import type { CredentialRequest, CredentialResponse } from '../src/lib/dto/credentials';
+import type { CEReportResponse } from '../src/lib/dto/ce-report';
 
 /** Synthetic stateful HTTP fixture; never forwards requests to the backend. */
 export async function credentialApiFixture(page: Page) {
@@ -16,7 +17,20 @@ export async function credentialApiFixture(page: Page) {
   const newId = '00000000-0000-4000-8000-000000000010';
   for (const method of ['GET', 'POST']) allowApi(page, method, '/api/credentials');
   for (const id of [credential.id, newId, 'missing']) for (const method of ['GET', 'PUT', 'DELETE']) allowApi(page, method, `/api/credentials/${id}`);
+  for (const id of [credential.id, newId, 'missing']) allowApi(page, 'GET', `/api/credentials/${id}/ce-report`);
   allowApi(page, 'GET', '/api/dashboard');
+  await page.route(/^http:\/\/localhost:5173\/api\/credentials\/[^/?]+\/ce-report$/, async route => {
+    const id = new URL(route.request().url()).pathname.split('/')[3];
+    const data = state.credentials.find(item => item.id === id);
+    if (!data) return route.fulfill({ status: 404, json: { status: 404, error: 'Fixture error', message: 'Credential not found', timestamp: '2026-01-01T00:00:00Z' } });
+    const earned = data.ceRecords.reduce((sum, item) => sum + item.hours, 0);
+    const body: CEReportResponse = {
+      credential: { id: data.id, name: data.name, type: data.type, issuingOrganization: data.issuingOrganization, expirationDate: data.expirationDate, requiredCEHours: data.requiredCEHours, status: data.status },
+      summary: { totalHoursEarned: earned, remainingHours: Math.max(data.requiredCEHours - earned, 0), recordCount: data.ceRecords.length, progress: data.requiredCEHours > 0 ? earned / data.requiredCEHours : 1 },
+      records: [...data.ceRecords].sort((a, b) => b.dateCompleted.localeCompare(a.dateCompleted)).map(item => ({ title: item.title, provider: item.provider, hours: item.hours, dateCompleted: item.dateCompleted, certificateUrl: item.certificateUrl })),
+    };
+    return route.fulfill({ json: body });
+  });
   await page.route(/^http:\/\/localhost:5173\/api\/dashboard$/, async route => {
     state.dashboardReads += 1;
     await route.fulfill({ json: { ...emptyDashboardResponse, stats: { ...emptyDashboardResponse.stats, totalCredentials: state.credentials.length, activeCount: state.credentials.length } } });

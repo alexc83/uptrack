@@ -146,3 +146,135 @@ html.dark {
     scroll-behavior: auto !important;
   }
 }
+
+/* M11 CE report: stacked records table on narrow screens (Angular parity). */
+@media (max-width: 720px) {
+  .ce-report-records table,
+  .ce-report-records tbody,
+  .ce-report-records tr,
+  .ce-report-records td {
+    display: block;
+  }
+  .ce-report-records thead {
+    display: none;
+  }
+  .ce-report-records tbody tr {
+    margin-bottom: 0.9rem;
+    border: 1px solid var(--ut-border);
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+  .ce-report-records td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    text-align: left !important;
+  }
+  .ce-report-records td::before {
+    content: attr(data-label);
+    color: var(--ut-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+/* M11 CE report: pre-print light pass while the dialog opens (Angular `isPrinting`). */
+.ce-report-printing,
+.ce-report-printing .ce-report-sheet {
+  background: #fff !important;
+  color: #111827 !important;
+}
+
+/* M11 CE report: multi-page print output (Flowbite gap: print styles). */
+@media print {
+  @page {
+    margin: 0.7in 0.6in;
+  }
+  .ce-report,
+  .ce-report * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .ce-report {
+    background: #fff;
+    color: #111827;
+  }
+  .ce-report .ce-report-sheet,
+  .ce-report .ce-report-block,
+  .ce-report .ce-report-records-card {
+    background: #fff !important;
+    color: #111827 !important;
+    border-color: #d1d5db !important;
+  }
+  .ce-report .ce-report-block,
+  .ce-report .ce-report-records-card {
+    margin-top: 0.55rem;
+    padding: 0.65rem 0.8rem;
+  }
+  .ce-report header,
+  .ce-report footer,
+  .ce-report th,
+  .ce-report td,
+  .ce-report h1,
+  .ce-report h2,
+  .ce-report strong,
+  .ce-report span,
+  .ce-report p {
+    color: #111827 !important;
+  }
+  .ce-report .text-ut-muted {
+    color: #4b5563 !important;
+  }
+  .ce-report header,
+  .ce-report footer,
+  .ce-report th,
+  .ce-report td {
+    border-color: #d1d5db !important;
+  }
+  .ce-report .ce-report-block {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+  .ce-report .ce-report-records-card {
+    break-before: page;
+    page-break-before: always;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+  .ce-report .ce-report-records-card h2 {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+  .ce-report .ce-report-records tr,
+  .ce-report .ce-report-records td,
+  .ce-report .ce-report-records th {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+  /* Print keeps the real table even from a narrow window. */
+  .ce-report .ce-report-records table {
+    display: table;
+  }
+  .ce-report .ce-report-records thead {
+    display: table-header-group;
+  }
+  .ce-report .ce-report-records tbody {
+    display: table-row-group;
+  }
+  .ce-report .ce-report-records tr {
+    display: table-row;
+    margin-bottom: 0;
+    border: 0;
+    border-bottom: 1px solid #d1d5db;
+    border-radius: 0;
+  }
+  .ce-report .ce-report-records td {
+    display: table-cell;
+  }
+  .ce-report .ce-report-records td::before {
+    content: none;
+  }
+}

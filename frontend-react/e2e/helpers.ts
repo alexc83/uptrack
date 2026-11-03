@@ -1,7 +1,7 @@
 import { test as base, expect, type Locator, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { credential } from '../src/test/fixtures/api-fixtures';
+import { ceReport, credential } from '../src/test/fixtures/api-fixtures';
 
 // Default-deny: every /api request is aborted and fails the test unless the test declared it with allowApi()
 // AND registered an explicit mock for it. M06 auth specs are the only ones that do so.
@@ -46,6 +46,14 @@ export async function mockCredentialReads(page: Page) {
     const path = new URL(route.request().url()).pathname;
     allowApi(page, 'GET', path);
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...credential, id: decodeURIComponent(path.split('/').at(-1)!) }) });
+  });
+  // M11: the standalone report route renders the real page.
+  await page.route(/^http:\/\/localhost:5173\/api\/credentials\/[^/?]+\/ce-report$/, route => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    const path = new URL(route.request().url()).pathname;
+    allowApi(page, 'GET', path);
+    const id = decodeURIComponent(path.split('/')[3]!);
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...ceReport, credential: { ...ceReport.credential, id } }) });
   });
 }
 

@@ -1,6 +1,6 @@
 # M11 — Compliance reporting and print
 
-**Status:** DRAFT OUTLINE — not approved for coding.  
+**Status:** IMPLEMENTED on `feature/react-ce-report` per the owner brief of 2026-11-03 ("Begin M11 implementation now"); pending owner acceptance. Evidence: `../verification/m11-report.md`.  
 **Branch:** `feature/react-ce-report`  
 **Dependency:** Previous milestone approved and merged
 

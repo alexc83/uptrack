@@ -28,7 +28,7 @@ export const routes: RouteObject[] = [
       },
       {
         path: '/credentials/:credentialId/ce-report',
-        lazy: () => import('./preview/report-placeholder').then(module => ({ Component: module.ReportPlaceholder })),
+        lazy: () => import('../features/ce-report/ce-report-page').then(module => ({ Component: module.CEReportPage })),
       },
     ],
   },

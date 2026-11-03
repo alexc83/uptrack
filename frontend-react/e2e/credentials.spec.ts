@@ -40,7 +40,7 @@ test('create, refresh, detail, inline edit/cancel, cascading delete and protecte
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(drawer.getByRole('heading', { name: 'Edited credential' })).toBeVisible();
   await drawer.getByRole('link', { name: 'Open CE Report' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'CE Report' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Edited credential' })).toBeVisible();
   await expect(page.getByRole('navigation')).toHaveCount(0);
   await expect(page).toHaveURL(/\/ce-report\?returnTo=%2Fcredentials$/);
   await page.goBack();

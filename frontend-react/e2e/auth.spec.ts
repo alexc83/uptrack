@@ -128,7 +128,7 @@ test('an authenticated user is redirected away from / and legacy URLs keep their
   await expect(page.getByRole('dialog', { name: 'Credential details' })).toBeVisible();
   await expect(page).toHaveURL(/\/credentials$/);
   await page.goto('/credentials/preview/ce-report?returnTo=%2Fcredentials');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('CE Report');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Fixture credential');
   await expect(page.getByRole('navigation')).toHaveCount(0);
 });
 
