@@ -59,8 +59,8 @@ function CEReportContent() {
 
   return (
     <main className={`ce-report min-h-dvh bg-ut-main py-6 text-ut-text print:bg-white print:py-0 print:text-gray-900${printing ? ' ce-report-printing' : ''}`}>
-      <div className="mx-auto w-full max-w-[66rem] px-6 print:max-w-none print:px-0 max-[720px]:px-4">
-        <header className="mb-4 flex items-center justify-between gap-4 print:hidden max-[900px]:flex-col max-[900px]:items-stretch">
+      <div className="mx-auto w-full max-w-[66rem] px-6 print:max-w-none print:px-0 [@media(max-width:720px)]:px-4">
+        <header className="mb-4 flex items-center justify-between gap-4 print:hidden [@media(max-width:900px)]:flex-col [@media(max-width:900px)]:items-stretch">
           <Button type="button" color="alternative" onClick={goBack} className="min-h-11">
             <ArrowLeft aria-hidden="true" className="mr-2 h-4 w-4" />Back
           </Button>
@@ -87,13 +87,13 @@ function CEReportContent() {
         )}
 
         {report && (
-          <article className="ce-report-sheet rounded-3xl border border-ut-border bg-ut-surface p-6 shadow-[0_20px_48px_rgba(15,23,42,0.07)] print:rounded-none print:border-0 print:p-0 print:shadow-none max-[720px]:p-4">
+          <article className="ce-report-sheet rounded-3xl border border-ut-border bg-ut-surface p-6 shadow-[0_20px_48px_rgba(15,23,42,0.07)] print:rounded-none print:border-0 print:p-0 print:shadow-none [@media(max-width:720px)]:p-4">
             {query.isRefetchError && (
               <div className="mb-4 print:hidden">
                 <StateBlock kind="error" title="Report may be out of date" message="We could not refresh this report. Showing the last data loaded." action={{ label: 'Retry', onClick: () => void query.refetch() }} />
               </div>
             )}
-            <header className="ce-report-block flex items-start justify-between gap-5 border-b border-ut-border pb-4 max-[900px]:flex-col">
+            <header className="ce-report-block flex items-start justify-between gap-5 border-b border-ut-border pb-4 [@media(max-width:900px)]:flex-col">
               <div className="min-w-0 space-y-2 break-words">
                 <span className="inline-block text-xs font-extrabold uppercase tracking-wide text-ut-primary">UpTrack CE Report</span>
                 <h1 className="text-4xl font-bold leading-none tracking-tight sm:text-5xl">{report.credential.name}</h1>
@@ -122,9 +122,9 @@ function CEReportContent() {
 
             <section aria-label="Credential summary" className="ce-report-block mt-4 rounded-2xl border border-ut-border bg-ut-main p-4">
               <h2 className="mb-3 text-base font-semibold">Credential Summary</h2>
-              <div className="grid grid-cols-2 items-start gap-x-6 gap-y-2 max-[720px]:grid-cols-1" role="list">
+              <div className="grid grid-cols-2 items-start gap-x-6 gap-y-2 [@media(max-width:720px)]:grid-cols-1" role="list">
                 {fields.map(field => (
-                  <div key={field.label} className="grid grid-cols-[minmax(8.5rem,10.5rem)_minmax(0,1fr)] items-baseline gap-3 max-[720px]:grid-cols-[minmax(7.5rem,9rem)_minmax(0,1fr)]" role="listitem">
+                  <div key={field.label} className="grid grid-cols-[minmax(8.5rem,10.5rem)_minmax(0,1fr)] items-baseline gap-3 [@media(max-width:720px)]:grid-cols-[minmax(7.5rem,9rem)_minmax(0,1fr)]" role="listitem">
                     <span className="whitespace-nowrap text-xs font-semibold text-ut-muted">{field.label}</span>
                     <strong className="text-sm leading-snug">{field.value}</strong>
                   </div>
@@ -170,7 +170,7 @@ function CEReportContent() {
 
             <section aria-label="Report totals" className="ce-report-block mt-4 rounded-2xl border border-ut-border bg-ut-main p-4">
               <h2 className="mb-3 text-base font-semibold">Summary</h2>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 max-[720px]:grid-cols-1">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 [@media(max-width:720px)]:grid-cols-1">
                 <div className="grid grid-cols-[minmax(8.5rem,10.5rem)_minmax(0,1fr)] items-baseline gap-3">
                   <span className="whitespace-nowrap text-xs font-semibold text-ut-muted">Total CE Hours</span>
                   <strong className="text-sm leading-snug">{formatCredentialHours(report.summary.totalHoursEarned)}</strong>
@@ -182,7 +182,7 @@ function CEReportContent() {
               </div>
             </section>
 
-            <footer className="mt-4 flex justify-between gap-4 border-t border-ut-border pt-3 text-sm text-ut-muted max-[900px]:flex-col max-[900px:items-start">
+            <footer className="mt-4 flex justify-between gap-4 border-t border-ut-border pt-3 text-sm text-ut-muted [@media(max-width:900px)]:flex-col [@media(max-width:900px)]:items-start">
               <span>Generated from UpTrack</span>
               <span>{formatReportTimestamp(generatedAt)}</span>
             </footer>
