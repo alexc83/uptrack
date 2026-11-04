@@ -1,12 +1,14 @@
-# UpTrack continuous integration (D01-B). Spec: context/migration/specs/d01-ci-foundation.md
+# UpTrack continuous integration (D01-B, D01-C). Spec: context/migration/specs/d01-ci-foundation.md
 #
-# Three independent jobs on GitHub-hosted Ubuntu runners:
-#   backend       Java 21: compile, H2 unit/integration tests, package (./mvnw verify)
-#   frontend      Node 22: npm ci, typecheck, lint, Vitest, production build
-#   e2e-chromium  Node 22: mocked Playwright functional suite on bundled Chromium
+# Four independent jobs on GitHub-hosted Ubuntu runners:
+#   backend           Java 21: compile, H2 unit/integration tests, package (./mvnw verify)
+#   backend-postgres  Java 21: the same backend test suite on a disposable PostgreSQL 17 service container
+#   frontend          Node 22: npm ci, typecheck, lint, Vitest, production build
+#   e2e-chromium      Node 22: mocked Playwright functional suite on bundled Chromium
 #
 # Security: read-only token, no secrets, no deployment, no production services (Neon, Render,
-# Vercel, Cloudinary). Safe for pull requests from forks. Actions are pinned to full commit SHAs
+# Vercel, Cloudinary); backend-postgres uses throwaway credentials local to its service container.
+# Safe for pull requests from forks. Actions are pinned to full commit SHAs
 # (kept current by Dependabot's github-actions ecosystem). CodeQL default setup and the Vercel
 # GitHub App run independently of this workflow.
 name: CI
@@ -56,6 +58,70 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-surefire-reports
+          path: backend/target/surefire-reports/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  backend-postgres:
+    name: backend-postgres
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        # Official image; major version matches production (Neon PostgreSQL 17.x). Disposable: the
+        # container and its data exist only for this job and are not reachable outside the runner.
+        image: postgres:17
+        env:
+          POSTGRES_DB: uptrack_ci
+          POSTGRES_USER: uptrack_ci
+          POSTGRES_PASSWORD: uptrack_ci_disposable # throwaway test value, not a secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U uptrack_ci -d uptrack_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      # Adds the ci-postgres document of src/test/resources/application-test.yml to the "test" profile.
+      SPRING_PROFILES_INCLUDE: ci-postgres
+      CI_POSTGRES_URL: jdbc:postgresql://localhost:5432/uptrack_ci
+      CI_POSTGRES_USER: uptrack_ci
+      CI_POSTGRES_PASSWORD: uptrack_ci_disposable
+      # Independent of the profile: TestDatabaseAssertions fails unless every checked test context is
+      # connected (JDBC metadata) to PostgreSQL with server major version 17.
+      UPTRACK_TEST_EXPECTED_DATABASE_PRODUCT: PostgreSQL
+      UPTRACK_TEST_EXPECTED_DATABASE_MAJOR_VERSION: '17'
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Report PostgreSQL server version
+        env:
+          PGPASSWORD: uptrack_ci_disposable
+        run: psql -h localhost -U uptrack_ci -d uptrack_ci -tAc 'SELECT version();'
+
+      - name: Test on PostgreSQL 17
+        run: ./mvnw -B -ntp test
+
+      - name: Upload Surefire reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-postgres-surefire-reports
           path: backend/target/surefire-reports/
           retention-days: 7
           if-no-files-found: ignore
