@@ -53,9 +53,25 @@ Report each failure per browser, separately from the shared-browser results, cla
 
 ## 5. Verification status, resolved findings and limitations
 
-**Configuration is not verification.** The status below is the result of one owner-authorized run on 2026-11-02 (macOS, Playwright 1.64.1, Edge/Chrome/Firefox installed on the owner's Mac, Playwright-managed Firefox and WebKit). It was a specifically authorized exception for establishing this infrastructure; it does not change the default policy that full suites are owner-run. Re-run after relevant changes; do not treat it as standing proof.
+**Configuration is not verification.** Counts change as milestones add tests; re-run before relying on them.
 
-| Project | Result (108 functional tests each) |
+### Current baseline (D01-A audit, 2026-11-04, `main` = `7fabdbb`, Linux cloud container)
+
+| Check | Result |
+|---|---|
+| Vitest unit/component (`npx vitest run`) | 571/571 passed, 41 files |
+| typecheck / lint / build | pass / pass / pass (build warns: main chunk 679 kB) |
+| Functional Playwright on **Chromium (bundled)** (`E2E_CHROMIUM_FALLBACK=1`, project `chromium`) | 146/146 passed |
+| `msedge`, `chrome`, `firefox`, `webkit`, `visual-edge` | NOT RUN in this audit |
+| Backend `./mvnw -B -ntp verify` (H2) | 165/165 passed, JAR built |
+
+The functional suite is now **146 tests per project** (it was 108 at the 2026-11-02 run below; M10–M13 and P01 added specs). Evidence: [`migration/verification/d01-a-ci-baseline.md`](migration/verification/d01-a-ci-baseline.md). In cloud containers whose preinstalled Playwright browsers do not match the pinned `@playwright/test` version, `browserType.launch` fails before any test runs; install the matching build with `npm run e2e:install:linux` (or `npx playwright install --with-deps chromium`) — this is infrastructure, not a test failure.
+
+### Historical four-browser run (2026-11-02)
+
+The status below is the result of one owner-authorized run on 2026-11-02 (macOS, Playwright 1.64.1, Edge/Chrome/Firefox installed on the owner's Mac, Playwright-managed Firefox and WebKit). It was a specifically authorized exception for establishing this infrastructure; it does not change the default policy that full suites are owner-run. Re-run after relevant changes; do not treat it as standing proof.
+
+| Project | Result (108 functional tests each at that time) |
 |---|---|
 | `msedge` | 108/108 passed |
 | `chrome` | 108/108 passed (installed Google Chrome via the `chrome` channel). **Run before the final corrections**; it was covered again only by the combined post-fix run below |
@@ -64,7 +80,7 @@ Report each failure per browser, separately from the shared-browser results, cla
 | `visual-edge` | 4/4 tests, 8/8 screenshots compared without update mode; checksums of all 8 PNGs unchanged. Edge/macOS remains the authoritative screenshot-baseline environment; this says nothing about other engines' rendering |
 | Combined post-fix functional suite | 432/432 passed (4 projects × 108) |
 
-Other checks in the same pass: unit 424/424; typecheck, lint and build passed.
+Other checks in the same pass: unit 424/424 (historical count; 571 at the D01-A baseline); typecheck, lint and build passed.
 
 ### Resolved findings
 - **Firefox breakpoint flake (application race, fixed).** `useShellNavigation` read `matchMedia` in initial state but subscribed to `change` in an effect without re-reading, so a viewport crossing between render and subscription left `mobile` stale. Fix: `setMobile(query.matches)` after subscribing; regression test `use-shell-navigation.test.ts` (fails without the fix). The unmodified `app-shell.spec.ts:94` went from ~10% failures to 80/80 passes in Firefox.

@@ -1,6 +1,10 @@
 # Current Feature
 
-## Current — S05R application security remediation (2026-11-03)
+## Current — D01 Continuous Integration Foundation (2026-11-04)
+
+D01-A (specification, testing baseline, documentation) is authorized and prepared on `claude/uptrack-d01-ci-audit-utzis9` from `main` = `7fabdbb`. See [D01 spec](migration/specs/d01-ci-foundation.md) and [D01-A baseline](migration/verification/d01-a-ci-baseline.md). No application code, tests, workflows or deployment settings changed. D01-B (initial GitHub Actions CI) awaits separate authorization.
+
+## Historical — S05R application security remediation (2026-11-03)
 
 Task-authorized implementation on `fix/s05r-security-remediation` from main `75d6eec` after S05 PR #15 merged. Core authentication/upload/JWT/error fixes are implemented and locally verified. Backend 132 tests including 47 cross-user regressions, frontend checks, four focused system Chromium cases and isolated PostgreSQL token revocation passed. No schema migration; all pre-S05R sessions must sign in once at rollout. Cloudinary delivery remains public; privacy migration, durable orphan cleanup and deployment decisions are deferred. No deployment or merge. See [S05R report](migration/verification/s05r-security-remediation.md).
 
