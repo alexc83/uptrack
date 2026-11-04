@@ -72,7 +72,20 @@ describe('CE list rendering, summary, filters and pagination', () => {
   it('paginates beyond ten records', async () => {
     const many = Array.from({ length: 12 }, (_, index) => ({ ...record, id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`, title: `Course ${index + 1}` }));
     vi.mocked(credentialsApi.list).mockResolvedValue([{ ...structuredClone(credential), ceRecords: many }]);
-    const { user } = open();
+    // The page starts its 250 ms search debounce on mount and, when it fires, calls setPage(0). With real timers that
+    // timer races this test: user.click() takes long enough that the click can land just before the timer fires, which
+    // sends the page back to 1 and fails the assertions below. Consume the mount-time timer deterministically with a
+    // controlled clock (only setTimeout/clearTimeout, restored before any interaction), then paginate as before.
+    // The reset itself is a page defect, tracked separately; this test is about pagination.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    let opened: ReturnType<typeof open>;
+    try {
+      opened = open();
+      await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+    } finally {
+      vi.useRealTimers();
+    }
+    const { user } = opened;
     expect(await screen.findByText('Showing 1–10 of 12 records')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Next ›' }));
     expect(await screen.findByText('Showing 11–12 of 12 records')).toBeVisible();
