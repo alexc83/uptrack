@@ -27,3 +27,34 @@ cloudinary:
   cloud-name: test-cloud
   api-key: test-key
   api-secret: test-secret
+---
+# Test-only PostgreSQL overrides (D01-C), applied only when the ci-postgres profile is added to "test"
+# with SPRING_PROFILES_INCLUDE=ci-postgres. They live in this file, after the H2 document, because an
+# included profile is ordered before @ActiveProfiles("test"): a separate application-ci-postgres.yml
+# would be overridden by the H2 values above. Everything not set here (JWT, Cloudinary, rate limits,
+# ddl-auto: create-drop) is inherited from the document above.
+# Defaults point at a disposable local database; CI supplies its throwaway service-container values
+# through CI_POSTGRES_*. Never point this at a shared or production database (e.g. Neon).
+spring:
+  config:
+    activate:
+      on-profile: ci-postgres
+  datasource:
+    url: ${CI_POSTGRES_URL:jdbc:postgresql://localhost:5432/uptrack_ci}
+    username: ${CI_POSTGRES_USER:uptrack_ci}
+    password: ${CI_POSTGRES_PASSWORD:uptrack_ci_disposable}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+uptrack:
+  test:
+    # Checked against JDBC metadata by TestDatabaseAssertions; CI also sets it (and the major version)
+    # through the environment, so the job fails if this document is not applied.
+    expected-database-product: PostgreSQL
+    # MultipartHttpIntegrationTest keeps its own H2 database by default; under ci-postgres it uses the same
+    # PostgreSQL database as the other test contexts. (Not ${spring.datasource.url}: inside that context
+    # spring.datasource.url refers back to this key, which would be a circular placeholder.)
+    multipart-datasource-url: ${CI_POSTGRES_URL:jdbc:postgresql://localhost:5432/uptrack_ci}
