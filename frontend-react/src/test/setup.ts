@@ -12,7 +12,14 @@ if (!('inert' in HTMLElement.prototype)) Object.defineProperty(HTMLElement.proto
 });
 // React Router's native Request must receive a Node AbortSignal, not jsdom's realm.
 const NodeAbortController = transferableAbortController().constructor;
-beforeEach(() => { installMatchMedia(); vi.stubGlobal('AbortController', NodeAbortController); });
+beforeEach(() => {
+  installMatchMedia();
+  vi.stubGlobal('AbortController', NodeAbortController);
+  // jsdom logs "Not implemented: window.scrollTo"; real browsers implement it. Stub only in tests (unstubbed in afterEach)
+  // so production scroll-to-top behavior stays untouched. A global stub, not a spy, so specs that call
+  // vi.restoreAllMocks() in their own beforeEach do not silently remove it.
+  vi.stubGlobal('scrollTo', vi.fn());
+});
 afterEach(async () => {
   cleanup();
   // Overlay unmount queues scroll reconciliation and focus return before the next paint.
