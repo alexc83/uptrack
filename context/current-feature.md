@@ -1,6 +1,10 @@
 # Current Feature
 
-## Current — D01 Continuous Integration Foundation (2026-11-04)
+## Current — D01-B complete; D01-C next (2026-11-04)
+
+D01-B (initial GitHub Actions CI) is merged: PR #27, merge commit `4795fda`. The post-merge run on `main` ([41800095547](https://github.com/alexc83/uptrack/actions/runs/41800095547)) passed all 884 tests — 165 backend, 573 frontend, 146 Chromium E2E — with CI jobs `backend`, `frontend` and `e2e-chromium`. The next milestone is **D01-C — PostgreSQL 17 integration-test parity**; it is not started and awaits separate owner authorization. The logout query recreation race ([D01-W03](migration/follow-ups/d01-w03-logout-query-recreation-race.md)) remains unresolved, and the disposable branch `test/d01-b-ci-failure-validation` is a non-blocking cleanup item. See the [D01 spec](migration/specs/d01-ci-foundation.md), the [D01-B report](migration/verification/d01-b-report.md), `migration/migration-status.md` and `migration/agent-handoff.md`.
+
+## Historical — D01-A Continuous Integration Foundation (2026-11-04)
 
 D01-A (specification, testing baseline, documentation) is authorized and prepared on `claude/uptrack-d01-ci-audit-utzis9` from `main` = `7fabdbb`. See [D01 spec](migration/specs/d01-ci-foundation.md) and [D01-A baseline](migration/verification/d01-a-ci-baseline.md). No application code, tests, workflows or deployment settings changed. D01-B (initial GitHub Actions CI) awaits separate authorization.
 
