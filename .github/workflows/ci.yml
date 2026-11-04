@@ -1,0 +1,152 @@
+# UpTrack continuous integration (D01-B). Spec: context/migration/specs/d01-ci-foundation.md
+#
+# Three independent jobs on GitHub-hosted Ubuntu runners:
+#   backend       Java 21: compile, H2 unit/integration tests, package (./mvnw verify)
+#   frontend      Node 22: npm ci, typecheck, lint, Vitest, production build
+#   e2e-chromium  Node 22: mocked Playwright functional suite on bundled Chromium
+#
+# Security: read-only token, no secrets, no deployment, no production services (Neon, Render,
+# Vercel, Cloudinary). Safe for pull requests from forks. Actions are pinned to full commit SHAs
+# (kept current by Dependabot's github-actions ecosystem). CodeQL default setup and the Vercel
+# GitHub App run independently of this workflow.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # Superseded pull-request runs are cancelled; every push to main runs to completion.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Compile, test (H2) and package
+        run: ./mvnw -B -ntp verify
+
+      - name: Upload Surefire reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-surefire-reports
+          path: backend/target/surefire-reports/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend-react
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-react/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and component tests (Vitest)
+        run: npx vitest run --reporter=default --reporter=junit --outputFile.junit=test-results/vitest-junit.xml
+
+      - name: Production build
+        run: npm run build
+
+      - name: Upload Vitest report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-vitest-report
+          path: frontend-react/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  e2e-chromium:
+    name: e2e-chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend-react
+    env:
+      # Bundled Chromium replaces the msedge/chrome projects. This is Chromium-engine coverage only,
+      # not Edge or Chrome branded-build coverage. visual-edge is never registered off macOS.
+      E2E_CHROMIUM_FALLBACK: '1'
+      PLAYWRIGHT_HTML_OPEN: never
+      PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report
+      PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/e2e-junit.xml
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-react/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright Chromium (version from lockfile)
+        run: npx playwright install --with-deps chromium
+
+      - name: Mocked functional E2E (Chromium)
+        run: npx playwright test --project=chromium --reporter=list,html,junit --trace=retain-on-failure
+
+      - name: Upload Playwright report and traces
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-chromium-report
+          path: |
+            frontend-react/playwright-report/
+            frontend-react/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
