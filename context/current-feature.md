@@ -1,6 +1,10 @@
 # Current Feature
 
-## Current — D01-B complete; D01-C next (2026-11-04)
+## Current — D01-C implemented and verified on draft PR #35, pending merge (2026-11-04)
+
+D01-C (PostgreSQL 17 backend integration tests) is implemented and verified on branch `chore/d01-c-postgres-ci`, [PR #35](https://github.com/alexc83/uptrack/pull/35) (draft, **not merged**; `main` = `1469f27` at branch creation). CI run [41811675630](https://github.com/alexc83/uptrack/actions/runs/41811675630) passed all four jobs: `backend` 167 (H2), **`backend-postgres` 167 on PostgreSQL 17.11**, `frontend` 573 and `e2e-chromium` 146; both JDBC datasource assertions confirmed PostgreSQL 17 in the job log. 167 = the 165 existing tests plus 2 new datasource checks; none excluded or weakened. The job uses a Hibernate-generated disposable schema — the real Neon schema was **not** validated (follow-up [D01-W01](migration/follow-ups/d01-w01-schema-migrations.md)). D01-C counts as landed only when PR #35 is merged to `main`. D01-D and D01-E are not authorized; the logout query recreation race ([D01-W03](migration/follow-ups/d01-w03-logout-query-recreation-race.md)) remains unresolved. See the [D01-C report](migration/verification/d01-c-report.md), the [D01 spec](migration/specs/d01-ci-foundation.md), `migration/migration-status.md` and `migration/agent-handoff.md`.
+
+## Historical — D01-B complete; D01-C next (2026-11-04)
 
 D01-B (initial GitHub Actions CI) is merged: PR #27, merge commit `4795fda`. The post-merge run on `main` ([41800095547](https://github.com/alexc83/uptrack/actions/runs/41800095547)) passed all 884 tests — 165 backend, 573 frontend, 146 Chromium E2E — with CI jobs `backend`, `frontend` and `e2e-chromium`. The next milestone is **D01-C — PostgreSQL 17 integration-test parity**; it is not started and awaits separate owner authorization. The logout query recreation race ([D01-W03](migration/follow-ups/d01-w03-logout-query-recreation-race.md)) remains unresolved, and the disposable branch `test/d01-b-ci-failure-validation` is a non-blocking cleanup item. See the [D01 spec](migration/specs/d01-ci-foundation.md), the [D01-B report](migration/verification/d01-b-report.md), `migration/migration-status.md` and `migration/agent-handoff.md`.
 
