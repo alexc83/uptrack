@@ -72,26 +72,52 @@ describe('CE list rendering, summary, filters and pagination', () => {
   it('paginates beyond ten records', async () => {
     const many = Array.from({ length: 12 }, (_, index) => ({ ...record, id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`, title: `Course ${index + 1}` }));
     vi.mocked(credentialsApi.list).mockResolvedValue([{ ...structuredClone(credential), ceRecords: many }]);
-    // The page starts its 250 ms search debounce on mount and, when it fires, calls setPage(0). With real timers that
-    // timer races this test: user.click() takes long enough that the click can land just before the timer fires, which
-    // sends the page back to 1 and fails the assertions below. Consume the mount-time timer deterministically with a
-    // controlled clock (only setTimeout/clearTimeout, restored before any interaction), then paginate as before.
-    // The reset itself is a page defect, tracked separately; this test is about pagination.
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    let opened: ReturnType<typeof open>;
-    try {
-      opened = open();
-      await act(async () => { await vi.advanceTimersByTimeAsync(300); });
-    } finally {
-      vi.useRealTimers();
-    }
-    const { user } = opened;
+    const { user } = open();
     expect(await screen.findByText('Showing 1–10 of 12 records')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Next ›' }));
     expect(await screen.findByText('Showing 11–12 of 12 records')).toBeVisible();
     expect(screen.getByRole('button', { name: '2' })).toHaveAttribute('aria-pressed', 'true');
     await user.click(screen.getByRole('button', { name: '‹ Prev' }));
     expect(await screen.findByText('Showing 1–10 of 12 records')).toBeVisible();
+  });
+  describe('search debounce and the current page', () => {
+    const twelve = () => Array.from({ length: 12 }, (_, index) => ({ ...record, id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`, title: `Course ${index + 1}` }));
+    // A controlled clock (only setTimeout/clearTimeout) makes the timing exact instead of machine-dependent.
+    const withClock = async (run: () => Promise<void>) => {
+      vi.mocked(credentialsApi.list).mockResolvedValue([{ ...structuredClone(credential), ceRecords: twelve() }]);
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      try { await run(); } finally { vi.useRealTimers(); }
+    };
+    const advance = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+    const search = (value: string) => fireEvent.change(screen.getByLabelText('Search CE records'), { target: { value } });
+
+    it('keeps the current page when no search change is pending, including whitespace-only edits', () => withClock(async () => {
+      open();
+      await advance(100); // the list is rendered; the page's 250 ms mark has not been reached
+      expect(screen.getByText('Showing 1–10 of 12 records')).toBeVisible();
+      fireEvent.click(screen.getByRole('button', { name: 'Next ›' }));
+      expect(screen.getByText('Showing 11–12 of 12 records')).toBeVisible();
+      await advance(1000); // well past any debounce started on mount
+      expect(screen.getByText('Showing 11–12 of 12 records')).toBeVisible();
+      expect(screen.getByRole('button', { name: '2' })).toHaveAttribute('aria-pressed', 'true');
+      search('   '); // the trimmed search is still '': nothing changed
+      await advance(1000);
+      expect(screen.getByText('Showing 11–12 of 12 records')).toBeVisible();
+      expect(screen.getByRole('button', { name: '2' })).toHaveAttribute('aria-pressed', 'true');
+    }));
+
+    it('returns to the first page once a real search change is applied', () => withClock(async () => {
+      open();
+      await advance(300); // list rendered and any mount-time timer already fired
+      fireEvent.click(screen.getByRole('button', { name: 'Next ›' }));
+      expect(screen.getByText('Showing 11–12 of 12 records')).toBeVisible();
+      search('Course'); // matches all 12 records, so a stale page would stay on page 2
+      await advance(200); // debounce (250 ms) not elapsed: nothing applied yet
+      expect(screen.getByText('Showing 11–12 of 12 records')).toBeVisible();
+      await advance(100); // 300 ms after the change: applied
+      expect(screen.getByText('Showing 1–10 of 12 records')).toBeVisible();
+      expect(screen.getByRole('button', { name: '1' })).toHaveAttribute('aria-pressed', 'true');
+    }));
   });
   it('shows loading, then error with retry recovering to the list', async () => {
     const gate = deferred<CredentialResponse[]>();
