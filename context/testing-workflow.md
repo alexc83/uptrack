@@ -67,6 +67,13 @@ Report each failure per browser, separately from the shared-browser results, cla
 
 The functional suite is now **146 tests per project** (it was 108 at the 2026-11-02 run below; M10–M13 and P01 added specs). Evidence: [`migration/verification/d01-a-ci-baseline.md`](migration/verification/d01-a-ci-baseline.md). In cloud containers whose preinstalled Playwright browsers do not match the pinned `@playwright/test` version, `browserType.launch` fails before any test runs; install the matching build with `npm run e2e:install:linux` (or `npx playwright install --with-deps chromium`) — this is infrastructure, not a test failure.
 
+### CI coverage reporting (D01-D, 2026-11-04; reporting only, no thresholds)
+
+- **Backend:** JaCoCo 0.8.13 is bound to `./mvnw verify` (`backend/pom.xml`); HTML/XML/CSV go to `backend/target/site/jacoco/`. Skip with `-Djacoco.skip=true`. `./mvnw test` alone does not write the report.
+- **Frontend:** `npm run test:coverage` (from `frontend-react/`; `@vitest/coverage-v8` 4.1.12) writes `text-summary`, LCOV, HTML and JSON summary to `frontend-react/coverage/` (git-ignored). Exclusions (see `vitest.config.ts`): test files, `src/test/**`, `*.d.ts`, `src/main.tsx`. `npm test` is unchanged.
+- **CI:** the H2 `backend` job and the `frontend` job add a coverage table to the job summary and upload `backend-coverage` / `frontend-coverage` (14 days, successful runs only). `backend-postgres` runs with `-Djacoco.skip=true`, so there is one backend report. Coverage is informational: it never fails a job; failing tests still do.
+- **Counts after D01-D (GitHub run 41818932511):** backend 193 (H2) and 193 (PostgreSQL 17.11), frontend Vitest 596 (local count), Chromium E2E 146. Local backend coverage 96.0 % line / 80.5 % branch; frontend 98.1 % / 88.7 % (with exclusions). Details: [D01-D report](migration/verification/d01-d-report.md).
+
 ### Historical four-browser run (2026-11-02)
 
 The status below is the result of one owner-authorized run on 2026-11-02 (macOS, Playwright 1.64.1, Edge/Chrome/Firefox installed on the owner's Mac, Playwright-managed Firefox and WebKit). It was a specifically authorized exception for establishing this infrastructure; it does not change the default policy that full suites are owner-run. Re-run after relevant changes; do not treat it as standing proof.

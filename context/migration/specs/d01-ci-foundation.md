@@ -2,7 +2,7 @@
 
 Metadata
 - Owner: alexc83. Agent (D01-A): Claude Code (cloud session).
-- Status: **READY** — architecture and milestone plan approved in principle by the owner (D01 approval brief, 2026-11-04). **D01-A, D01-B and D01-C are implemented and merged (D01-C: PR #35, merge `e1ff2e8`, [report](../verification/d01-c-report.md)). D01-D (next) and D01-E each require separate authorization before implementation.**
+- Status: **READY** — architecture and milestone plan approved in principle by the owner (D01 approval brief, 2026-11-04). **D01-A, D01-B and D01-C are implemented and merged (D01-C: PR #35, merge `e1ff2e8`, [report](../verification/d01-c-report.md)). D01-D is implemented and verified on draft [PR #37](https://github.com/alexc83/uptrack/pull/37), pending merge ([report](../verification/d01-d-report.md)). D01-E (next) requires separate authorization before implementation.**
 - Branch (D01-A): `claude/uptrack-d01-ci-audit-utzis9`, created from `main` = `7fabdbb` (merge of P01 PR #25).
 - Dependencies: P01 merged (`7fabdbb`); S05H merged (`a7b0f34`); M14 cutover on `main` (`2561919`, `9022d73`).
 - Revision: r1, 2026-11-04.
@@ -169,7 +169,7 @@ Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resour
 4. Given any H2-vs-PostgreSQL difference, then it is documented in the D01-C report.
 5. After ≥10 CI runs, a recommendation on keeping both jobs is recorded.
 
-### D01-D — Important test gaps and coverage reporting (approved in principle; not authorized)
+### D01-D — Important test gaps and coverage reporting (IMPLEMENTED AND VERIFIED on draft PR #37, pending merge; CI run 41818932511: backend 193, backend-postgres 193 on PostgreSQL 17.11, frontend Vitest 596 [local count; CI step passed], Chromium 146; [report](../verification/d01-d-report.md). G3–G6 closed by tests; coverage is reporting only; Cloudinary orphan concern recorded as [D01-W04](../follow-ups/d01-w04-cloudinary-certificate-lifecycle.md))
 1. Backend tests cover G3 (403/409/503 + `Retry-After`/500 with no stack trace or class names in the body), G4, G5, using existing MockMvc/Mockito patterns.
 2. Frontend tests cover G6 and relevant loading/empty/error states with existing Testing Library patterns.
 3. JaCoCo (backend) and `@vitest/coverage-v8` (frontend, dependency addition approved within D01-D) produce reports as CI artifacts/summaries; **no thresholds enforced**.
@@ -204,9 +204,9 @@ Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resour
 - Service container over Testcontainers unless proven otherwise.
 - Chromium E2E on every PR; Firefox/WebKit nightly + manual, not required initially.
 - Owner, 2026-11-04 (browser coverage for D01-E): Chromium every PR; Firefox + WebKit nightly and manual (no duplicated Chromium); Edge functional optional on demand; macOS Edge visual baselines preserved. See §5.3.
-- Coverage: report first, no thresholds initially.
-- Schema migrations and live-stack CI tracked as D01-W01 / D01-W02, outside D01.
+- Coverage: report first, no thresholds initially. Owner, 2026-11-04 (D01-D): JaCoCo 0.8.13 and `@vitest/coverage-v8` 4.1.12 reporting only; coverage produced by the H2 backend job and the frontend job (14-day artifacts); Cloudinary cleanup behaviour characterized, not changed; credential-delete orphan files tracked as D01-W04.
+- Schema migrations and live-stack CI tracked as D01-W01 / D01-W02, outside D01; logout race D01-W03; Cloudinary certificate lifecycle D01-W04.
 
 ## 10. Completion report reference
 - D01-A: [`verification/d01-a-ci-baseline.md`](../verification/d01-a-ci-baseline.md).
-- D01-B–E: `verification/d01-b-report.md` … `d01-e-report.md` (to be created).
+- D01-B: [`verification/d01-b-report.md`](../verification/d01-b-report.md); D01-C: [`verification/d01-c-report.md`](../verification/d01-c-report.md); D01-D: [`verification/d01-d-report.md`](../verification/d01-d-report.md); D01-E: `verification/d01-e-report.md` (to be created).
