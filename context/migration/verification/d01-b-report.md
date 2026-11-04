@@ -1,6 +1,6 @@
 # D01-B verification report — initial GitHub Actions CI
 
-Status: **IMPLEMENTED — local validation PASS; awaiting owner review before commit/push. GitHub Actions execution NOT YET RUN.**
+Status: **IMPLEMENTED — first GitHub Actions run PASS (owner-accepted 2026-11-04); draft PR #27 open, not merged.** §1–§5 are the original pre-push local validation, preserved as historical evidence; §6 records the GitHub results.
 Agent / session: Claude Code (cloud session).
 Date / branch / base: 2026-11-04 / `chore/d01-b-ci-workflow` / `origin/main` = `2588d05ec29e4d7ad0a688cea294181410ef352c` (merge of D01-A PR #26), ahead/behind 0/0 before changes.
 Spec: [`specs/d01-ci-foundation.md`](../specs/d01-ci-foundation.md) §5.1, §5.4, §6 (D01-B). Authorization: owner D01-B brief of 2026-11-04.
@@ -64,7 +64,28 @@ Compatibility: all four are official GitHub-owned JavaScript actions on the `nod
 - Measured GitHub runtimes: pending.
 - No deviation from the approved plan.
 
-## 6. GitHub validation (pending authorization)
-1. Push `chore/d01-b-ci-workflow`; open a draft PR to `main`.
-2. Confirm `CI / backend`, `CI / frontend`, `CI / e2e-chromium` appear as separate checks and pass (165 / 571 / 146), alongside unchanged CodeQL and Vercel checks; record durations.
-3. Afterwards, a separate disposable branch + draft PR with one deliberately failing test per job (never merged; deleted afterwards) to confirm red checks and downloadable artifacts.
+## 6. GitHub Actions validation — first run (2026-11-04)
+
+Commits `633cdda` (CI configuration) and `46f8f86` (documentation) pushed to `chore/d01-b-ci-workflow`; GitHub accepted the workflow file (no permission refusal). Draft PR [#27](https://github.com/alexc83/uptrack/pull/27). Run [#1 / 41766563250](https://github.com/alexc83/uptrack/actions/runs/41766563250), event `pull_request`, head `46f8f86`. Exactly one run was created (the branch push does not trigger CI because `push` is limited to `main`).
+
+All three jobs started at 03:21:06 UTC on separate `ubuntu-latest` runners and ran independently.
+
+| Job | Conclusion | Evidence from job log | Duration |
+|---|---|---|---|
+| `backend` | success | `Tests run: 165, Failures: 0, Errors: 0, Skipped: 0`; JAR built and repackaged; `BUILD SUCCESS` (Maven 56.4 s) | 66 s |
+| `frontend` | success | typecheck 4 s, lint 3 s; Vitest `41 passed (41)`, `571 passed (571)` (23.3 s), JUnit report written; build 8 s | 52 s |
+| `e2e-chromium` | success | Playwright Chromium install from lockfile **succeeded on GitHub** (44 s; the step that could not run locally); `146 passed (2.4m)` | 3 min 20 s |
+
+- **Total: 882 passing test executions** (165 + 571 + 146), 0 failures, 0 skipped. Overall workflow wall time ≈ **3 min 20 s** (bounded by `e2e-chromium`).
+- Failure-only upload steps were correctly `skipped` in all three jobs.
+- Caches saved on first run: Maven repository, Maven wrapper, npm.
+- No secrets, production credentials or production services (Neon, Render, Vercel, Cloudinary) were used or needed.
+- Existing integrations unaffected on the same head: CodeQL `Analyze (java-kotlin)` success (66 s), `Analyze (javascript-typescript)` success (56 s), `CodeQL` success; `Vercel` status "Deployment has completed"; `Vercel Preview Comments` success.
+
+Non-blocking observations
+- npm cache race: `e2e-chromium` logged `Failed to save: Unable to reserve cache with key node-cache-Linux-x64-npm-… another job may be creating this cache.` The `frontend` job saved the identical key first; both jobs restore it on later runs. Harmless; no change needed.
+- Existing build warnings, unchanged from local: main chunk 678.81 kB (> 500 kB) and two Rollup notices about annotation comments in `node_modules/zod/v4/core/{regexes,util}.js`.
+- Concurrency cancellation of superseded PR runs: configured, not yet observed (single push).
+
+## 7. Controlled failure validation
+Pending (separate disposable branch and draft PR; see owner authorization of 2026-11-04).
