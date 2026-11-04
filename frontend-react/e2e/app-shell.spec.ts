@@ -119,9 +119,13 @@ test('skip link and keyboard-visible focus reach semantic main content', async (
 
 test('exact redirects, query preservation and standalone report route', async ({ page }) => {
   await mockDashboard(page); // M08: the /dashboard redirect targets now render the real page
+  const redirectHeadings: Record<string, string> = { '/dashboard': 'Live compliance overview', '/credentials': 'Live credential tracking', '/ce-records': 'CE Records' };
   for (const [path, target] of [['/app', '/dashboard'], ['/app/dashboard', '/dashboard'], ['/app/credentials', '/credentials'], ['/app/ce-records', '/ce-records']]) {
     await page.goto(path!);
     await expect(page).toHaveURL(new RegExp(`${target}$`));
+    // Let the redirect target finish rendering (its declared, mocked read settles) before the next goto cancels it in flight;
+    // WebKit reports a navigation-cancelled fetch as an uncaught access-control page error.
+    await expect(page.getByRole('heading', { level: 1, name: redirectHeadings[target!] })).toBeVisible();
   }
   await page.goto('/credentials?credentialId=preview');
   await expect(page.getByRole('dialog', { name: 'Credential details' })).toBeVisible();

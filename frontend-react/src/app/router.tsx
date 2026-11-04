@@ -9,6 +9,10 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <GuestOnly><LandingPage /></GuestOnly>,
   },
+  {
+    path: '/roadmap',
+    lazy: () => import('../features/roadmap/roadmap-page').then(module => ({ Component: module.RoadmapPage })),
+  },
   ...['app', 'app/dashboard', 'app/credentials', 'app/ce-records'].map(path => ({
     path: `/${path}`,
     element: <RedirectPreservingSearch to={path === 'app' ? '/dashboard' : `/${path.slice(4)}`} />,

@@ -41,6 +41,17 @@ it('uses mobile through 768 and restores saved desktop collapse above it', async
   act(() => resize(767));
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
 });
+it('offers the public /roadmap route from desktop primary navigation', async () => {
+  renderWithProviders(null, { routes, path: '/dashboard' });
+  expect(await screen.findByRole('link', { name: 'Roadmap' })).toHaveAttribute('href', '/roadmap');
+});
+it('offers the public /roadmap route inside the mobile navigation drawer', async () => {
+  installMatchMedia(375);
+  const { user } = renderWithProviders(null, { routes, path: '/dashboard' });
+  await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+  const roadmap = await screen.findByRole('link', { name: 'Roadmap' });
+  expect(roadmap).toHaveAttribute('href', '/roadmap');
+});
 it('closes mobile navigation after a destination is selected', async () => {
   installMatchMedia(375);
   const { user } = renderWithProviders(null, { routes, path: '/dashboard' });
