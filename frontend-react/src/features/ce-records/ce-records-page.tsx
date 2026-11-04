@@ -26,9 +26,11 @@ function CERecordsContent() {
   const query = useCredentials({});
   useEffect(() => { document.title = 'CE Records — UpTrack'; }, []);
   useEffect(() => {
-    const timer = setTimeout(() => { setSearch(rawSearch.trim()); setPage(0); }, 250);
+    const next = rawSearch.trim();
+    if (next === search) return; // nothing to apply (e.g. on mount): must not send the user back to the first page
+    const timer = setTimeout(() => { setSearch(next); setPage(0); }, 250);
     return () => clearTimeout(timer);
-  }, [rawSearch]);
+  }, [rawSearch, search]);
 
   const credentialOptions = useMemo(() => buildCERecordCredentialOptions(query.data ?? []), [query.data]);
   const records = useMemo(() => flattenCERecords(query.data ?? []), [query.data]);

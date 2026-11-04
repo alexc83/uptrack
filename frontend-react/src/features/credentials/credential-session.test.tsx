@@ -142,6 +142,12 @@ it.each(['logout', 'switch'] as const)('aborts list/detail reads and never paint
   vi.spyOn(credentialsApi, 'get').mockImplementation((_id, options) => { detailSignal = options?.signal; return detailGate.promise; });
   const { store, authApi, client } = renderWithProviders(<CredentialsPage />, { path: `/credentials?credentialId=${credential.id}`, session: 'authenticated' });
   await waitFor(() => expect(detailSignal).toBeDefined());
+  // Settle the mount before the session transition. waitFor() resolves as soon as the detail request starts, while
+  // the last mount commit's passive effects (TanStack's observer.setOptions) may still be pending. If logout runs
+  // first, React flushes those effects against the just-cleared cache, which rebuilds and refetches both queries
+  // before the session boundary unmounts the page. That ordering is a test-setup race, not the behaviour under
+  // test; act() flushes pending effects deterministically, with no timers.
+  await act(async () => {});
   authApi.login.mockResolvedValue(authResponseFor(testToken('b'), accountB));
   vi.mocked(credentialsApi.list).mockResolvedValue([{ ...credential, name: 'B credential' }]);
   const leaks: string[] = [];

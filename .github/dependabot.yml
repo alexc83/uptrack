@@ -16,3 +16,10 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
+
+  # Keeps the SHA-pinned actions in .github/workflows/ current (D01-B).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
