@@ -1,6 +1,6 @@
 # D01-D verification report — test quality and coverage reporting
 
-Status: **IMPLEMENTED AND VERIFIED on draft [PR #37](https://github.com/alexc83/uptrack/pull/37), pending merge (owner-approved 2026-11-04).** Not merged. Do not describe D01-D as merged until PR #37 lands on `main`.
+Status: **COMPLETE — merged and verified.** [PR #37](https://github.com/alexc83/uptrack/pull/37) was merged into `main` as `db42d686e1a5a6a98a224690056e088bb9dcf3b2` (owner-accepted 2026-11-04); the post-merge CI run [41822488477](https://github.com/alexc83/uptrack/actions/runs/41822488477) passed all four jobs (§9). §1–§8 are the pre-merge evidence, preserved as written (they speak of the PR as pending).
 Agent / session: Claude Code (cloud session).
 Date / branch / base: 2026-11-04 / `chore/d01-d-test-quality` / `origin/main` = `f8ef6cdb9f983f40210a094835cb00b55687391a` (merge of D01-C closeout PR #36), ahead/behind 0/0 before changes.
 Spec: [`specs/d01-ci-foundation.md`](../specs/d01-ci-foundation.md) §4 (G3–G6, G9), §6 (D01-D). Authorization: owner D01-D audit approval, implementation brief, commit/push/draft-PR authorization and final documentation brief (all 2026-11-04).
@@ -32,7 +32,7 @@ Four implementation commits, all authored and committed as `alexc83 <alexc83@use
 | `70c1323` | build: add JaCoCo and Vitest coverage reporting | `backend/pom.xml`, `frontend-react/vitest.config.ts`, `frontend-react/package.json`, `frontend-react/package-lock.json` |
 | `d00eb39` | ci: publish coverage reports from backend and frontend jobs | `.github/workflows/ci.yml` |
 
-A fifth, documentation-only commit (this report, D01-W04, tracker updates) follows. **No production application code, deployment, Render/Vercel/Neon/Cloudinary configuration, branch protection or repository setting was changed.** `package-lock.json` changes are 148 pure insertions, limited to `@vitest/coverage-v8` and its 10 new transitive packages (`@bcoe/v8-coverage`, `ast-v8-to-istanbul` (+ nested `js-tokens`), `html-escaper`, `istanbul-lib-coverage`, `istanbul-lib-report`, `istanbul-reports`, `magicast`, `make-dir` (+ nested `semver`)); the `libc` fields that npm 10 would have stripped were deliberately preserved.
+A fifth, documentation-only commit `14f1824` (this report, D01-W04, tracker updates) completes the PR. **No production application code, deployment, Render/Vercel/Neon/Cloudinary configuration, branch protection or repository setting was changed.** `package-lock.json` changes are 148 pure insertions, limited to `@vitest/coverage-v8` and its 10 new transitive packages (`@bcoe/v8-coverage`, `ast-v8-to-istanbul` (+ nested `js-tokens`), `html-escaper`, `istanbul-lib-coverage`, `istanbul-lib-report`, `istanbul-reports`, `magicast`, `make-dir` (+ nested `semver`)); the `libc` fields that npm 10 would have stripped were deliberately preserved.
 
 ## 3. New tests (G3–G6) and findings
 
@@ -114,3 +114,20 @@ Whole run ≈ 3 min 26 s (jobs run in parallel; E2E is the critical path, so the
 ## 8. Unchanged / open items
 
 D01-W01 (production schema migrations; the real Neon schema is not validated), D01-W02 (live-stack CI), D01-W03 (logout query recreation race, **unresolved**) are unchanged. New: [D01-W04](../follow-ups/d01-w04-cloudinary-certificate-lifecycle.md). D01-E (Firefox/WebKit nightly and manual, CI documentation, branch-protection recommendations) is the next milestone and is **not authorized or started**.
+
+## 9. Merge and post-merge verification (2026-11-04) [V]
+
+- **Merge:** [PR #37](https://github.com/alexc83/uptrack/pull/37), merge-commit method, into `main` as **`db42d686e1a5a6a98a224690056e088bb9dcf3b2`** (parents `f8ef6cd` and `14f1824`; 5 commits, 19 files, +1377 / −15). All five D01-D commits (`acc8698`, `f88844c`, `70c1323`, `d00eb39`, `14f1824`) are ancestors of `main`. Branches were not deleted.
+- **Post-merge CI:** run [#27 / 41822488477](https://github.com/alexc83/uptrack/actions/runs/41822488477), event `push` to `main`, head `db42d68`, **success**, about 3 min 40 s.
+
+| Job | Result | Duration | Count source |
+|---|---|---|---|
+| `backend` (H2) | pass | 1 min 02 s | step green; 193/193 **confirmed on the PR head** (run 41818932511 log), not re-read post-merge |
+| `backend-postgres` | pass | 1 min 20 s | **post-merge log:** `Tests run: 193, Failures: 0, Errors: 0, Skipped: 0`; service container `PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2)`; JDBC assertion lines not re-read post-merge |
+| `frontend` | pass | 1 min 31 s | steps green; 596/596 in 43 files **confirmed on the PR head** (run 41819896582 log) on a tree identical to the merge commit; not re-read post-merge |
+| `e2e-chromium` | pass | 3 min 37 s | **post-merge log:** `146 passed (2.9m)` |
+
+- **Coverage artifacts:** the run produced exactly `backend-coverage` (453,195 bytes, 175 files) and `frontend-coverage` (688,239 bytes); `expires_at` = created + 14 days (2026-11-18); none from `backend-postgres`. Rendered summaries and artifact contents not inspectable from the sandbox (§7).
+- **CodeQL:** the `Push on main` CodeQL run on the merge commit succeeded. **Vercel:** green on the PR head (§6); the post-merge Vercel commit status was **not checked**.
+- **Unrelated:** a Dependabot run for Vite 8.3.5 (PR #9) started after the merge; not part of D01-D.
+- **Still open (unchanged):** D01-W01, D01-W02, D01-W03 (unresolved) and [D01-W04](../follow-ups/d01-w04-cloudinary-certificate-lifecycle.md) (documented, not implemented). **D01-E is next; not authorized or started.**

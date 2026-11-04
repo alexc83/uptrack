@@ -2,7 +2,7 @@
 
 Metadata
 - Owner: alexc83. Agent (D01-A): Claude Code (cloud session).
-- Status: **READY** — architecture and milestone plan approved in principle by the owner (D01 approval brief, 2026-11-04). **D01-A, D01-B and D01-C are implemented and merged (D01-C: PR #35, merge `e1ff2e8`, [report](../verification/d01-c-report.md)). D01-D is implemented and verified on draft [PR #37](https://github.com/alexc83/uptrack/pull/37), pending merge ([report](../verification/d01-d-report.md)). D01-E (next) requires separate authorization before implementation.**
+- Status: **READY** — architecture and milestone plan approved in principle by the owner (D01 approval brief, 2026-11-04). **D01-A, D01-B and D01-C are implemented and merged (D01-C: PR #35, merge `e1ff2e8`, [report](../verification/d01-c-report.md)). D01-D is complete and merged ([PR #37](https://github.com/alexc83/uptrack/pull/37), merge `db42d68`, [report](../verification/d01-d-report.md)). D01-E (next) requires separate authorization before implementation.**
 - Branch (D01-A): `claude/uptrack-d01-ci-audit-utzis9`, created from `main` = `7fabdbb` (merge of P01 PR #25).
 - Dependencies: P01 merged (`7fabdbb`); S05H merged (`a7b0f34`); M14 cutover on `main` (`2561919`, `9022d73`).
 - Revision: r1, 2026-11-04.
@@ -169,7 +169,7 @@ Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resour
 4. Given any H2-vs-PostgreSQL difference, then it is documented in the D01-C report.
 5. After ≥10 CI runs, a recommendation on keeping both jobs is recorded.
 
-### D01-D — Important test gaps and coverage reporting (IMPLEMENTED AND VERIFIED on draft PR #37, pending merge; CI run 41818932511: backend 193, backend-postgres 193 on PostgreSQL 17.11, frontend Vitest 596 [local count; CI step passed], Chromium 146; [report](../verification/d01-d-report.md). G3–G6 closed by tests; coverage is reporting only; Cloudinary orphan concern recorded as [D01-W04](../follow-ups/d01-w04-cloudinary-certificate-lifecycle.md))
+### D01-D — Important test gaps and coverage reporting (COMPLETE — merged via PR #37 as `db42d68`; post-merge CI run 41822488477 passed all four jobs: backend-postgres 193 on PostgreSQL 17.11 and Chromium 146 read from the post-merge logs, backend H2 193 and frontend Vitest 596 confirmed on the PR-head run 41819896582; [report](../verification/d01-d-report.md). G3–G6 closed by tests; coverage is reporting only; Cloudinary orphan concern recorded as [D01-W04](../follow-ups/d01-w04-cloudinary-certificate-lifecycle.md))
 1. Backend tests cover G3 (403/409/503 + `Retry-After`/500 with no stack trace or class names in the body), G4, G5, using existing MockMvc/Mockito patterns.
 2. Frontend tests cover G6 and relevant loading/empty/error states with existing Testing Library patterns.
 3. JaCoCo (backend) and `@vitest/coverage-v8` (frontend, dependency addition approved within D01-D) produce reports as CI artifacts/summaries; **no thresholds enforced**.
