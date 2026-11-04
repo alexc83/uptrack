@@ -2,7 +2,7 @@
 
 Metadata
 - Owner: alexc83. Agent (D01-A): Claude Code (cloud session).
-- Status: **READY** — architecture and milestone plan approved in principle by the owner (D01 approval brief, 2026-11-04). **D01-A, D01-B and D01-C are implemented and merged (D01-C: PR #35, merge `e1ff2e8`, [report](../verification/d01-c-report.md)). D01-D is complete and merged ([PR #37](https://github.com/alexc83/uptrack/pull/37), merge `db42d68`, [report](../verification/d01-d-report.md)). D01-E: the browser workflow is implemented and verified on draft [PR #39](https://github.com/alexc83/uptrack/pull/39) ([report](../verification/d01-e-report.md)), pending merge and post-merge manual validation; branch-protection changes require separate authorization.**
+- Status: **READY** — architecture and milestone plan approved in principle by the owner (D01 approval brief, 2026-11-04). **D01-A, D01-B and D01-C are implemented and merged (D01-C: PR #35, merge `e1ff2e8`, [report](../verification/d01-c-report.md)). D01-D is complete and merged ([PR #37](https://github.com/alexc83/uptrack/pull/37), merge `db42d68`, [report](../verification/d01-d-report.md)). D01-E: the browser workflow is merged ([PR #39](https://github.com/alexc83/uptrack/pull/39), `325e839`) and verified by manual dispatch (`all`, `firefox`, `webkit`); ruleset `26574227` (pull requests, 0 approvals, merge commits only, required checks `backend`, `backend-postgres`, `frontend`, `e2e-chromium`, no standing bypass) is active and enforcement was verified with disposable PRs #40 (blocked, closed) and #41 (merged `5d121ae`) ([report](../verification/d01-e-report.md) §7.0). Outstanding: first genuine scheduled run, failure-artifact path, rendered summaries, closeout PR merge.**
 - Branch (D01-A): `claude/uptrack-d01-ci-audit-utzis9`, created from `main` = `7fabdbb` (merge of P01 PR #25).
 - Dependencies: P01 merged (`7fabdbb`); S05H merged (`a7b0f34`); M14 cutover on `main` (`2561919`, `9022d73`).
 - Revision: r1, 2026-11-04.
@@ -20,7 +20,7 @@ Notation: **[V]** = verified by command output, repository inspection or read-on
 - No schema-migration tooling (Flyway/Liquibase) — tracked as [D01-W01](../follow-ups/d01-w01-schema-migrations.md).
 - No live React → Spring Boot → PostgreSQL CI suite — tracked as [D01-W02](../follow-ups/d01-w02-live-stack-integration-ci.md).
 - No change to the testing responsibility split in `context/testing-workflow.md` beyond documenting CI; Edge/macOS visual goldens remain owner-approved only.
-- No GitHub branch-protection/ruleset change without explicit owner authorization (D01-E only recommends).
+- No GitHub branch-protection/ruleset change without explicit owner authorization (D01-E recommended; the owner then authorized and applied ruleset `26574227` on 2026-11-04).
 
 ## 2. Existing implementation inspected
 
@@ -176,10 +176,10 @@ Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resour
 4. Coverage is compared with the D01-A baseline (93.1/77.0 backend, 96.8/87.5 frontend); threshold proposals are made only after review.
 5. No test is skipped, deleted or weakened; no assertion-free tests.
 
-### D01-E — Browser matrix, documentation, branch protection (browser workflow IMPLEMENTED AND VERIFIED on draft PR #39 — Browsers run 41827213935: Firefox 146/146 and WebKit 146/146 on Linux; PENDING MERGE and post-merge manual dispatch/schedule validation; branch-protection recommendations documented in the [D01-E report](../verification/d01-e-report.md) §7, none applied; not complete)
+### D01-E — Browser matrix, documentation, branch protection (browser workflow MERGED (PR #39, `325e839`) and verified by PR run 41827213935 and manual dispatch `all`/`firefox`/`webkit`; branch protection APPLIED AND VERIFIED — ruleset `26574227`, [report](../verification/d01-e-report.md) §7.0; OUTSTANDING: first scheduled run, failure-artifact path, rendered summaries, closeout PR merge)
 1. `browsers.yml` runs Firefox + WebKit (not Chromium again) nightly and on dispatch, so developers can trigger the broader matrix manually; Edge functional is optional on demand; not a required PR check; `contents: read`; failures produce artifacts.
 2. `testing-workflow.md` gains a CI section: triggers, what each job checks, interpreting failures, downloading artifacts, reproducing locally, CI-vs-production differences, measured times and cost.
-3. A ruleset/branch-protection recommendation lists required checks (e.g. `backend`, `backend-postgres`, `frontend`, `e2e-chromium`), accounting for CodeQL and Dependabot, plus the interaction with Vercel/Render auto-deploy. No setting is changed without authorization.
+3. A ruleset/branch-protection recommendation lists required checks (e.g. `backend`, `backend-postgres`, `frontend`, `e2e-chromium`), accounting for CodeQL and Dependabot, plus the interaction with Vercel/Render auto-deploy. No setting is changed without authorization. *(Recommendation delivered; applied with owner authorization as ruleset `26574227` — required checks `backend`, `backend-postgres`, `frontend`, `e2e-chromium`, 0 approvals, merge commits only, no bypass, not strict — and verified; `Protect main` unchanged.)*
 4. Visual baselines unchanged.
 
 ## 7. Verification commands
@@ -189,7 +189,7 @@ Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resour
 - Coverage (measurement only, no repo change): `./mvnw -B -ntp org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.13:report`; `npm i --no-save @vitest/coverage-v8@4.1.12 && npx vitest run --coverage`.
 
 ## 8. Risks, dependencies and rollback
-- R1 — **Deployments are not gated by CI.** Vercel previews run per PR [V]; production deploys on `main` are likely automatic [A]. Until required checks are configured (D01-E, owner action), a red CI does not stop a deploy. `main` has an active ruleset ("Protect main") that blocks only deletion and non-fast-forward pushes; it has no required status checks and no pull-request requirement [V, D01-E read-only audit, 2026-11-04].
+- R1 — **Deployments are not gated by CI.** Vercel previews run per PR [V]; production deploys on `main` are likely automatic [A]. Required checks gate **merges**, not deployments. *Update 2026-11-04:* ruleset `26574227` now requires a pull request and the four CI checks before anything reaches `main`, so a red CI can no longer be merged (verified with PR #40); a deploy triggered by a merged `main` still depends on Vercel/Render settings outside D01. Before the change, `main` had only "Protect main" (deletion and non-fast-forward) [V, D01-E read-only audit, 2026-11-04], which is unchanged.
 - R2 — Playwright browser/version drift: the audit container's preinstalled Chromium did not match `@playwright/test` 1.64.1; CI must install browsers from the lockfile version.
 - R3 — E2E flakiness: historical one-off flakes (M07/M08) are resolved; one Chromium run here passed 146/146. Any CI flake must be investigated and documented, never retried away silently (`retries: 0` stays).
 - R4 — H2/PostgreSQL divergence: PostgreSQL 16 run was clean apart from the harness conflict; PostgreSQL 17 not yet run.
