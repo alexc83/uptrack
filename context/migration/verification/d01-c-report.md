@@ -1,6 +1,6 @@
 # D01-C verification report — PostgreSQL 17 backend integration tests
 
-Status: **IMPLEMENTED AND VERIFIED ON PR #35 — owner-approved 2026-11-04; draft PR open, NOT merged.** Do not read this as "merged": D01-C lands on `main` only when the owner authorizes the merge of [PR #35](https://github.com/alexc83/uptrack/pull/35).
+Status: **COMPLETE — merged and verified.** [PR #35](https://github.com/alexc83/uptrack/pull/35) was merged into `main` as `e1ff2e8ac64459c86219b2fd484141517ef7b707` (owner-accepted 2026-11-04); the post-merge CI run [41813299826](https://github.com/alexc83/uptrack/actions/runs/41813299826) passed all four jobs (§12). §1–§11 are the pre-merge evidence, preserved as written (they speak of the PR as pending); §12 records the merge and the post-merge results.
 Agent / session: Claude Code (cloud session).
 Date / branch / base: 2026-11-04 / `chore/d01-c-postgres-ci` / `origin/main` = `1469f270d112325e3e9052b6f94b4a60cdf3a5d3` (merge of D01-B closeout PR #34), ahead/behind 0/0 before changes.
 Spec: [`specs/d01-ci-foundation.md`](../specs/d01-ci-foundation.md) §5.2, §6 (D01-C). Authorization: owner D01-C implementation brief and approvals of 2026-11-04 (Option A for the profile design; commits, push and draft PR; final documentation brief).
@@ -111,14 +111,14 @@ Security and scope: [V] top-level `permissions: contents: read` with no job over
 ## 9. H2-versus-PostgreSQL compatibility findings
 
 - **Application behaviour:** none. All 167 tests pass on H2 and on PostgreSQL 17.11 with no code or assertion changes; the code under test has no native SQL, uses UUID keys assigned in Java, `@Enumerated(STRING)`, `LocalDate`/`Instant`/`BigDecimal` columns and two JPQL `@Modifying` updates. The earlier PostgreSQL 16 experiment's single failure (`MultipartHttpIntegrationTest`) was the hard-coded H2 URL meeting the forced PostgreSQL driver — a test-configuration conflict, not an application defect.
-- **Dialect warning:** 6 × `HHH90000025` ("PostgreSQLDialect does not need to be specified explicitly") on PostgreSQL. Harmless, but the explicit dialect must stay or the `H2Dialect` from the base document would apply.
+- **Dialect warning (correction, see §12):** `HHH90000025` ("`Dialect` does not need to be specified explicitly") appears **6 times in each backend job** — in the PostgreSQL job for `PostgreSQLDialect` and, equally, in the H2 job for `H2Dialect` — so it is **not** PostgreSQL-specific. It is harmless: the explicit dialect is the pre-existing H2 setting in the base `test` document, and the `ci-postgres` document overrides it with `PostgreSQLDialect` (without the override the H2 dialect would apply). The original wording of this bullet ("on PostgreSQL") was inaccurate.
 - **Test-configuration differences:** the `test` profile uses H2 `MODE=MySQL`; the multipart test used H2 `MODE=PostgreSQL`. Neither emulation is PostgreSQL; the new job removes the reliance on emulation for the whole suite.
 - **Shared database:** all test contexts share one PostgreSQL database with `ddl-auto: create-drop` per context. No lock or ordering problem appeared in this run [V]; repeated runs have not been observed.
 
 ## 10. Existing warnings and limitations
 
 1. **The Neon production schema was not validated.** The CI job tests against a **Hibernate-generated disposable schema** (`ddl-auto: create-drop`). Production has evolved through `ddl-auto: update` and has no migration tooling, so this job proves the entities and queries work on PostgreSQL 17, not that the real Neon schema matches. That remains with [D01-W01](../follow-ups/d01-w01-schema-migrations.md).
-2. **Single run.** Results come from one CI run (plus one local PostgreSQL 16 run). Flakiness on PostgreSQL has not been measured.
+2. **Few runs.** At the time of writing the results came from one CI run (plus one local PostgreSQL 16 run); three green GitHub runs now exist (PR runs #20 and #21, post-merge run #22; §12). Flakiness on PostgreSQL has still not been measured over many runs.
 3. **Floating image tag** `postgres:17` (owner decision; Dependabot does not track service images). A new minor could change behaviour; the job prints the version and requires major 17.
 4. Unchanged frontend build warnings (main chunk 679 kB, two `zod` Rollup annotation notices), as in the D01-B report.
 5. **Commit signatures.** The three commits carry an SSH signature header made with this container's signing key (`commit.gpgsign` is true in the container's global git configuration). Whether GitHub displays them as Verified could not be read: the GitHub MCP tools return no verification field, the unauthenticated API request returned HTTP 403, and the pull-request commits page showed no badge text. Treat the status as **unknown**; check the PR's Commits tab. Because the key is not associated with the owner's GitHub account, the signatures may show as "Unverified". History is not altered.
@@ -128,3 +128,22 @@ Security and scope: [V] top-level `permissions: contents: read` with no job over
 ## 11. Local container notes [L]
 
 A disposable local PostgreSQL 16.15 database and role (`uptrack_ci`) were created for harness validation and dropped afterwards; the cluster was stopped. No pre-existing database was touched. actionlint 1.7.12 was downloaded to the scratchpad (checksum verified) and removed.
+
+## 12. Merge and post-merge verification (2026-11-04) [V]
+
+- **Merge:** [PR #35](https://github.com/alexc83/uptrack/pull/35) merged with the repository's merge-commit method into `main` as **`e1ff2e8ac64459c86219b2fd484141517ef7b707`** (parents `1469f27` and `ee3137e`). GitHub recorded the merge commit's author as `Alex Cruce <33612197+alexc83@users.noreply.github.com>` and its committer as `GitHub` (normal for a merge made through the API); the four D01-C commits keep `alexc83` authorship. All four commits (`b6fcf29`, `4aa9326`, `1acb369`, `ee3137e`) are ancestors of `origin/main`; the merge changed exactly the 11 approved files. Before the merge the PR head was `ee3137e`, mergeable (`clean`), with PR run [#21 / 41812654821](https://github.com/alexc83/uptrack/actions/runs/41812654821) green.
+- **Post-merge CI:** [run #22 / 41813299826](https://github.com/alexc83/uptrack/actions/runs/41813299826), event `push` to `main`, head `e1ff2e8`, `success`, **2 min 30 s** end to end (10:18:33–10:21:03 UTC).
+
+| Job | Result | Tests (from the job logs) | Runtime |
+|---|---|---|---|
+| `backend` (H2) | success | `Tests run: 167, Failures: 0, Errors: 0, Skipped: 0`; JAR built; Maven 36.9 s | 50 s |
+| `backend-postgres` | success | `Tests run: 167, Failures: 0, Errors: 0, Skipped: 0`; Maven 41.3 s | 68 s |
+| `frontend` | success | Vitest `573 passed (573)`, `41 passed (41)` files; typecheck, lint, build pass | 48 s |
+| `e2e-chromium` | success | `146 passed (2.0m)` | 2 min 26 s |
+
+Total test executions in the run: 167 + 167 + 573 + 146 = 1053.
+
+- **PostgreSQL:** `PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2)`; both JDBC assertions logged `Test datasource: product=PostgreSQL version=17.11 … major=17 url=jdbc:postgresql://localhost:5432/uptrack_ci profiles=[ci-postgres, test]`. The H2 job logged `product=H2 version=2.3.232` for both contexts.
+- **CodeQL / Vercel (merge commit):** `Analyze (java-kotlin)`, `Analyze (javascript-typescript)` and `Analyze (actions)` all succeeded; the `Vercel` commit status was `success` ("Deployment has completed"). The Vercel deployment itself was not opened, and no `Vercel Preview Comments` check was listed for the push.
+- **Warnings:** `HHH90000025` ×6 in each backend job (H2: `H2Dialect`; PostgreSQL: `PostgreSQLDialect`) — see §9; the unchanged frontend build notices (§10.4). No failures.
+- **Still open (unchanged):** [D01-W01](../follow-ups/d01-w01-schema-migrations.md) (the Neon production schema is not validated by this job), [D01-W02](../follow-ups/d01-w02-live-stack-integration-ci.md), [D01-W03](../follow-ups/d01-w03-logout-query-recreation-race.md) (unresolved). Optional cleanup: remote branch `test/d01-b-ci-failure-validation`; merged branch `chore/d01-c-postgres-ci` (not deleted). GitHub's verification status of the four signed D01-C commits was not readable (§10.5). Next milestone: D01-D (not authorized); D01-E pending.
