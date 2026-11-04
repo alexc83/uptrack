@@ -1,4 +1,4 @@
-# UpTrack continuous integration (D01-B, D01-C). Spec: context/migration/specs/d01-ci-foundation.md
+# UpTrack continuous integration (D01-B, D01-C, D01-D coverage reporting). Spec: context/migration/specs/d01-ci-foundation.md
 #
 # Four independent jobs on GitHub-hosted Ubuntu runners:
 #   backend           Java 21: compile, H2 unit/integration tests, package (./mvnw verify)
@@ -50,8 +50,37 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
 
-      - name: Compile, test (H2) and package
+      # JaCoCo (pom.xml) writes backend/target/site/jacoco/ during verify. Only this H2 job produces coverage;
+      # backend-postgres runs the same code with -Djacoco.skip=true. Reporting only: no thresholds, no gate.
+      - name: Compile, test (H2), report coverage and package
         run: ./mvnw -B -ntp verify
+
+      - name: Coverage summary
+        if: success()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import csv
+          rows = list(csv.DictReader(open('target/site/jacoco/jacoco.csv')))
+          def total(kind):
+              covered = sum(int(r[kind + '_COVERED']) for r in rows)
+              missed = sum(int(r[kind + '_MISSED']) for r in rows)
+              return covered, covered + missed
+          print('### Backend coverage (JaCoCo, H2 job)')
+          print('| Metric | Covered | Total | % |')
+          print('|---|---|---|---|')
+          for label, kind in (('Line', 'LINE'), ('Branch', 'BRANCH'), ('Instruction', 'INSTRUCTION')):
+              c, t = total(kind)
+              print(f'| {label} | {c} | {t} | {100 * c / t:.1f} |')
+          PY
+
+      - name: Upload backend coverage report
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-coverage
+          path: backend/target/site/jacoco/
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Upload Surefire reports
         if: failure()
@@ -114,8 +143,9 @@ jobs:
           PGPASSWORD: uptrack_ci_disposable
         run: psql -h localhost -U uptrack_ci -d uptrack_ci -tAc 'SELECT version();'
 
+      # Coverage is produced by the H2 backend job only; instrumenting here would duplicate an identical report.
       - name: Test on PostgreSQL 17
-        run: ./mvnw -B -ntp test
+        run: ./mvnw -B -ntp -Djacoco.skip=true test
 
       - name: Upload Surefire reports
         if: failure()
@@ -155,8 +185,32 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Unit and component tests (Vitest)
-        run: npx vitest run --reporter=default --reporter=junit --outputFile.junit=test-results/vitest-junit.xml
+      # Coverage (v8; text-summary, lcov, html, json-summary) is configured in vitest.config.ts. Reporting only:
+      # no thresholds, so a coverage change can never fail this step; failing tests still do.
+      - name: Unit and component tests (Vitest) with coverage
+        run: npx vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=test-results/vitest-junit.xml
+
+      - name: Coverage summary
+        if: success()
+        run: |
+          node -e "
+            const t = require('./coverage/coverage-summary.json').total;
+            const row = (n, m) => '| ' + n + ' | ' + m.covered + ' | ' + m.total + ' | ' + m.pct + ' |';
+            console.log('### Frontend coverage (Vitest, v8)');
+            console.log('| Metric | Covered | Total | % |');
+            console.log('|---|---|---|---|');
+            console.log(row('Line', t.lines)); console.log(row('Branch', t.branches));
+            console.log(row('Statement', t.statements)); console.log(row('Function', t.functions));
+          " >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload frontend coverage report
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-coverage
+          path: frontend-react/coverage/
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Production build
         run: npm run build
