@@ -1,5 +1,6 @@
 package com.ccruce.backend.controller;
 
+import com.ccruce.backend.TestDatabaseAssertions;
 import com.ccruce.backend.dto.response.AuthResponseDto;
 import com.cloudinary.Cloudinary;
 import org.junit.jupiter.api.Test;
@@ -8,22 +9,33 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
+import javax.sql.DataSource;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-        "spring.datasource.url=jdbc:h2:mem:multipart-http;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+        // H2 by default; the ci-postgres test profile overrides it with its PostgreSQL URL.
+        "spring.datasource.url=${uptrack.test.multipart-datasource-url:jdbc:h2:mem:multipart-http;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}",
         "app.rate-limit.login-per-minute=2", "app.rate-limit.registration-per-hour=2"})
 @ActiveProfiles("test")
 class MultipartHttpIntegrationTest {
     @Autowired TestRestTemplate rest;
     @LocalServerPort int port;
     @MockBean Cloudinary cloudinary;
+    @Autowired DataSource dataSource;
+    @Autowired Environment environment;
+
+    @Test
+    void multipartContextUsesTheExpectedDatabase() throws Exception {
+        // This context sets its own datasource URL, so it is verified separately from the shared context.
+        TestDatabaseAssertions.assertExpectedDatabase(dataSource, environment);
+    }
 
     @Test
     void realServletLimitsAndMalformedMultipartHaveStructuredClientErrors() {

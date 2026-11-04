@@ -2,7 +2,7 @@
 
 Metadata
 - Owner: alexc83. Agent (D01-A): Claude Code (cloud session).
-- Status: **READY** — architecture and milestone plan approved in principle by the owner (D01 approval brief, 2026-11-04). **D01-A authorized and implemented (documentation only). D01-B, D01-C, D01-D and D01-E each require separate authorization before implementation.**
+- Status: **READY** — architecture and milestone plan approved in principle by the owner (D01 approval brief, 2026-11-04). **D01-A and D01-B are implemented and merged. D01-C is implemented and verified on draft PR #35, pending merge ([report](../verification/d01-c-report.md)). D01-D and D01-E each require separate authorization before implementation.**
 - Branch (D01-A): `claude/uptrack-d01-ci-audit-utzis9`, created from `main` = `7fabdbb` (merge of P01 PR #25).
 - Dependencies: P01 merged (`7fabdbb`); S05H merged (`a7b0f34`); M14 cutover on `main` (`2561919`, `9022d73`).
 - Revision: r1, 2026-11-04.
@@ -107,11 +107,18 @@ Optional
 - Both H2 and PostgreSQL jobs are kept until actual CI runtimes and results have been collected; then evaluate whether full duplication remains worthwhile.
 - Testcontainers is not introduced unless implementation demonstrates a clear advantage (it adds a dependency and a Docker requirement locally).
 - Document every H2-vs-PostgreSQL behavioural difference discovered.
+- **As implemented (D01-C, PR #35):** the PostgreSQL settings are a `spring.config.activate.on-profile: ci-postgres` document appended to `application-test.yml`, not a separate `application-ci-postgres.yml` (an included profile is ordered before `@ActiveProfiles("test")`, so a separate file would lose to the H2 values). Two JDBC-metadata assertions (`TestDatabaseAssertions`) prove the datasource product and server major version. See the [D01-C report](../verification/d01-c-report.md) §2 and §6.
 
 ### 5.3 Browser testing strategy
 - Every PR: mocked functional suite on Playwright bundled **Chromium** (`e2e-chromium`). Reports must say "Chromium (bundled)", never Edge/Chrome.
 - `browsers.yml` (D01-E): Firefox and WebKit, `schedule` (nightly) + `workflow_dispatch`, not required for PRs initially.
 - Edge/Chrome branded builds and `visual-edge` (Edge/macOS goldens) remain owner-run per `testing-workflow.md`; CI never runs `--update-snapshots`.
+- **Owner decisions for D01-E (recorded 2026-11-04; not implemented in D01-C):**
+  - *Every pull request:* keep running the Chromium (bundled) functional E2E suite.
+  - *Nightly browser compatibility:* add Firefox and WebKit functional E2E on a schedule; do not re-run Chromium there (no duplicated coverage).
+  - *Microsoft Edge:* functional testing is optional, added only if a specific compatibility need arises. The existing macOS Edge `visual-edge` baselines are preserved and remain owner-approved only.
+  - *Manual runs:* developers can trigger the broader browser matrix on demand (`workflow_dispatch`) when working on browser-sensitive functionality.
+  - Existing Playwright configurations and visual baselines are not modified by D01-C.
 - Live suite (`e2e-live/`) is out of D01 (D01-W02).
 
 ### 5.4 Workflow security requirements
@@ -154,7 +161,7 @@ Files: `.github/workflows/ci.yml`, `.github/dependabot.yml` (add `github-actions
 8. Actual job durations are recorded in the D01-B report.
 Verification: actionlint (if available) or careful review; `git diff`; observed GitHub Actions runs (links in report).
 
-### D01-C — PostgreSQL 17 parity (approved in principle; not authorized)
+### D01-C — PostgreSQL 17 parity (implemented and verified on draft PR #35; pending merge)
 Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resources/application-ci-postgres.yml` (or equivalent), `MultipartHttpIntegrationTest.java` (URL overridable only).
 1. Given the `backend-postgres` job, then it uses `postgres:17` with disposable inline credentials and no secrets.
 2. Given the PostgreSQL profile, then all 165 tests (or the then-current count) execute and pass on PostgreSQL 17, with 0 excluded.
@@ -170,7 +177,7 @@ Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resour
 5. No test is skipped, deleted or weakened; no assertion-free tests.
 
 ### D01-E — Browser matrix, documentation, branch protection (approved in principle; not authorized)
-1. `browsers.yml` runs Firefox + WebKit nightly and on dispatch; not a required PR check; `contents: read`; failures produce artifacts.
+1. `browsers.yml` runs Firefox + WebKit (not Chromium again) nightly and on dispatch, so developers can trigger the broader matrix manually; Edge functional is optional on demand; not a required PR check; `contents: read`; failures produce artifacts.
 2. `testing-workflow.md` gains a CI section: triggers, what each job checks, interpreting failures, downloading artifacts, reproducing locally, CI-vs-production differences, measured times and cost.
 3. A ruleset/branch-protection recommendation lists required checks (e.g. `backend`, `backend-postgres`, `frontend`, `e2e-chromium`), accounting for CodeQL and Dependabot, plus the interaction with Vercel/Render auto-deploy. No setting is changed without authorization.
 4. Visual baselines unchanged.
@@ -196,6 +203,7 @@ Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resour
 - PostgreSQL CI target: `postgres:17` (production Neon 17.11 [O]).
 - Service container over Testcontainers unless proven otherwise.
 - Chromium E2E on every PR; Firefox/WebKit nightly + manual, not required initially.
+- Owner, 2026-11-04 (browser coverage for D01-E): Chromium every PR; Firefox + WebKit nightly and manual (no duplicated Chromium); Edge functional optional on demand; macOS Edge visual baselines preserved. See §5.3.
 - Coverage: report first, no thresholds initially.
 - Schema migrations and live-stack CI tracked as D01-W01 / D01-W02, outside D01.
 
