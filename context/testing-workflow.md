@@ -67,6 +67,14 @@ Report each failure per browser, separately from the shared-browser results, cla
 
 The functional suite is now **146 tests per project** (it was 108 at the 2026-11-02 run below; M10–M13 and P01 added specs). Evidence: [`migration/verification/d01-a-ci-baseline.md`](migration/verification/d01-a-ci-baseline.md). In cloud containers whose preinstalled Playwright browsers do not match the pinned `@playwright/test` version, `browserType.launch` fails before any test runs; install the matching build with `npm run e2e:install:linux` (or `npx playwright install --with-deps chromium`) — this is infrastructure, not a test failure.
 
+### CI workflows and the browser matrix (D01-E, 2026-11-04)
+
+- **`.github/workflows/ci.yml` (`CI`)** — pull requests to `main`, pushes to `main`, manual: `backend` (H2), `backend-postgres` (PostgreSQL 17), `frontend` (typecheck, lint, Vitest with coverage, build) and `e2e-chromium` (bundled Chromium, functional suite). These four are the intended future required checks (not yet required; see the [D01-E report](migration/verification/d01-e-report.md) §7).
+- **`.github/workflows/browsers.yml` (`Browsers`, informational, not required)** — daily at **05:17 UTC**, manual (`workflow_dispatch` input `browser`: `all` | `firefox` | `webkit`), and pull requests that change the workflow file. One job per browser (`e2e-firefox`, `e2e-webkit`), `fail-fast: false`, running `npm run e2e:<browser>` (146 functional tests each; Chromium and the visual project never run). Reproduce locally with `npm run e2e:install` then `npm run e2e:firefox` or `npm run e2e:webkit`.
+- **Reading a result:** open the run, check the job summary table (browser, passed, failed, skipped, total, duration) and the log's `N passed` line. Artifacts: `e2e-<browser>-junit` (14 days, every run) and, on failure only, `e2e-<browser>-report` (HTML report and traces, 7 days; open with `npx playwright show-report`). Classify any failure per §4 (test assumption, browser difference, application defect, unclassified) before changing anything; never add retries, skips or longer timeouts to make it pass.
+- **Measured (PR run 41827213935, Linux):** Firefox 146/146 in 3.9 min (job 4 min 29 s), WebKit 146/146 in 4.1 min (job 5 min 24 s); Chromium in `ci.yml` about 2.7–3.3 min. Scheduled runs, manual dispatch and the failure-artifact path are **not yet validated**.
+- **CI vs. local:** CI runs Playwright-managed Chromium/Firefox/WebKit on Linux with mocked `/api`. It never runs Edge/Chrome branded builds, the live suite, or the macOS Edge visual project; those stay owner-run (§1–§3). CI does not run `--update-snapshots`.
+
 ### CI coverage reporting (D01-D, 2026-11-04; reporting only, no thresholds)
 
 - **Backend:** JaCoCo 0.8.13 is bound to `./mvnw verify` (`backend/pom.xml`); HTML/XML/CSV go to `backend/target/site/jacoco/`. Skip with `-Djacoco.skip=true`. `./mvnw test` alone does not write the report.
