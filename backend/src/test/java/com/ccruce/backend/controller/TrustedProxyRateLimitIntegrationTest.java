@@ -1,5 +1,7 @@
 package com.ccruce.backend.controller;
 
+import com.ccruce.backend.security.RequestRateLimiter;
+import com.ccruce.backend.security.RequestRateLimiterTestSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,8 +9,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Map;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -17,16 +23,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Real security-chain behaviour with a trusted proxy configured: forwarded identities are
  * used only when the direct peer is in the allowlist. Separate profile/properties from the
  * shared fixtures so production-like small limits are exercised.
+ *
+ * <p>The limiter counts whole epoch seconds, so on the wall clock a request sequence that
+ * straddles a second boundary legitimately reports {@code Retry-After: 59}. The real limiter
+ * therefore runs on a fixed clock here, making exact {@code Retry-After} assertions deterministic.
  */
 @SpringBootTest(properties = {
-        "app.rate-limit.login-per-minute=2",
-        "app.rate-limit.registration-per-hour=100",
-        "app.rate-limit.upload-per-hour=100",
+        "app.rate-limit.login-per-minute=" + TrustedProxyRateLimitIntegrationTest.LOGIN_LIMIT,
+        "app.rate-limit.registration-per-hour=" + TrustedProxyRateLimitIntegrationTest.REGISTRATION_LIMIT,
+        "app.rate-limit.upload-per-hour=" + TrustedProxyRateLimitIntegrationTest.UPLOAD_LIMIT,
         "app.trusted-proxies=10.9.9.9,192.168.0.0/16"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class TrustedProxyRateLimitIntegrationTest {
+    static final int LOGIN_LIMIT = 2;
+    static final int REGISTRATION_LIMIT = 100;
+    static final int UPLOAD_LIMIT = 100;
+
+    @TestBean RequestRateLimiter requestRateLimiter;
+
+    static RequestRateLimiter requestRateLimiter() {
+        Clock fixed = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
+        return RequestRateLimiterTestSupport.withClock(fixed, LOGIN_LIMIT, REGISTRATION_LIMIT, UPLOAD_LIMIT);
+    }
+
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
 

@@ -87,5 +87,33 @@ Non-blocking observations
 - Existing build warnings, unchanged from local: main chunk 678.81 kB (> 500 kB) and two Rollup notices about annotation comments in `node_modules/zod/v4/core/{regexes,util}.js`.
 - Concurrency cancellation of superseded PR runs: configured, not yet observed (single push).
 
-## 7. Controlled failure validation
-Pending (separate disposable branch and draft PR; see owner authorization of 2026-11-04).
+## 7. Intermittent test exposed by CI (run #2) and its correction
+
+**Observation.** Run [#2 / 41770554769](https://github.com/alexc83/uptrack/actions/runs/41770554769) on PR #27 (head `c550c3e`, a documentation-only commit) failed in `backend`: 164/165, `TrustedProxyRateLimitIntegrationTest.untrustedDirectClientSharesNoBucketAndCannotSpoofForwardedIdentity:60 Response header 'Retry-After' expected:<60> but was:<59>`. `frontend` passed (571/571). The `backend-surefire-reports` artifact (42 files, ID 13294726747, expires 2026-11-11) uploaded as designed. Run #1 and all local runs had passed.
+
+**Root cause (test assumption, not an application or CI defect).** `RequestRateLimiter` measures windows in whole epoch seconds (`clock.instant().getEpochSecond()`) on `Clock.systemUTC()` and returns `Retry-After = duration − (now − windowStart)`. The test sends three login requests (two allowed, third limited) and asserted exactly `60`, implicitly assuming all three land in the same wall-clock second. When they straddle a second boundary the limiter correctly reports `59`. With the test taking ≈0.16 s on CI, roughly one run in six could fail. Reproduced deterministically in a scratch harness (outside the repository) against the compiled limiter: same second → `60`; clock moved 00.900 → 01.100 → `59`. The test was introduced in S05H (`ec37e35`, on `main`); D01-B did not cause it. `RequestRateLimiterTest`'s exact `"60"` assertion already uses a controllable `MutableClock` and is not affected.
+
+**Correction (test-only, owner-authorized 2026-11-04).**
+- `TrustedProxyRateLimitIntegrationTest`: Spring `@TestBean` replaces the `RequestRateLimiter` bean in this test's context with the real limiter constructed on `Clock.fixed(2026-01-01T00:00:00Z)`. Limits are shared constants used by both the `@SpringBootTest` properties and the factory (2 / 100 / 100, unchanged). The full security chain (filter, `ClientIpResolver`, trusted-proxy allowlist, controllers) is unchanged. **No assertion was removed or relaxed**; `Retry-After` is still asserted to be exactly `60`.
+- New `backend/src/test/java/com/ccruce/backend/security/RequestRateLimiterTestSupport.java`: test-only public factory exposing the limiter's existing package-private clock constructor to tests in other packages.
+- No application code, no sleeps, no retries, no tolerance window.
+
+**Verification (local, Linux cloud container).**
+| Check | Result |
+|---|---|
+| Fixed test class, single run | 4/4 pass |
+| Proof that the injected limiter is the one in use: test temporarily run with a clock advancing 1 s per reading (scratch edit, then restored; `cmp` identical) | fails as expected: `Retry-After expected:<60> but was:<58>` (strict assertion still detects wrong values) |
+| Fixed test class, 30 consecutive runs (`./mvnw -q test -Dtest=TrustedProxyRateLimitIntegrationTest`) | **30/30 pass**, ≈12 s per run, 348 s total |
+| Full backend `./mvnw -B -ntp verify` | **165/165**, `BUILD SUCCESS`, 42 s |
+
+(An earlier proof attempt with 400 ms clock steps passed and was inconclusive, because the first and third requests could still share a whole second; it was replaced by the 1 s-step check above.)
+
+## 8. Controlled failure validation (disposable PR [#28](https://github.com/alexc83/uptrack/pull/28), branch `test/d01-b-ci-failure-validation`)
+
+Each scenario adds one new temporary failing probe file; no existing test is modified. The probes never exist on `chore/d01-b-ci-workflow`.
+
+| # | Probe | Run | Expected job | Result |
+|---|---|---|---|---|
+| 1 | `backend/.../ciprobe/CiFailureProbeTest.java` (commit `b3d7de0`) | [#3 / 41770603100](https://github.com/alexc83/uptrack/actions/runs/41770603100) | `backend` fails | **As expected.** Run conclusion `failure`. `backend`: 166 run, 1 failure = the probe (`CiFailureProbeTest.deliberateBackendFailureForCiValidation:12 … expected: <expected> but was: <D01-B deliberate backend failure>`); `backend-surefire-reports` uploaded (44 files, ID 13294861544, listed via API, expires 2026-11-11). `frontend` success (1 min 16 s); `e2e-chromium` success (2 min 58 s). Not infrastructure: all setup steps succeeded. |
+| 2 | frontend Vitest probe | — | `frontend` fails | Pending: deferred until the flaky test fix is merged into PR #27 and its normal CI is green |
+| 3 | Playwright probe | — | `e2e-chromium` fails | Pending (same condition) |
