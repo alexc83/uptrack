@@ -112,6 +112,12 @@ Optional
 - Every PR: mocked functional suite on Playwright bundled **Chromium** (`e2e-chromium`). Reports must say "Chromium (bundled)", never Edge/Chrome.
 - `browsers.yml` (D01-E): Firefox and WebKit, `schedule` (nightly) + `workflow_dispatch`, not required for PRs initially.
 - Edge/Chrome branded builds and `visual-edge` (Edge/macOS goldens) remain owner-run per `testing-workflow.md`; CI never runs `--update-snapshots`.
+- **Owner decisions for D01-E (recorded 2026-11-04; not implemented in D01-C):**
+  - *Every pull request:* keep running the Chromium (bundled) functional E2E suite.
+  - *Nightly browser compatibility:* add Firefox and WebKit functional E2E on a schedule; do not re-run Chromium there (no duplicated coverage).
+  - *Microsoft Edge:* functional testing is optional, added only if a specific compatibility need arises. The existing macOS Edge `visual-edge` baselines are preserved and remain owner-approved only.
+  - *Manual runs:* developers can trigger the broader browser matrix on demand (`workflow_dispatch`) when working on browser-sensitive functionality.
+  - Existing Playwright configurations and visual baselines are not modified by D01-C.
 - Live suite (`e2e-live/`) is out of D01 (D01-W02).
 
 ### 5.4 Workflow security requirements
@@ -170,7 +176,7 @@ Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resour
 5. No test is skipped, deleted or weakened; no assertion-free tests.
 
 ### D01-E — Browser matrix, documentation, branch protection (approved in principle; not authorized)
-1. `browsers.yml` runs Firefox + WebKit nightly and on dispatch; not a required PR check; `contents: read`; failures produce artifacts.
+1. `browsers.yml` runs Firefox + WebKit (not Chromium again) nightly and on dispatch, so developers can trigger the broader matrix manually; Edge functional is optional on demand; not a required PR check; `contents: read`; failures produce artifacts.
 2. `testing-workflow.md` gains a CI section: triggers, what each job checks, interpreting failures, downloading artifacts, reproducing locally, CI-vs-production differences, measured times and cost.
 3. A ruleset/branch-protection recommendation lists required checks (e.g. `backend`, `backend-postgres`, `frontend`, `e2e-chromium`), accounting for CodeQL and Dependabot, plus the interaction with Vercel/Render auto-deploy. No setting is changed without authorization.
 4. Visual baselines unchanged.
@@ -196,6 +202,7 @@ Files: `.github/workflows/ci.yml` (`backend-postgres`), `backend/src/test/resour
 - PostgreSQL CI target: `postgres:17` (production Neon 17.11 [O]).
 - Service container over Testcontainers unless proven otherwise.
 - Chromium E2E on every PR; Firefox/WebKit nightly + manual, not required initially.
+- Owner, 2026-11-04 (browser coverage for D01-E): Chromium every PR; Firefox + WebKit nightly and manual (no duplicated Chromium); Edge functional optional on demand; macOS Edge visual baselines preserved. See §5.3.
 - Coverage: report first, no thresholds initially.
 - Schema migrations and live-stack CI tracked as D01-W01 / D01-W02, outside D01.
 
