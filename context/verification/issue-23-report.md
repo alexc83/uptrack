@@ -32,7 +32,7 @@ Coverage: authorized issuance + TTL/acl binding, cross-user/unknown 404, unauthe
 
 ## Review-correction pass (PR #57 independent review, 2026-11-05)
 
-**Finding 1 — delivery-type compatibility.** Confirmed at code level [C]: uploads use Cloudinary delivery type `upload` (no `type` option in `buildUploadOptions`), and the SDK config carries `cloud_name`/`api_key`/`api_secret` (the AuthToken signing key is present). An `authenticated`-type URL for an `upload`-type asset is denied by the provider, so the delivery endpoint now **refuses `upload`-type managed assets with 409** instead of issuing broken URLs — never falling back to the public URL. Assets become deliverable via the endpoint only when `delivery_type='authenticated'` (Phase 4 migration). Upload responses no longer carry the permanent public URL (`url: null`); the registry still stores `delivery_url` internally, and cleanup/recovery are unaffected (they key on public_id/resource_type, not delivery type). Existing public URLs remain independently accessible until Phase 4 retirement [LV]. Tests: `uploadTypeAssetIsNotServedViaAuthenticatedUrl` (unit), `uploadTypeAssetIsRefusedUntilMigrated` (integration), upload-response URL assertions updated to null.
+**Finding 1 — delivery-type compatibility.** Confirmed at code level [C]: uploads use Cloudinary delivery type `upload` (no `type` option in `buildUploadOptions`), and the SDK config carries `cloud_name`/`api_key`/`api_secret` (API credentials are present; this does not establish presence of the separate token-auth key — see the preparation correction below). An `authenticated`-type URL for an `upload`-type asset is denied by the provider, so the delivery endpoint now **refuses `upload`-type managed assets with 409** instead of issuing broken URLs — never falling back to the public URL. Assets become deliverable via the endpoint only when `delivery_type='authenticated'` (Phase 4 migration). Upload responses no longer carry the permanent public URL (`url: null`); the registry still stores `delivery_url` internally, and cleanup/recovery are unaffected (they key on public_id/resource_type, not delivery type). Existing public URLs remain independently accessible until Phase 4 retirement [LV]. Tests: `uploadTypeAssetIsNotServedViaAuthenticatedUrl` (unit), `uploadTypeAssetIsRefusedUntilMigrated` (integration), upload-response URL assertions updated to null.
 
 **Finding 2 — React popup reliability.** The drawer previously awaited the API before `window.open`, risking loss of user activation and leaving a blank tab on failure. Now the popup opens **synchronously on click**, the fresh short-lived URL is fetched, the popup is navigated to it, and `opener` is severed (`noopener` fallback path retained); on API failure the placeholder popup is closed and an inline error shows; fully blocked popups get a graceful message. Bearer tokens never enter URLs. Tests: 3 drawer unit tests (navigate-after-fetch + opener severed, close-on-failure, popup-blocked) and the e2e flow (popup on click + exactly one on-demand fetch).
 
@@ -56,6 +56,20 @@ PR #57 as-is is **not mergeable without impairing certificate viewing**: uploads
 Tests added/updated this pass: `CertificateDeliveryFlagDisabledIntegrationTest` (flag-off contract: upload `type=upload`, URL present in upload/CE responses, endpoint 404), `CertificateDeliveryIntegrationTest` with `app.certificates.delivery.enabled=true` (`flagOnUploadsAuthenticatedAssetsAndSuppressesUrl`, `existingUploadTypeAssetsStayViewableViaUrlWhenEnabled`, upload-type 409), `flagDisabledIssuesNothing` (unit), upload/reservation/concurrency/reconciliation tests updated to the 4-arg `reserve(..., deliveryType)` and per-delivery-type stubbing.
 
 Re-run after the gate: backend **252/252** (H2, `./mvnw -B -ntp test`); frontend `npm run typecheck` / `lint` / `build` pass; Vitest **600/600**; full Chromium Playwright suite **146/146** (`E2E_CHROMIUM_FALLBACK=1 npx playwright test --project=chromium`). Required CI (`backend`, `backend-postgres`, `frontend`, `e2e-chromium`) re-runs on the new PR head. Cloudinary mocked everywhere.
+
+## Pilot tooling preparation (2026-11-05, PR #58)
+
+Current tooling findings and local/mock evidence are maintained in
+[issue-23-pilot-tooling-report.md](issue-23-pilot-tooling-report.md), with owner setup and recovery
+instructions in the [tooling README](../../scripts/cloudinary-pilot/README.md).
+
+**Correction to earlier evidence:** API credentials do not establish presence of an AuthToken signing
+key. Cloudinary token authentication uses a separate configured encryption key; do not substitute
+`api_secret`. The real SDK local self-test confirms the exact merged signer omits the token parameter.
+The helper corrects keying, `signed(true)` and the full SDK-generated ACL path for provider experiments;
+that is not application parity. Backend remediation remains separately scoped and activation blocked.
+No Cloudinary API calls were made during preparation. The earlier nine-case preparation run was
+superseded by the broader checks in the dedicated report.
 
 ## Pilot status and unverified provider behavior
 

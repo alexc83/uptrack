@@ -7,21 +7,21 @@
 ## 1. Environment and credential requirements (owner actions to authorize)
 
 1. Create a **dedicated non-production Cloudinary cloud** (separate from the production cloud name) — or a sub-account with its own API key/secret. Never reuse production credentials.
-2. Provide the pilot runner (agent or owner machine) with, via the owner's secret manager (e.g. Doppler) — **never committed, never posted to GitHub**: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` of the test cloud.
+2. Provide the pilot runner (agent or owner machine) with, via the owner's secret manager (e.g. Doppler) — **never committed, never posted to GitHub**: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` of the test cloud, plus its separate `CLOUDINARY_AUTH_TOKEN_KEY` for token-based authentication. Provisioning is not yet authorized.
 3. Confirm the account setting **"Authenticated delivery" / private CDN** enablement state and record it.
 4. Use **synthetic certificates only** (generated one-page PDF, generated PNG/JPEG) — no real user documents.
 5. Scope: read/write/destroy + Admin API on the test cloud only; no production Cloudinary access at any point.
 
 ## 2. Pilot procedure (each step = one [LV] question from the spec §3)
 
-0. **Signing configuration check [C]:** the backend `CloudinaryConfig` passes `cloud_name`, `api_key`, `api_secret` — the `api_secret` is the AuthToken signing key; confirm it is present in the test-cloud env and never logged.
-1. Upload synthetic PDF (`raw`) and PNG (`image`) via the server-side SDK with **`type=upload`** (current production behavior). Record returned `secure_url`, `public_id`, `resource_type`.
+0. **Signing configuration check [C]:** the backend `CloudinaryConfig` passes `cloud_name`, `api_key`, `api_secret` — the API secret authenticates provider API calls, but is **not** the token-authentication key. The pilot requires the separate hex `CLOUDINARY_AUTH_TOKEN_KEY` supplied/configured for Cloudinary token authentication. The merged application signer needs a separately authorized correction before activation; see §2b.
+1. Upload synthetic PDF (`raw`) and PNG (`image`) with **`type=upload`** (current production behavior). The tooling uses the documented Upload REST API with Basic Auth, and the Java SDK for local delivery signing. Record identities/resource types and safe status/header evidence; do not publish token URLs.
 2. Logged-out fetch of the public URL → record status (baseline: expect 200 on `upload` type). **This also proves existing public URLs remain accessible independently of the authenticated endpoint.**
 3. Generate an AuthToken URL (`type=authenticated`, `duration=60`, acl pinned) for the **`upload`-type** asset → logged-out fetch: **expect denial** — confirms the delivery-type mismatch and why Phase 3 refuses (409) `upload`-type assets until migration.
 4. Upload fresh synthetic assets with **`type=authenticated`** directly → verify the full upload → authenticated-view → destroy lifecycle works for the new type (reservation recovery and cleanup-worker deletion are type-agnostic by public_id, but confirm destroy works on `authenticated` assets and returns the same `result` contract).
 5. Change one `upload` asset to `type=authenticated` via the `explicit` Admin API → logged-out fetch of the **old public URL** (with and without `invalidate`) → refused immediately or edge-cached? Record TTL of any cached copy.
 6. On an `authenticated` asset: plain URL → expect 401/404; signed URL (`sign_url`) → 200?; AuthToken URL → 200 before expiry, denied after — **measure actual TTL and clock-skew tolerance** against the intended 60 s.
-7. ACL exact matching: AuthToken for asset A used against asset B's URL → denied? Record the exact acl path format that works — including **whether a raw `.pdf` extension in the URL affects matching** (`/<resource_type>/<delivery_type>/<public_id>` vs with extension). The implementation currently uses the former without extension; correct it if the pilot shows otherwise.
+7. ACL exact matching: AuthToken for asset A used against asset B's URL → denied? Record the exact acl path format that works — including **whether a raw `.pdf` extension in the URL affects matching** (`/<resource_type>/<delivery_type>/<public_id>` vs with extension). The merged application currently uses the former without cloud/version/extension. The helper pins ACL to the complete SDK-generated URI path (cloud + resource/delivery type + SDK `/v1/` + public ID/extension); live acceptance and a separately authorized application correction remain required.
 8. Raw PDF via authenticated URL: record `Content-Type`, `Content-Disposition` (inline vs attachment), whether the URL needs the `.pdf` extension, browser preview vs download behavior in Chromium.
 9. Image via authenticated URL: does it serve **transformations** (e.g. `w_200`) or only the original?
 10. Caching: response cache headers on authenticated URLs; is `auth_token` part of the CDN cache key (fetch twice with different tokens); `destroy(invalidate=true)` purge behavior for **both** delivery types.
@@ -31,9 +31,43 @@
 14. In-place type change: does `explicit(type=authenticated)` preserve public_id and bytes? (Phase 4 copy-and-verify assumes **not** unless proven here.)
 15. Failure modes: expired/revoked token response codes; whether URL generation is purely local (no API call) during an API outage.
 
-## 2b. Runnable pilot script (no credentials committed)
+## 2b. Runnable pilot tooling (no credentials committed)
 
-`scripts/cloudinary-pilot/run-pilot.sh` — env-driven (`CLOUDINARY_CLOUD_NAME`/`API_KEY`/`API_SECRET` of the **test** cloud + `PILOT_CONFIRM_NONPRODUCTION=yes`), generates synthetic PDF/PNG fixtures itself, runs upload (both delivery types), logged-out access checks, Admin API probes, destroy-contract checks, reconciliation listings, and destroys everything it created. AuthToken URL generation (steps 7–9) is deliberately done via the SDK/backend delivery endpoint, not hand-rolled signatures. Expected results per step are printed inline and restated in §3.
+The [tooling README](../../scripts/cloudinary-pilot/README.md) defines the exact environment,
+recovery procedure, assertions and remaining manual matrix. [Preparation evidence](../verification/issue-23-pilot-tooling-report.md)
+records local/mock verification. [PR #58](https://github.com/alexc83/uptrack/pull/58) is preparation only;
+merging it and executing the pilot require **separate** owner authorizations.
+
+- `run-pilot.sh` launches the Python standard-library runner. Before any provider call it requires
+  `PILOT_CONFIRM_NONPRODUCTION=yes`, exact nonempty `CLOUDINARY_CLOUD_NAME` /
+  `PILOT_EXPECTED_CLOUD_NAME` equality, test API key/secret, and separate hex `CLOUDINARY_AUTH_TOKEN_KEY`;
+  configuration is validated. Equality alone does not prove non-production: owner console verification
+  is mandatory. No credentials or production cloud names are stored in the tools.
+- Four synthetic assets (raw PDF/image PNG × public/authenticated) use a unique `pilot/<UUID>/`
+  child prefix, explicit identities and `overwrite=false`. Status/content-type assertions cover public
+  retrieval, unsigned denial, token success, cross-asset ACL denial both ways, expiry denial, Admin
+  existence/absence and Upload destroy `ok` / repeated `not found` semantics for all four assets.
+  Only parsed safe status/header evidence is printed; URLs/tokens/provider errors are withheld.
+- Durable owner-only JSON state records attempts **before** upload, survives failure and is never
+  truncated on recovery. Cleanup targets only exact attempted run identities; reported collisions are
+  not deleted. Normal exit, failure and SIGINT/SIGTERM run cleanup; `--cleanup-only` recovers from
+  harder interruptions using the same cloud/prefix and original private journal. Post-run inventory
+  paginates all four combinations under the run prefix. Unverified/failed cleanup fails the run and
+  reports unresolved test-cloud resources; other runs' assets are never deleted.
+- `--validate-state FILE` is offline structural validation, not proof of provenance.
+  `PILOT_PREFLIGHT_ONLY=yes` checks configuration, fixtures and real SDK local signing without any
+  provider I/O. `test-tooling.sh` covers orchestration and failures using mocks, never live credentials.
+- **Application acceptance blocker [C]:** the merged signer has an unkeyed AuthToken and lacks
+  `signed(true)`; an exact-construction offline SDK test confirms no token parameter is emitted.
+  Its ACL also omits the cloud/version/actual-format path. The helper uses those same SDK primitives
+  with the necessary corrections, including the separate token-authentication key and exact URI-path
+  ACL. Earlier tooling documentation incorrectly called the API secret the AuthToken key; that claim
+  is superseded. No backend code is changed here. Helper success cannot establish application parity
+  or live provider authorization; application correction requires separate scope authorization.
+
+Browser preview, CDN behavior, exact skew boundary, transformations, historical URL/type-change
+behavior and SDK upgrade parity remain manual. No provider pilot, provisioning, deployment,
+production access or authenticated-delivery activation is authorized by tooling preparation.
 
 ## 3. Acceptance for the pilot (live-provider; mocked tests cannot establish these)
 
