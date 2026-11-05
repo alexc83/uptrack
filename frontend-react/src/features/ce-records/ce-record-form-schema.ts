@@ -22,6 +22,8 @@ export const ceRecordSchema = z.object({
   certificatePublicId: z.string().trim().max(255, 'Use 255 characters or fewer.'),
   certificateResourceType: z.string().trim().max(40, 'Use 40 characters or fewer.'),
   certificateOriginalFilename: z.string().trim().max(255, 'Use 255 characters or fewer.'),
+  // Phase 1 (#24): registry asset UUID from the upload response; legacy fields are kept for compatibility.
+  certificateAssetId: z.string().trim().max(64, 'Use 64 characters or fewer.'),
 });
 export type CERecordFormValues = z.infer<typeof ceRecordSchema>;
 
@@ -35,6 +37,7 @@ export const emptyCERecordFormValues = (credentialId = ''): CERecordFormValues =
   certificatePublicId: '',
   certificateResourceType: '',
   certificateOriginalFilename: '',
+  certificateAssetId: '',
 });
 
 /** Angular parity: ce-record-form.utils.ts toCeRecordRequest — trimmed text, empty certificate fields become null. */
@@ -50,6 +53,7 @@ export function toCERecordRequest(values: CERecordFormValues): CERecordRequest {
     certificatePublicId: blankToNull(values.certificatePublicId),
     certificateResourceType: blankToNull(values.certificateResourceType),
     certificateOriginalFilename: blankToNull(values.certificateOriginalFilename),
+    certificateAssetId: blankToNull(values.certificateAssetId),
   };
 }
 
@@ -64,5 +68,6 @@ export function ceRecordFormValues(record: Omit<CERecordResponse, 'id'>, credent
     certificatePublicId: record.certificatePublicId ?? '',
     certificateResourceType: record.certificateResourceType ?? '',
     certificateOriginalFilename: record.certificateOriginalFilename ?? '',
+    certificateAssetId: record.certificateAssetId ?? '',
   };
 }

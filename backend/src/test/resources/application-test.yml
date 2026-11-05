@@ -4,6 +4,10 @@ app:
     login-per-minute: 10000
     registration-per-hour: 10000
     upload-per-hour: 10000
+  upload:
+    # The reservation sweeper is exercised in dedicated unit tests with mocks; keep it off
+    # in shared integration contexts so it cannot fire mid-test.
+    sweeper-enabled: false
 spring:
   datasource:
     url: jdbc:h2:mem:uptrack-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE

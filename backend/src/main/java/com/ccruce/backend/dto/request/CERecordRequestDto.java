@@ -19,6 +19,9 @@ public record CERecordRequestDto(
         @Size(max = 255) String certificatePublicId,
         @Size(max = 40) String certificateResourceType,
         @Size(max = 255) String certificateOriginalFilename,
+        // Phase 1 (#24): managed attachment by registry asset UUID; when present, the legacy
+        // certificate fields above are ignored and the server binds the owned asset.
+        UUID certificateAssetId,
         @NotNull UUID credentialId
 ) {
 }

@@ -254,7 +254,9 @@ public class CredentialServiceImpl implements CredentialService {
                 ceRecord.getCertificateUrl(),
                 ceRecord.getCertificatePublicId(),
                 ceRecord.getCertificateResourceType(),
-                ceRecord.getCertificateOriginalFilename()
+                ceRecord.getCertificateOriginalFilename(),
+                ceRecord.getCertificateAssetId(),
+                ceRecord.getCertificateClassification()
         );
     }
 

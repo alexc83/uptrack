@@ -12,6 +12,7 @@ vi.mock('../../core/auth/session-context', () => ({
 }));
 
 const response: CertificateUploadResponse = {
+  assetId: '00000000-0000-4000-8000-0000000000aa',
   url: 'https://files.example.test/new.pdf',
   publicId: 'uptrack/users/u/certificates/new',
   originalFilename: 'new.pdf',

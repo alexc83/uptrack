@@ -63,3 +63,10 @@ app:
   upload:
     # Concurrent certificate validate+upload operations; excess requests get 503, never queue.
     max-concurrent: ${MAX_CONCURRENT_UPLOADS:4}
+    # Phase 1 (#24) reservation reconciliation: a RESERVED asset row is created before the
+    # Cloudinary call; this sweeper probes the Admin API for uncertain outcomes (crash/timeout).
+    sweeper-enabled: ${UPLOAD_SWEEPER_ENABLED:true}
+    sweeper-interval-ms: ${UPLOAD_SWEEPER_INTERVAL_MS:60000}
+    sweeper-batch-size: ${UPLOAD_SWEEPER_BATCH_SIZE:20}
+    reservation-grace-minutes: ${UPLOAD_RESERVATION_GRACE_MINUTES:10}
+    reconciliation-delay-seconds: ${UPLOAD_RECONCILIATION_DELAY_SECONDS:60}
