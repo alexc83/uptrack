@@ -25,6 +25,20 @@ Reuse `bug`, `enhancement`, `documentation`, `dependencies`; add `security`, `ma
 9. Merge by merge commit only; verify the issue and Project state. Use closing keywords only when all acceptance criteria will be satisfied. Partial work uses `Related to #N`; keep the issue open.
 10. Record unresolved work in linked follow-up issues and leave a handoff with issue/PR, branch, approval/spec status, checks, blockers and next action. If GitHub is unavailable, provide ready-to-post text and state that it was not posted.
 
+## Tracking synchronization
+
+At each stage, an agent performing authorized work updates GitHub in the same session. It uses native Project workflows where they exist and manual edits only where they do not. These updates are tracking, not new actions: they apply only after the underlying action is authorized.
+
+| Stage | Required tracking update |
+|---|---|
+| Work begins | Link the issue in the branch/PR and set Project Status to In Progress. |
+| PR created | The PR body links the issue (`Closes #N` or `Related to #N`); confirm the PR is in the Project; set the issue to Review; comment on the issue with PR link and verification summary. |
+| CI verification | Report required-check results (`backend`, `backend-postgres`, `frontend`, `e2e-chromium`) in the PR, including failures and pending checks. |
+| Authorized merge | Verify the PR is merged, the issue is closed (when `Closes #N`), and the issue and PR Project items are Done. Report any that did not transition. |
+| Blocked GitHub operation | State the exact blocked operation, the error or missing permission, and the ready-to-post text. Never skip a tracking update silently. |
+
+Use existing native automations (auto-add, Item added → Backlog, Item closed → Done, PR merged → Done). Do not add Actions, bots, tokens or third-party services without separate approval. Native close/merge transitions are still unverified, so check them after each authorized merge and record the result in the PR.
+
 ## Initiatives and evidence
 
 Use a parent issue with `initiative` for work spanning independent deliverables; attach existing sub-issues, never copy them. Keep implementation steps as checklists when independent scheduling is unnecessary. Add milestones only for a real release or delivery target.

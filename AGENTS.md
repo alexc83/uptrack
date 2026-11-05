@@ -29,6 +29,8 @@ React + strict TypeScript + Vite + Flowbite React + Tailwind CSS 4 in `frontend-
 7. Move the issue to Review; verify required CI and obtain owner acceptance and merge authorization. Commit, push, PR creation, merge and branch deletion require authorization; an explicit authorization may cover a named sequence.
 8. After an authorized merge, verify issue closure and Project status. Done means accepted development completion, not deployment. Record unresolved work as linked follow-ups rather than silently closing it.
 
+**Tracking synchronization (mandatory, all agents).** Keeping GitHub tracking in sync is part of every authorized lifecycle stage, equally for Claude Code, Codex and any other agent. See [development workflow](context/development-workflow.md#tracking-synchronization). It never widens authorization: commit, push, PR creation, merge, deployment and branch deletion still require owner authorization.
+
 ## Stops / escalation
 If tests cannot run, report blocker and do not claim parity. If 2–3 grounded fixes fail, stop rather than random retries. Ask before architecture changes, destructive operations, schema updates, dependency additions outside spec, modifying git history, deployments, and branch deletion.
 
