@@ -1,3 +1,5 @@
+> **Historical tracking record (PM01).** Retained as migration evidence; dated/current/pending claims below describe earlier checkpoints and may be superseded. Active work, decisions and handoffs now live in [GitHub Issues](https://github.com/alexc83/uptrack/issues) and [UpTrack Development](https://github.com/users/alexc83/projects/2). Do not append active progress here.
+
 # Current Feature
 
 ## Current — D01-E browser workflow merged and branch protection applied and verified; closeout PR pending (2026-11-04)

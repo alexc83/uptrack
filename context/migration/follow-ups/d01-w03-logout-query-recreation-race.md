@@ -1,3 +1,5 @@
+> **PM01 tracking:** [GitHub issue #45](https://github.com/alexc83/uptrack/issues/45) is the canonical active tracker. This document preserves investigation and proposed options; it is not implementation authorization.
+
 # D01-W03 — Post-logout query recreation (session-scoped queries are not session-aware)
 
 Status: **PROPOSED — technical debt / future engineering initiative. Not part of D01; not authorized.** Drafted 2026-11-04 during D01-B, after an intermittent failure of `src/features/credentials/credential-session.test.tsx` ("aborts list/detail reads and never paints late A data after logout", assertion at the empty-query-cache check) in GitHub Actions run [41777298837](https://github.com/alexc83/uptrack/actions/runs/41777298837). The D01-B test change only removes a test-setup race; **it does not fix the behaviour described here.**

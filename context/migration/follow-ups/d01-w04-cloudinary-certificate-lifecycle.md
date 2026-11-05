@@ -1,3 +1,5 @@
+> **PM01 tracking:** [GitHub issue #20](https://github.com/alexc83/uptrack/issues/20) is the canonical active tracker. This document preserves investigation and proposed options; it is not implementation authorization.
+
 # D01-W04 — Cloudinary certificate lifecycle and orphaned files
 
 Status: **OPEN — future engineering initiative. Not part of D01; not authorized.** Recorded 2026-11-04 during D01-D (found while characterizing Cloudinary cleanup failures). No production code or Cloudinary configuration was changed.
