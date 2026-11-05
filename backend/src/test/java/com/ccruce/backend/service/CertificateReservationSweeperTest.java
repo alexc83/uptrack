@@ -15,6 +15,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -103,5 +104,17 @@ class CertificateReservationSweeperTest {
         sweeper(true).reconcileBatch();
 
         verify(assetService, never()).probeAtProvider(any());
+    }
+
+    @Test
+    void workerIdWrittenToLockedByFitsVarchar64() {
+        CertificateAsset asset = reserved();
+        when(repository.findEligibleReservations(any(), any(), any())).thenReturn(List.of(asset));
+        when(assetService.claimReservation(eq(asset), anyString())).thenReturn(null);
+
+        sweeper(true).reconcileBatch();
+
+        // Same varchar(64) regression as the cleanup worker: locked_by must always fit.
+        verify(assetService).claimReservation(eq(asset), argThat(id -> id != null && id.length() <= 64));
     }
 }

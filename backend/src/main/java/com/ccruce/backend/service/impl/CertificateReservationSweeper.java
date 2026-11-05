@@ -11,7 +11,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -49,17 +48,9 @@ public class CertificateReservationSweeper {
         this.enabled = enabled;
         this.graceMinutes = graceMinutes;
         this.batchSize = batchSize;
-        this.workerId = resolveWorkerId();
+        this.workerId = WorkerIds.resolve();
         this.repository = repository;
         this.assetService = assetService;
-    }
-
-    private static String resolveWorkerId() {
-        try {
-            return InetAddress.getLocalHost().getHostName() + ":" + UUID.randomUUID();
-        } catch (Exception exception) {
-            return "unknown:" + UUID.randomUUID();
-        }
     }
 
     @Scheduled(fixedDelayString = "${app.upload.sweeper-interval-ms:60000}")

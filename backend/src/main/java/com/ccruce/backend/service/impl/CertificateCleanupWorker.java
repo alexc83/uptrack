@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -42,16 +41,8 @@ public class CertificateCleanupWorker {
         this.enabled = enabled;
         this.batchSize = batchSize;
         this.abandonedGraceHours = abandonedGraceHours;
-        this.workerId = resolveWorkerId();
+        this.workerId = WorkerIds.resolve();
         this.assetService = assetService;
-    }
-
-    private static String resolveWorkerId() {
-        try {
-            return InetAddress.getLocalHost().getHostName() + ":" + UUID.randomUUID();
-        } catch (Exception exception) {
-            return "unknown:" + UUID.randomUUID();
-        }
     }
 
     @Scheduled(fixedDelayString = "${app.cleanup.interval-ms:60000}")
