@@ -1,16 +1,20 @@
 package com.ccruce.backend.service;
 
 import com.ccruce.backend.dto.response.CertificateUploadResponseDto;
+import com.ccruce.backend.entity.CertificateAsset;
 import com.ccruce.backend.exception.UnauthorizedException;
 import com.ccruce.backend.exception.UploadFailedException;
 import com.ccruce.backend.security.AuthenticatedUser;
+import com.ccruce.backend.service.CertificateAssetService;
 import com.ccruce.backend.service.impl.CertificateUploadServiceImpl;
 import com.ccruce.backend.validation.CertificateFileValidator;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Uploader;
+import com.cloudinary.api.exceptions.BadRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,10 +26,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -37,12 +44,21 @@ class CertificateUploadServiceImplTest {
     private final Cloudinary cloudinary = mock(Cloudinary.class);
     private final Uploader uploader = mock(Uploader.class);
     private final CertificateFileValidator validator = mock(CertificateFileValidator.class);
-    private final CertificateUploadServiceImpl service = new CertificateUploadServiceImpl(cloudinary, validator, 2);
+    private final CertificateAssetService assetService = mock(CertificateAssetService.class);
+    private final CertificateUploadServiceImpl service = new CertificateUploadServiceImpl(cloudinary, validator, assetService, 2);
 
     @BeforeEach
     void setUp() throws IOException {
         when(cloudinary.uploader()).thenReturn(uploader);
         when(validator.validate(any())).thenReturn(new byte[]{1, 2, 3});
+        when(assetService.reserve(any(), anyString(), any())).thenAnswer(invocation -> {
+            CertificateAsset asset = new CertificateAsset();
+            asset.setId(UUID.randomUUID());
+            asset.setUserId(invocation.getArgument(0));
+            asset.setPublicId("uptrack/users/%s/certificates/%s".formatted(invocation.getArgument(0), UUID.randomUUID()));
+            asset.setResourceType(invocation.getArgument(1));
+            return asset;
+        });
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 new AuthenticatedUser(UUID.randomUUID(), "u@example.test", "User"), null, List.of()));
     }
@@ -70,6 +86,67 @@ class CertificateUploadServiceImplTest {
         UploadFailedException thrown = assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()));
 
         assertEquals("Certificate upload failed.", thrown.getMessage());
+    }
+
+    @Test
+    void reservationIsPersistedBeforeTheProviderCallAndSuccessMarksPending() throws IOException {
+        when(uploader.upload(any(), anyMap())).thenReturn(result(null, null));
+
+        CertificateUploadResponseDto response = service.uploadCertificate(png());
+
+        InOrder order = inOrder(assetService, uploader);
+        order.verify(assetService).reserve(any(), eq("image"), eq("a.png"));
+        order.verify(uploader).upload(any(), anyMap());
+        order.verify(assetService).markUploaded(eq(response.assetId()), any(), eq("https://res.example.test/x.png"), eq("a.png"));
+        assertNotNull(response.assetId());
+        // Safeguard 1: legacy fields remain in the response for viewing compatibility.
+        assertEquals("https://res.example.test/x.png", response.url());
+        assertEquals("uptrack/x", response.publicId());
+    }
+
+    @Test
+    void uncertainProviderFailureSchedulesReconciliationInsteadOfFailingTheReservation() throws IOException {
+        when(uploader.upload(any(), anyMap())).thenThrow(new IOException("read timeout"));
+
+        assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()));
+
+        verify(assetService).scheduleReconciliation(any());
+        verify(assetService, never()).markDefinitivelyFailed(any());
+        verify(assetService, never()).markUploaded(any(), any(), any(), any());
+    }
+
+    @Test
+    void definitiveProviderRejectionMarksUploadFailed() throws Exception {
+        // The SDK wraps provider 4xx rejections; the service walks the cause chain.
+        when(uploader.upload(any(), anyMap()))
+                .thenThrow(new IOException("provider rejected", new BadRequest("invalid file")));
+
+        assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()));
+
+        verify(assetService).markDefinitivelyFailed(any());
+        verify(assetService, never()).scheduleReconciliation(any());
+    }
+
+    @Test
+    void providerErrorMapWith4xxIsDefinitiveAnd5xxIsUncertain() throws IOException {
+        when(uploader.upload(any(), anyMap())).thenReturn(Map.of(
+                "error", Map.of("message", "bad", "http_code", 400)));
+        assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()));
+        verify(assetService).markDefinitivelyFailed(any());
+
+        when(uploader.upload(any(), anyMap())).thenReturn(Map.of(
+                "error", Map.of("message", "oops", "http_code", 500)));
+        assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()));
+        verify(assetService).scheduleReconciliation(any());
+    }
+
+    @Test
+    void databaseFailureAtReservationNeverCallsTheProvider() throws IOException {
+        when(assetService.reserve(any(), anyString(), any())).thenThrow(new RuntimeException("db down"));
+
+        assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()));
+
+        verify(uploader, never()).upload(any(), anyMap());
     }
 
     @Test

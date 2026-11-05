@@ -44,6 +44,14 @@ public class CERecord {
     @Column(length = 255)
     private String certificateOriginalFilename;
 
+    /** Phase 1 (#24): managed attachment via the certificate_assets registry (plain UUID; no circular FK). */
+    @Column(name = "certificate_asset_id")
+    private UUID certificateAssetId;
+
+    /** MANAGED_VERIFIED / LEGACY_UNVERIFIED / EXTERNAL_LINK — historical metadata is never auto-verified. */
+    @Column(name = "certificate_classification", length = 32)
+    private String certificateClassification;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "credential_id", nullable = false)
     private Credential credential;
@@ -129,6 +137,22 @@ public class CERecord {
 
     public void setCertificateOriginalFilename(String certificateOriginalFilename) {
         this.certificateOriginalFilename = certificateOriginalFilename;
+    }
+
+    public UUID getCertificateAssetId() {
+        return certificateAssetId;
+    }
+
+    public void setCertificateAssetId(UUID certificateAssetId) {
+        this.certificateAssetId = certificateAssetId;
+    }
+
+    public String getCertificateClassification() {
+        return certificateClassification;
+    }
+
+    public void setCertificateClassification(String certificateClassification) {
+        this.certificateClassification = certificateClassification;
     }
 
     public Credential getCredential() {

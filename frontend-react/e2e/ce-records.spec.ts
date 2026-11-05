@@ -38,7 +38,7 @@ test('list, filters, create with certificate upload, detail, edit and delete', a
   await dialog.getByRole('button', { name: 'Save CE Record' }).click();
   await expect(dialog).toHaveCount(0);
   expect(api.uploads).toEqual(['cert.pdf']);
-  expect(api.writes[0]).toEqual({ method: 'POST', request: { title: 'New course', provider: 'New provider', hours: 4.5, dateCompleted: '2026-02-01', credentialId, certificateUrl: 'https://files.example.test/cert.pdf', certificatePublicId: 'pub-cert.pdf', certificateResourceType: 'raw', certificateOriginalFilename: 'cert.pdf' } });
+  expect(api.writes[0]).toEqual({ method: 'POST', request: { title: 'New course', provider: 'New provider', hours: 4.5, dateCompleted: '2026-02-01', credentialId, certificateAssetId: 'asset-cert.pdf', certificateUrl: 'https://files.example.test/cert.pdf', certificatePublicId: 'pub-cert.pdf', certificateResourceType: 'raw', certificateOriginalFilename: 'cert.pdf' } });
   const newRow = page.getByRole('row', { name: /New course/ });
   await expect(newRow).toBeVisible();
   await expect(page.getByText('Showing 1–2 of 2 records')).toBeVisible();

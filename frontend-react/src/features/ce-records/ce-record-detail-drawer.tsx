@@ -32,7 +32,7 @@ export function CERecordDetailDrawer({ id, context, onClose }: { id: string; con
       await mutation.run({
         kind: 'edit',
         id,
-        request: { title: record.title, provider: record.provider, hours: record.hours, dateCompleted: record.dateCompleted, credentialId: context.credentialId, certificateUrl: null, certificatePublicId: null, certificateResourceType: null, certificateOriginalFilename: null },
+        request: { title: record.title, provider: record.provider, hours: record.hours, dateCompleted: record.dateCompleted, credentialId: context.credentialId, certificateUrl: null, certificatePublicId: null, certificateResourceType: null, certificateOriginalFilename: null, certificateAssetId: null },
       });
     } finally {
       setRemoving(false);

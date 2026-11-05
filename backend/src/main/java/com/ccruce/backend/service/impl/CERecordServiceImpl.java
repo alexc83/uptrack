@@ -2,9 +2,11 @@ package com.ccruce.backend.service.impl;
 
 import com.ccruce.backend.dto.request.CERecordRequestDto;
 import com.ccruce.backend.dto.response.CERecordResponseDto;
+import com.ccruce.backend.entity.CertificateAsset;
 import com.ccruce.backend.entity.CERecord;
 import com.ccruce.backend.entity.Credential;
 import com.ccruce.backend.entity.User;
+import com.ccruce.backend.enums.CertificateClassification;
 import com.ccruce.backend.exception.BadRequestException;
 import com.ccruce.backend.exception.ResourceNotFoundException;
 import com.ccruce.backend.exception.UnauthorizedException;
@@ -13,11 +15,16 @@ import com.ccruce.backend.repository.CredentialRepository;
 import com.ccruce.backend.repository.UserRepository;
 import com.ccruce.backend.security.AuthenticatedUser;
 import com.ccruce.backend.service.CERecordService;
+import com.ccruce.backend.service.CertificateAssetService;
 import com.ccruce.backend.service.CertificateUploadService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Set;
@@ -26,23 +33,28 @@ import java.util.UUID;
 @Service
 public class CERecordServiceImpl implements CERecordService {
 
+    private static final Logger log = LoggerFactory.getLogger(CERecordServiceImpl.class);
+
     private static final Set<String> ALLOWED_CERTIFICATE_RESOURCE_TYPES = Set.of("raw", "image");
 
     private final CERecordRepository ceRecordRepository;
     private final CredentialRepository credentialRepository;
     private final UserRepository userRepository;
     private final CertificateUploadService certificateUploadService;
+    private final CertificateAssetService certificateAssetService;
 
     public CERecordServiceImpl(
             CERecordRepository ceRecordRepository,
             CredentialRepository credentialRepository,
             UserRepository userRepository,
-            CertificateUploadService certificateUploadService
+            CertificateUploadService certificateUploadService,
+            CertificateAssetService certificateAssetService
     ) {
         this.ceRecordRepository = ceRecordRepository;
         this.credentialRepository = credentialRepository;
         this.userRepository = userRepository;
         this.certificateUploadService = certificateUploadService;
+        this.certificateAssetService = certificateAssetService;
     }
 
     @Override
@@ -51,9 +63,11 @@ public class CERecordServiceImpl implements CERecordService {
         Credential credential = getExistingCredential(requestDto.credentialId());
         User user = getAuthenticatedUser();
         ensureCredentialBelongsToUser(credential, user);
-        validateCertificateMetadata(requestDto, user.getId());
 
         CERecord ceRecord = new CERecord();
+        // Assign the id up front so the registry attach can reference it in the same transaction.
+        ceRecord.setId(UUID.randomUUID());
+        applyCertificateMetadata(ceRecord, requestDto, user);
         applyRequest(ceRecord, requestDto, credential, user);
 
         return toResponse(ceRecordRepository.save(ceRecord));
@@ -82,17 +96,33 @@ public class CERecordServiceImpl implements CERecordService {
         User user = getAuthenticatedUser();
         ensureCERecordBelongsToUser(ceRecord, user);
         ensureCredentialBelongsToUser(credential, user);
-        validateCertificateMetadata(requestDto, user.getId());
 
+        UUID previousAssetId = ceRecord.getCertificateAssetId();
         String previousCertificatePublicId = normalizeCertificateValue(ceRecord.getCertificatePublicId());
         String previousCertificateResourceType = normalizeCertificateValue(ceRecord.getCertificateResourceType());
+
+        // Managed replacement: detach and destroy the previous asset FIRST so the unique
+        // ce_record_id slot is free for the new attach in the same transaction.
+        if (requestDto.certificateAssetId() != null
+                && previousAssetId != null && !previousAssetId.equals(requestDto.certificateAssetId())) {
+            detachManagedAsset(previousAssetId, ceRecord, user);
+        }
+
+        applyCertificateMetadata(ceRecord, requestDto, user);
         applyRequest(ceRecord, requestDto, credential, user);
         CERecordResponseDto response = toResponse(ceRecordRepository.save(ceRecord));
-        deletePriorCertificateIfReplacedOrRemoved(
-                previousCertificatePublicId,
-                previousCertificateResourceType,
-                requestDto
-        );
+
+        if (requestDto.certificateAssetId() == null && previousAssetId != null) {
+            // Managed asset removed without a replacement.
+            detachManagedAsset(previousAssetId, ceRecord, user);
+        } else if (previousAssetId == null) {
+            // Legacy path only when the record was never managed: unchanged synchronous cleanup.
+            deletePriorCertificateIfReplacedOrRemoved(
+                    previousCertificatePublicId,
+                    previousCertificateResourceType,
+                    requestDto
+            );
+        }
 
         return response;
     }
@@ -102,8 +132,92 @@ public class CERecordServiceImpl implements CERecordService {
     public void deleteCERecord(UUID id) {
         CERecord ceRecord = getExistingCERecord(id);
         ensureCERecordBelongsToUser(ceRecord, getAuthenticatedUser());
-        deleteStoredCertificateIfPresent(ceRecord);
+        if (ceRecord.getCertificateAssetId() != null) {
+            detachManagedAsset(ceRecord.getCertificateAssetId(), ceRecord, getAuthenticatedUser());
+        } else {
+            deleteStoredCertificateIfPresent(ceRecord);
+        }
         ceRecordRepository.delete(ceRecord);
+    }
+
+    /**
+     * Phase 1 deletion for managed assets (transaction-safety review): the pending deletion is recorded
+     * in the SAME database transaction as the CE-record change, and the Cloudinary destroy runs only in
+     * an afterCommit synchronization — i.e. strictly AFTER the pending-deletion mark is durably committed.
+     * Cloudinary never participates in the PostgreSQL transaction, so a rollback can never leave the
+     * registry claiming an asset exists at the provider when it does not (the reverse-consistency defect).
+     * On post-commit destroy success the row becomes DELETED; on provider failure/timeout the row stays
+     * PENDING_DELETION (durable, visible, individually recoverable by the Phase 2 worker, whose destroy is
+     * idempotent and treats not-found as success). If the destroy succeeded but the DELETED mark failed,
+     * Phase 2 also self-heals (not-found = success).
+     */
+    private void detachManagedAsset(UUID assetId, CERecord ceRecord, User user) {
+        CertificateAsset asset = certificateAssetService.findOwnedAsset(assetId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Certificate asset not found for id: " + assetId));
+        certificateAssetService.markPendingDeletion(assetId, ceRecord.getId());
+        schedulePostCommitDestroy(asset);
+    }
+
+    private void schedulePostCommitDestroy(CertificateAsset asset) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        certificateUploadService.deleteCertificate(asset.getPublicId(), asset.getResourceType());
+                        certificateAssetService.markDeleted(asset.getId()); // REQUIRES_NEW, see service
+                    } catch (RuntimeException exception) {
+                        log.warn("Post-commit certificate destroy failed; asset {} stays PENDING_DELETION for durable retry.",
+                                asset.getId(), exception);
+                    }
+                }
+            });
+        } else {
+            // No active transaction in current call paths; destroy inline as a fallback.
+            certificateUploadService.deleteCertificate(asset.getPublicId(), asset.getResourceType());
+            certificateAssetService.markDeleted(asset.getId());
+        }
+    }
+
+    /**
+     * Phase 1 (#24): certificate metadata binding. A managed {@code certificateAssetId} is resolved
+     * against the registry (ownership-validated, 404 for foreign/unknown), attached atomically, and
+     * classified MANAGED_VERIFIED; legacy fields in the same request are ignored. Without an asset id,
+     * the existing legacy validation applies and the classification is explicit: public-id metadata is
+     * LEGACY_UNVERIFIED (never auto-trusted), a URL-only certificate is EXTERNAL_LINK.
+     */
+    private void applyCertificateMetadata(CERecord ceRecord, CERecordRequestDto requestDto, User user) {
+        if (requestDto.certificateAssetId() != null) {
+            UUID assetId = requestDto.certificateAssetId();
+            CertificateAsset asset = certificateAssetService.findOwnedAsset(assetId, user.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Certificate asset not found for id: " + assetId));
+            // Populate the legacy columns from the registry so existing viewing keeps working
+            // until Phase 3 (owner safeguard 1); the registry stays authoritative.
+            ceRecord.setCertificateAssetId(assetId);
+            ceRecord.setCertificateClassification(CertificateClassification.MANAGED_VERIFIED.name());
+            ceRecord.setCertificateUrl(asset.getDeliveryUrl());
+            ceRecord.setCertificatePublicId(asset.getPublicId());
+            ceRecord.setCertificateResourceType(asset.getResourceType());
+            ceRecord.setCertificateOriginalFilename(asset.getOriginalFilename());
+            // Atomic attach inside this transaction; ConflictException rolls the record back.
+            certificateAssetService.attach(assetId, user.getId(), ceRecord.getId());
+            return;
+        }
+
+        validateCertificateMetadata(requestDto, user.getId());
+        ceRecord.setCertificateAssetId(null);
+        ceRecord.setCertificateUrl(normalizeCertificateValue(requestDto.certificateUrl()));
+        ceRecord.setCertificatePublicId(normalizeCertificateValue(requestDto.certificatePublicId()));
+        ceRecord.setCertificateResourceType(normalizeCertificateValue(requestDto.certificateResourceType()));
+        ceRecord.setCertificateOriginalFilename(normalizeCertificateValue(requestDto.certificateOriginalFilename()));
+        if (normalizeCertificateValue(requestDto.certificatePublicId()) != null) {
+            // Historical metadata is not automatically trusted as a verified managed asset (safeguard 2).
+            ceRecord.setCertificateClassification(CertificateClassification.LEGACY_UNVERIFIED.name());
+        } else if (normalizeCertificateValue(requestDto.certificateUrl()) != null) {
+            ceRecord.setCertificateClassification(CertificateClassification.EXTERNAL_LINK.name());
+        } else {
+            ceRecord.setCertificateClassification(null);
+        }
     }
 
     private CERecord getExistingCERecord(UUID id) {
@@ -148,10 +262,6 @@ public class CERecordServiceImpl implements CERecordService {
         ceRecord.setProvider(requestDto.provider());
         ceRecord.setHours(requestDto.hours());
         ceRecord.setDateCompleted(requestDto.dateCompleted());
-        ceRecord.setCertificateUrl(normalizeCertificateValue(requestDto.certificateUrl()));
-        ceRecord.setCertificatePublicId(normalizeCertificateValue(requestDto.certificatePublicId()));
-        ceRecord.setCertificateResourceType(normalizeCertificateValue(requestDto.certificateResourceType()));
-        ceRecord.setCertificateOriginalFilename(normalizeCertificateValue(requestDto.certificateOriginalFilename()));
         ceRecord.setCredential(credential);
         ceRecord.setUser(user);
     }
@@ -166,7 +276,9 @@ public class CERecordServiceImpl implements CERecordService {
                 ceRecord.getCertificateUrl(),
                 ceRecord.getCertificatePublicId(),
                 ceRecord.getCertificateResourceType(),
-                ceRecord.getCertificateOriginalFilename()
+                ceRecord.getCertificateOriginalFilename(),
+                ceRecord.getCertificateAssetId(),
+                ceRecord.getCertificateClassification()
         );
     }
 

@@ -154,7 +154,7 @@ describe('CE create dialog', () => {
     expect(create).not.toHaveBeenCalled();
     await fillForm(user, within(dialog));
     await user.click(within(dialog).getByRole('button', { name: 'Save CE Record' }));
-    await waitFor(() => expect(create).toHaveBeenCalledWith({ title: 'New course', provider: 'New provider', hours: 4.5, dateCompleted: '2026-02-01', credentialId, certificateUrl: null, certificatePublicId: null, certificateResourceType: null, certificateOriginalFilename: null }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith({ title: 'New course', provider: 'New provider', hours: 4.5, dateCompleted: '2026-02-01', credentialId, certificateUrl: null, certificatePublicId: null, certificateResourceType: null, certificateOriginalFilename: null, certificateAssetId: null }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Add CE record' })).not.toBeInTheDocument());
     expect(vi.mocked(credentialsApi.list).mock.calls.length).toBeGreaterThan(1);
     expect(client.getQueryState(queryKeys.dashboard())?.isInvalidated).toBe(true);
@@ -176,7 +176,7 @@ describe('CE create dialog', () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
   it('uploads a supported certificate and includes its metadata in the create payload', async () => {
-    const upload = vi.spyOn(uploadsApi, 'uploadCertificate').mockResolvedValue({ url: 'https://files.example.test/new.pdf', publicId: 'pub-1', originalFilename: 'new.pdf', resourceType: 'raw' });
+    const upload = vi.spyOn(uploadsApi, 'uploadCertificate').mockResolvedValue({ assetId: 'asset-1', url: 'https://files.example.test/new.pdf', publicId: 'pub-1', originalFilename: 'new.pdf', resourceType: 'raw' });
     const create = vi.spyOn(ceRecordsApi, 'create').mockResolvedValue(structuredClone(record));
     const { user } = open();
     await screen.findByRole('table');
@@ -187,7 +187,7 @@ describe('CE create dialog', () => {
     expect(within(dialog).getByText(/Uploaded:/).parentElement).toHaveTextContent('new.pdf');
     await fillForm(user, within(dialog));
     await user.click(within(dialog).getByRole('button', { name: 'Save CE Record' }));
-    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ certificateUrl: 'https://files.example.test/new.pdf', certificatePublicId: 'pub-1', certificateResourceType: 'raw', certificateOriginalFilename: 'new.pdf' })));
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ certificateAssetId: 'asset-1', certificateUrl: 'https://files.example.test/new.pdf', certificatePublicId: 'pub-1', certificateResourceType: 'raw', certificateOriginalFilename: 'new.pdf' })));
     expect(upload).toHaveBeenCalledTimes(1);
   });
   it('surfaces upload failures and does not submit while uploading', async () => {

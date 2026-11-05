@@ -41,12 +41,15 @@ export function CERecordForm({ initialValue, credentialOptions = [], showCredent
     setValue('certificatePublicId', response.publicId, { shouldDirty: true });
     setValue('certificateResourceType', response.resourceType, { shouldDirty: true });
     setValue('certificateOriginalFilename', response.originalFilename ?? '', { shouldDirty: true });
+    // Phase 1 (#24): managed reference; legacy fields above stay populated for compatibility (safeguard 1).
+    setValue('certificateAssetId', response.assetId, { shouldDirty: true });
   }
   function handleCertificateRemoved() {
     setValue('certificateUrl', '', { shouldDirty: true });
     setValue('certificatePublicId', '', { shouldDirty: true });
     setValue('certificateResourceType', '', { shouldDirty: true });
     setValue('certificateOriginalFilename', '', { shouldDirty: true });
+    setValue('certificateAssetId', '', { shouldDirty: true });
     upload.removePending();
   }
   return <form noValidate aria-label={editing ? 'Edit CE record' : 'Add CE record'} className="space-y-5" onSubmit={event => { void handleSubmit(values => onSubmit(toCERecordRequest(values)))(event); }}>

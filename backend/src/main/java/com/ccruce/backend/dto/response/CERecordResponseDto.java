@@ -13,6 +13,9 @@ public record CERecordResponseDto(
         String certificateUrl,
         String certificatePublicId,
         String certificateResourceType,
-        String certificateOriginalFilename
+        String certificateOriginalFilename,
+        // Phase 1 (#24): additive fields; existing URL fields stay until Phase 3 (safeguard 1).
+        UUID certificateAssetId,
+        String certificateClassification
 ) {
 }
