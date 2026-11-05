@@ -154,7 +154,7 @@ function CEReportContent() {
                           <td data-label="Provider" className="break-words px-3 py-3 align-top text-sm leading-snug">{record.provider}</td>
                           <td data-label="Completed Date" className="whitespace-nowrap px-3 py-3 align-top text-sm leading-snug">{formatShortDate(record.dateCompleted)}</td>
                           <td data-label="Hours" className="whitespace-nowrap px-3 py-3 text-right align-top text-sm leading-snug">{formatCredentialHours(record.hours)}</td>
-                          <td data-label="Certificate" className="min-w-30 whitespace-nowrap px-3 py-3 align-top text-sm leading-snug">{reportCertificateLabel(record.certificateUrl)}</td>
+                          <td data-label="Certificate" className="min-w-30 whitespace-nowrap px-3 py-3 align-top text-sm leading-snug">{reportCertificateLabel(record.certificateUrl, record.certificateAssetId)}</td>
                         </tr>
                       ))}
                     </tbody>

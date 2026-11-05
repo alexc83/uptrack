@@ -169,7 +169,9 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.certificateAssetId").value(assetId))
                 .andExpect(jsonPath("$.certificateClassification").value("MANAGED_VERIFIED"))
-                .andExpect(jsonPath("$.certificateUrl").isString()) // safeguard 1: viewing keeps working
+                // Phase 3 (#23): managed records no longer expose the permanent Cloudinary URL;
+                // viewing goes through GET /certificate-url (covered by CertificateDeliveryIntegrationTest).
+                .andExpect(jsonPath("$.certificateUrl").doesNotExist())
                 .andExpect(jsonPath("$.certificatePublicId").isString());
 
         CertificateAsset asset = assetById(assetId);
@@ -487,7 +489,8 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                                 """.formatted(credentialId, assetId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.certificateClassification").value("MANAGED_VERIFIED"))
-                .andExpect(jsonPath("$.certificateUrl").value(recovered.getDeliveryUrl()))
+                // Phase 3: managed URL is not exposed; delivery metadata lives in the registry.
+                .andExpect(jsonPath("$.certificateUrl").doesNotExist())
                 .andExpect(jsonPath("$.certificateOriginalFilename").value("recovered-cert.pdf"));
         assertEquals(AssetStatus.ATTACHED, assetById(assetId).getStatus());
     }

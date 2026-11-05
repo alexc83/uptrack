@@ -269,7 +269,7 @@ public class CredentialServiceImpl implements CredentialService {
                 ceRecord.getProvider(),
                 ceRecord.getHours(),
                 ceRecord.getDateCompleted(),
-                ceRecord.getCertificateUrl(),
+                ceRecord.getCertificateAssetId() != null ? null : ceRecord.getCertificateUrl(),
                 ceRecord.getCertificatePublicId(),
                 ceRecord.getCertificateResourceType(),
                 ceRecord.getCertificateOriginalFilename(),
@@ -284,7 +284,8 @@ public class CredentialServiceImpl implements CredentialService {
                 ceRecord.getProvider(),
                 ceRecord.getHours(),
                 ceRecord.getDateCompleted(),
-                ceRecord.getCertificateUrl()
+                ceRecord.getCertificateAssetId() != null ? null : ceRecord.getCertificateUrl(),
+                ceRecord.getCertificateAssetId()
         );
     }
 

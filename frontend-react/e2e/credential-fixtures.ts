@@ -27,7 +27,7 @@ export async function credentialApiFixture(page: Page) {
     const body: CEReportResponse = {
       credential: { id: data.id, name: data.name, type: data.type, issuingOrganization: data.issuingOrganization, expirationDate: data.expirationDate, requiredCEHours: data.requiredCEHours, status: data.status },
       summary: { totalHoursEarned: earned, remainingHours: Math.max(data.requiredCEHours - earned, 0), recordCount: data.ceRecords.length, progress: data.requiredCEHours > 0 ? earned / data.requiredCEHours : 1 },
-      records: [...data.ceRecords].sort((a, b) => b.dateCompleted.localeCompare(a.dateCompleted)).map(item => ({ title: item.title, provider: item.provider, hours: item.hours, dateCompleted: item.dateCompleted, certificateUrl: item.certificateUrl })),
+      records: [...data.ceRecords].sort((a, b) => b.dateCompleted.localeCompare(a.dateCompleted)).map(item => ({ title: item.title, provider: item.provider, hours: item.hours, dateCompleted: item.dateCompleted, certificateUrl: item.certificateUrl, certificateAssetId: item.certificateAssetId })),
     };
     return route.fulfill({ json: body });
   });

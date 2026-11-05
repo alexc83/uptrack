@@ -38,7 +38,7 @@ test('list, filters, create with certificate upload, detail, edit and delete', a
   await dialog.getByRole('button', { name: 'Save CE Record' }).click();
   await expect(dialog).toHaveCount(0);
   expect(api.uploads).toEqual(['cert.pdf']);
-  expect(api.writes[0]).toEqual({ method: 'POST', request: { title: 'New course', provider: 'New provider', hours: 4.5, dateCompleted: '2026-02-01', credentialId, certificateAssetId: 'asset-cert.pdf', certificateUrl: 'https://files.example.test/cert.pdf', certificatePublicId: 'pub-cert.pdf', certificateResourceType: 'raw', certificateOriginalFilename: 'cert.pdf' } });
+  expect(api.writes[0]).toEqual({ method: 'POST', request: { title: 'New course', provider: 'New provider', hours: 4.5, dateCompleted: '2026-02-01', credentialId, certificateAssetId: 'asset-cert.pdf', certificateUrl: null, certificatePublicId: 'pub-cert.pdf', certificateResourceType: 'raw', certificateOriginalFilename: 'cert.pdf' } });
   const newRow = page.getByRole('row', { name: /New course/ });
   await expect(newRow).toBeVisible();
   await expect(page.getByText('Showing 1–2 of 2 records')).toBeVisible();
@@ -46,13 +46,19 @@ test('list, filters, create with certificate upload, detail, edit and delete', a
   await newRow.click();
   const drawer = page.getByRole('dialog', { name: 'CE record details' });
   await expect(drawer.getByRole('heading', { name: 'New course' })).toBeVisible();
-  await expect(drawer.getByRole('link', { name: 'View certificate' })).toHaveAttribute('href', 'https://files.example.test/cert.pdf');
+  const viewButton = drawer.getByRole('button', { name: 'View certificate' });
+  await expect(viewButton).toBeVisible();
+  const popupPromise = page.waitForEvent('popup');
+  await viewButton.click();
+  const popup = await popupPromise;
+  await popup.close();
+  expect(api.certificateUrlReads).toBe(1); // short-lived URL fetched on demand, not stored
   await drawer.getByRole('button', { name: 'Edit CE Record' }).click();
   await page.getByLabel('Title', { exact: true }).fill('Edited course');
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(drawer.getByRole('heading', { name: 'Edited course' })).toBeVisible();
   expect(api.writes[1]?.method).toBe('PUT');
-  expect(api.writes[1]?.request).toMatchObject({ title: 'Edited course', credentialId, certificateUrl: 'https://files.example.test/cert.pdf' });
+  expect(api.writes[1]?.request).toMatchObject({ title: 'Edited course', credentialId, certificateUrl: null, certificateAssetId: 'asset-cert.pdf' });
   await drawer.getByRole('button', { name: 'Delete CE Record' }).click();
   const confirm = page.getByRole('dialog', { name: 'Delete CE record?' });
   await expect(confirm.getByText(/linked credential totals will refresh/)).toBeVisible();

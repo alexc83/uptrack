@@ -53,8 +53,8 @@ export function flattenCERecords(credentials: CredentialResponse[]): CERecordLis
       credentialId: credential.id,
       credentialName: credential.name,
       credentialOrganization: credential.issuingOrganization,
-      hasCertificate: Boolean(record.certificateUrl),
-      certificateLabel: record.certificateUrl ? 'On file' : 'Missing',
+      hasCertificate: Boolean(record.certificateUrl || record.certificateAssetId),
+      certificateLabel: record.certificateUrl || record.certificateAssetId ? 'On file' : 'Missing',
     }));
 }
 
@@ -101,6 +101,8 @@ export interface CERecordDetailView {
   credentialOrganization: string;
   certificateLabel: string;
   certificateUrl: string | null;
+  certificateAssetId: string | null;
+  hasManagedCertificate: boolean;
 }
 export function buildCERecordDetailView(record: CERecordResponse, context: CERecordCredentialOption): CERecordDetailView {
   return {
@@ -116,8 +118,10 @@ export function buildCERecordDetailView(record: CERecordResponse, context: CERec
     credentialId: context.credentialId,
     credentialName: context.credentialName,
     credentialOrganization: context.credentialOrganization,
-    certificateLabel: record.certificateUrl ? 'View certificate' : 'No certificate uploaded',
+    certificateLabel: record.certificateUrl || record.certificateAssetId ? 'View certificate' : 'No certificate uploaded',
     certificateUrl: record.certificateUrl,
+    certificateAssetId: record.certificateAssetId,
+    hasManagedCertificate: Boolean(record.certificateAssetId),
   };
 }
 

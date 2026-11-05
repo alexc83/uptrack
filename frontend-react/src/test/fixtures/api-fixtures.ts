@@ -13,7 +13,7 @@ export const credential: CredentialResponse = { ...credentialRequest, id: creden
 export const ceReport: CEReportResponse = {
   credential: { id: credential.id, name: credential.name, type: credential.type, issuingOrganization: credential.issuingOrganization, expirationDate: credential.expirationDate, requiredCEHours: credential.requiredCEHours, status: credential.status },
   summary: { totalHoursEarned: 15, remainingHours: 0, recordCount: 1, progress: 1.5 },
-  records: [{ title: record.title, provider: record.provider, hours: record.hours, dateCompleted: record.dateCompleted, certificateUrl: record.certificateUrl }],
+  records: [{ title: record.title, provider: record.provider, hours: record.hours, dateCompleted: record.dateCompleted, certificateUrl: record.certificateUrl, certificateAssetId: record.certificateAssetId }],
 };
 export const errorBody = (status: number) => ({ status, error: 'Fixture error', message: 'Fixture error message', timestamp: '2026-01-01T00:00:00Z' });
 export function deferred<T>() {
