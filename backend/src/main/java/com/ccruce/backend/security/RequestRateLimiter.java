@@ -30,7 +30,8 @@ public class RequestRateLimiter {
     private enum Scope {
         LOGIN("login", 60),
         REGISTER("register", 3600),
-        UPLOAD("upload", 3600);
+        UPLOAD("upload", 3600),
+        CERTIFICATE_URL("certificate-url", 3600);
 
         final String label;
         final long durationSeconds;
@@ -60,12 +61,17 @@ public class RequestRateLimiter {
     public RequestRateLimiter(
             @Value("${app.rate-limit.login-per-minute:10}") int loginLimit,
             @Value("${app.rate-limit.registration-per-hour:5}") int registrationLimit,
-            @Value("${app.rate-limit.upload-per-hour:20}") int uploadLimit) {
-        this(Clock.systemUTC(), loginLimit, registrationLimit, uploadLimit);
+            @Value("${app.rate-limit.upload-per-hour:20}") int uploadLimit,
+            @Value("${app.rate-limit.certificate-url-per-hour:120}") int certificateUrlLimit) {
+        this(Clock.systemUTC(), loginLimit, registrationLimit, uploadLimit, certificateUrlLimit);
     }
 
     RequestRateLimiter(Clock clock, int loginLimit, int registrationLimit, int uploadLimit) {
-        if (loginLimit < 1 || registrationLimit < 1 || uploadLimit < 1) {
+        this(clock, loginLimit, registrationLimit, uploadLimit, 120);
+    }
+
+    RequestRateLimiter(Clock clock, int loginLimit, int registrationLimit, int uploadLimit, int certificateUrlLimit) {
+        if (loginLimit < 1 || registrationLimit < 1 || uploadLimit < 1 || certificateUrlLimit < 1) {
             throw new IllegalStateException("Rate limits must be positive.");
         }
         this.clock = clock;
@@ -74,6 +80,7 @@ public class RequestRateLimiter {
         limits.put(Scope.LOGIN, loginLimit);
         limits.put(Scope.REGISTER, registrationLimit);
         limits.put(Scope.UPLOAD, uploadLimit);
+        limits.put(Scope.CERTIFICATE_URL, certificateUrlLimit);
     }
 
     /** Zero permits the request; otherwise returns seconds until retry. */

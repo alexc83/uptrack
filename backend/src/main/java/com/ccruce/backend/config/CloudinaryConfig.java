@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-@EnableConfigurationProperties(CloudinaryProperties.class)
+@EnableConfigurationProperties({CloudinaryProperties.class, CertificateDeliveryProperties.class})
 public class CloudinaryConfig {
 
     @Bean

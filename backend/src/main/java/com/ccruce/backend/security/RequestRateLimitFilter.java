@@ -40,6 +40,13 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
                 identity = user.id().toString();
             }
         }
+        if (request.getMethod().equals("GET") && path.matches("/api/ce-records/[^/]+/certificate-url")) {
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof AuthenticatedUser user) {
+                scope = "certificate-url";
+                identity = user.id().toString();
+            }
+        }
         long retry = scope == null ? 0 : limiter.retryAfter(scope, identity);
         if (retry > 0) {
             response.setStatus(429);

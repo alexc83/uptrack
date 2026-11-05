@@ -1,7 +1,9 @@
 package com.ccruce.backend.controller;
 
 import com.ccruce.backend.dto.request.CERecordRequestDto;
+import com.ccruce.backend.dto.response.CertificateDeliveryUrlDto;
 import com.ccruce.backend.dto.response.CERecordResponseDto;
+import com.ccruce.backend.service.CertificateDeliveryService;
 import com.ccruce.backend.service.CERecordService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -23,9 +25,18 @@ import java.util.UUID;
 public class CERecordController {
 
     private final CERecordService ceRecordService;
+    private final CertificateDeliveryService certificateDeliveryService;
 
-    public CERecordController(CERecordService ceRecordService) {
+    public CERecordController(CERecordService ceRecordService,
+            CertificateDeliveryService certificateDeliveryService) {
         this.ceRecordService = ceRecordService;
+        this.certificateDeliveryService = certificateDeliveryService;
+    }
+
+    /** Phase 3 (#23): ownership-checked short-lived authenticated delivery URL; never a public fallback. */
+    @GetMapping("/{id}/certificate-url")
+    public ResponseEntity<CertificateDeliveryUrlDto> getCertificateDeliveryUrl(@PathVariable UUID id) {
+        return ResponseEntity.ok(certificateDeliveryService.issueDeliveryUrl(id));
     }
 
     @PostMapping

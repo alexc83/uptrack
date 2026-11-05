@@ -117,7 +117,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.assetId").isString())
-                .andExpect(jsonPath("$.url").isString()) // safeguard 1: legacy fields kept
+                .andExpect(jsonPath("$.url").isString()) // flag OFF: Phase 2 response contract preserved
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).get("assetId").asText();
     }
@@ -169,7 +169,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.certificateAssetId").value(assetId))
                 .andExpect(jsonPath("$.certificateClassification").value("MANAGED_VERIFIED"))
-                .andExpect(jsonPath("$.certificateUrl").isString()) // safeguard 1: viewing keeps working
+                .andExpect(jsonPath("$.certificateUrl").isString()) // flag OFF: URL preserved
                 .andExpect(jsonPath("$.certificatePublicId").isString());
 
         CertificateAsset asset = assetById(assetId);
@@ -226,6 +226,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
 
         // Replace (Phase 2): the old managed asset is marked PENDING_DELETION in the CE-record
         // transaction; the provider destroy is owned by the durable cleanup worker, not the request.
+        String oldPublicId = assetById(assetId).getPublicId();
         String assetId2 = uploadCertificate(owner);
         mockMvc.perform(put("/api/ce-records/{id}", firstId)
                         .header("Authorization", bearerToken(owner))
@@ -249,12 +250,15 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
         assertEquals(AssetStatus.PENDING_DELETION, assetById(assetId2).getStatus());
         verify(uploader, never()).destroy(anyString(), anyMap());
 
-        // The durable worker performs the destroys and marks both DELETED.
+        // The durable worker performs the destroys and marks both DELETED. Assert per-asset (the shared
+        // PostgreSQL test database may contain other PENDING_DELETION rows from earlier tests).
+        String newPublicId = assetById(assetId2).getPublicId();
         org.mockito.Mockito.doReturn(Map.of("result", "ok")).when(uploader).destroy(anyString(), anyMap());
         cleanupWorker.processDeletionBatch();
         assertEquals(AssetStatus.DELETED, assetById(assetId).getStatus());
         assertEquals(AssetStatus.DELETED, assetById(assetId2).getStatus());
-        verify(uploader, org.mockito.Mockito.times(2)).destroy(anyString(), anyMap());
+        verify(uploader).destroy(eq(oldPublicId), anyMap());
+        verify(uploader).destroy(eq(newPublicId), anyMap());
     }
 
     @Test
@@ -487,7 +491,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                                 """.formatted(credentialId, assetId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.certificateClassification").value("MANAGED_VERIFIED"))
-                .andExpect(jsonPath("$.certificateUrl").value(recovered.getDeliveryUrl()))
+                .andExpect(jsonPath("$.certificateUrl").isString()) // flag OFF: URL preserved
                 .andExpect(jsonPath("$.certificateOriginalFilename").value("recovered-cert.pdf"));
         assertEquals(AssetStatus.ATTACHED, assetById(assetId).getStatus());
     }

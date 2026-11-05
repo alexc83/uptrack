@@ -36,7 +36,7 @@ class CertificateUploadConcurrencyTest {
         CertificateAssetService assetService = mock(CertificateAssetService.class);
         when(cloudinary.uploader()).thenReturn(uploader);
         when(validator.validate(any())).thenReturn(new byte[]{1, 2, 3});
-        when(assetService.reserve(any(), anyString(), any())).thenAnswer(invocation -> {
+        when(assetService.reserve(any(), anyString(), any(), anyString())).thenAnswer(invocation -> {
             com.ccruce.backend.entity.CertificateAsset asset = new com.ccruce.backend.entity.CertificateAsset();
             asset.setId(UUID.randomUUID());
             asset.setUserId(invocation.getArgument(0));
@@ -53,7 +53,7 @@ class CertificateUploadConcurrencyTest {
                     "secure_url", "https://res.example.test/x.png");
         });
 
-        var service = new CertificateUploadServiceImpl(cloudinary, validator, assetService, 1);
+        var service = new CertificateUploadServiceImpl(cloudinary, validator, assetService, new com.ccruce.backend.config.CertificateDeliveryProperties(false, 60), 1);
         var user = new AuthenticatedUser(UUID.randomUUID(), "u@example.test", "User");
         var pool = Executors.newSingleThreadExecutor();
         var inFlight = pool.submit(() -> {

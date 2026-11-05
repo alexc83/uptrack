@@ -113,6 +113,7 @@ public class CertificateReconciliationService {
         Map<String, String> listed = new HashMap<>();
         try {
             for (String resourceType : List.of("image", "raw")) {
+              for (String deliveryType : List.of("upload", "authenticated")) {
                 String cursor = null;
                 int pages = 0;
                 do {
@@ -122,7 +123,7 @@ public class CertificateReconciliationService {
                     }
                     Map<String, Object> options = new HashMap<>(Map.of(
                             "resource_type", resourceType,
-                            "type", "upload",
+                            "type", deliveryType,
                             "prefix", PREFIX,
                             "max_results", PROVIDER_PAGE_SIZE));
                     if (cursor != null) {
@@ -136,11 +137,12 @@ public class CertificateReconciliationService {
                     }
                     for (Object item : items) {
                         if (item instanceof Map<?, ?> resource && resource.get("public_id") instanceof String publicId) {
-                            listed.put(identityKey(cloudinaryProperties.cloudName(), resourceType, publicId), resourceType);
+                            listed.put(identityKey(cloudinaryProperties.cloudName(), resourceType, deliveryType, publicId), deliveryType);
                         }
                     }
                     cursor = response.get("next_cursor") instanceof String next && !next.isBlank() ? next : null;
                 } while (cursor != null);
+              }
             }
             return listed;
         } catch (Exception exception) {
@@ -163,7 +165,7 @@ public class CertificateReconciliationService {
                     return new RegistryInventory(keys, byKey, duplicates, total);
                 }
                 for (CertificateAsset asset : batch) {
-                    String key = identityKey(asset.getCloudName(), asset.getResourceType(), asset.getPublicId());
+                    String key = identityKey(asset.getCloudName(), asset.getResourceType(), asset.getDeliveryType(), asset.getPublicId());
                     if (!keys.add(key)) {
                         duplicates.add(key);
                     }
@@ -184,8 +186,8 @@ public class CertificateReconciliationService {
     }
 
     /** Unambiguous asset identity across both inventories: cloud name + resource type + public id. */
-    private static String identityKey(String cloudName, String resourceType, String publicId) {
-        return cloudName + "\n" + resourceType + "\n" + publicId;
+    private static String identityKey(String cloudName, String resourceType, String deliveryType, String publicId) {
+        return cloudName + "\n" + resourceType + "\n" + deliveryType + "\n" + publicId;
     }
 
     private record RegistryInventory(Set<String> keys, Map<String, CertificateAsset> byKey,

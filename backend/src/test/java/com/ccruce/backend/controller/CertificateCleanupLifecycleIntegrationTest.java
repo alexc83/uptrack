@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -154,12 +155,16 @@ class CertificateCleanupLifecycleIntegrationTest extends AbstractControllerInteg
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNotFound()); // already cascaded
 
-        // Worker cleans up the marked assets (provider confirms result=ok).
+        // Worker cleans up the marked assets (provider confirms result=ok). Assert per-asset:
+        // the shared PostgreSQL test database may contain other PENDING_DELETION rows.
         Mockito.doReturn(Map.of("result", "ok")).when(uploader).destroy(anyString(), anyMap());
+        String publicIdA = assetById(assetA).getPublicId();
+        String publicIdB = assetById(assetB).getPublicId();
         cleanupWorker.processDeletionBatch();
         assertEquals(AssetStatus.DELETED, assetById(assetA).getStatus());
         assertEquals(AssetStatus.DELETED, assetById(assetB).getStatus());
-        verify(uploader, Mockito.times(2)).destroy(anyString(), anyMap());
+        verify(uploader).destroy(eq(publicIdA), anyMap());
+        verify(uploader).destroy(eq(publicIdB), anyMap());
     }
 
     @Test

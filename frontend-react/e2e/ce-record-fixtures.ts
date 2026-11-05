@@ -11,6 +11,7 @@ export async function ceRecordApiFixture(page: Page) {
     credentials: [structuredClone(credential)] as CredentialResponse[],
     writes: [] as Array<{ method: string; request?: CERecordRequest }>,
     uploads: [] as string[],
+    certificateUrlReads: 0,
     listStatus: 200,
     recordGetStatus: 200,
     nextWriteStatus: 200,
@@ -30,6 +31,7 @@ export async function ceRecordApiFixture(page: Page) {
   allowApi(page, 'GET', '/api/credentials');
   for (const method of ['GET', 'POST']) allowApi(page, method, '/api/ce-records');
   for (const id of [record.id, newId]) for (const method of ['GET', 'PUT', 'DELETE']) allowApi(page, method, `/api/ce-records/${id}`);
+  for (const id of [record.id, newId]) allowApi(page, 'GET', `/api/ce-records/${id}/certificate-url`);
   allowApi(page, 'POST', '/api/uploads/certificates');
   await page.route(/^http:\/\/localhost:5173\/api\/credentials(?:\?.*)?$/, async route => {
     if (route.request().method() !== 'GET') return route.fallback();
@@ -73,6 +75,12 @@ export async function ceRecordApiFixture(page: Page) {
     found.owner.ceRecords = found.owner.ceRecords.map(item => (item.id === id ? updated : item));
     return route.fulfill({ status: 200, json: updated });
   });
+  await page.route(/^http:\/\/localhost:5173\/api\/ce-records\/[^/]+\/certificate-url$/, async route => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    state.certificateUrlReads = (state.certificateUrlReads ?? 0) + 1;
+    return route.fulfill({ status: 200, json: { url: 'https://files.example.test/short-lived-cert', expiresAt: new Date(Date.now() + 60_000).toISOString() } });
+  });
+  await page.context().route(/^https:\/\/files\.example\.test\/.*$/, route => route.fulfill({ status: 200, contentType: 'application/pdf', body: 'fixture' }));
   await page.route(/^http:\/\/localhost:5173\/api\/uploads\/certificates$/, async route => {
     if (route.request().method() !== 'POST') return route.fallback();
     const match = /filename="([^"]+)"/.exec(route.request().postData() ?? '');

@@ -45,13 +45,13 @@ class CertificateUploadServiceImplTest {
     private final Uploader uploader = mock(Uploader.class);
     private final CertificateFileValidator validator = mock(CertificateFileValidator.class);
     private final CertificateAssetService assetService = mock(CertificateAssetService.class);
-    private final CertificateUploadServiceImpl service = new CertificateUploadServiceImpl(cloudinary, validator, assetService, 2);
+    private final CertificateUploadServiceImpl service = new CertificateUploadServiceImpl(cloudinary, validator, assetService, new com.ccruce.backend.config.CertificateDeliveryProperties(false, 60), 2);
 
     @BeforeEach
     void setUp() throws IOException {
         when(cloudinary.uploader()).thenReturn(uploader);
         when(validator.validate(any())).thenReturn(new byte[]{1, 2, 3});
-        when(assetService.reserve(any(), anyString(), any())).thenAnswer(invocation -> {
+        when(assetService.reserve(any(), anyString(), any(), anyString())).thenAnswer(invocation -> {
             CertificateAsset asset = new CertificateAsset();
             asset.setId(UUID.randomUUID());
             asset.setUserId(invocation.getArgument(0));
@@ -95,11 +95,11 @@ class CertificateUploadServiceImplTest {
         CertificateUploadResponseDto response = service.uploadCertificate(png());
 
         InOrder order = inOrder(assetService, uploader);
-        order.verify(assetService).reserve(any(), eq("image"), eq("a.png"));
+        order.verify(assetService).reserve(any(), eq("image"), eq("a.png"), eq("upload"));
         order.verify(uploader).upload(any(), anyMap());
         order.verify(assetService).markUploaded(eq(response.assetId()), any(), eq("https://res.example.test/x.png"), eq("a.png"));
         assertNotNull(response.assetId());
-        // Safeguard 1: legacy fields remain in the response for viewing compatibility.
+        // Flag OFF (default): the Phase 2 response contract is preserved — the URL is present.
         assertEquals("https://res.example.test/x.png", response.url());
         assertEquals("uptrack/x", response.publicId());
     }
@@ -142,7 +142,7 @@ class CertificateUploadServiceImplTest {
 
     @Test
     void databaseFailureAtReservationNeverCallsTheProvider() throws IOException {
-        when(assetService.reserve(any(), anyString(), any())).thenThrow(new RuntimeException("db down"));
+        when(assetService.reserve(any(), anyString(), any(), anyString())).thenThrow(new RuntimeException("db down"));
 
         assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()));
 
@@ -175,14 +175,18 @@ class CertificateUploadServiceImplTest {
         Map<String, Object> raw = new HashMap<>(Map.of("resource_type", "raw", "public_id", "uptrack/x",
                 "secure_url", "https://res.example.test/raw/x", "format", "pdf"));
         when(uploader.upload(any(), anyMap())).thenReturn(raw);
-        assertEquals("https://res.example.test/raw/x.pdf", service.uploadCertificate(pdf()).url());
+        assertEquals("raw", service.uploadCertificate(pdf()).resourceType());
+        // The raw format suffix is still computed for the registry's stored delivery URL...
+        verify(assetService).markUploaded(any(), any(), eq("https://res.example.test/raw/x.pdf"), any());
 
         raw.put("secure_url", "https://res.example.test/raw/x.PDF");
-        assertEquals("https://res.example.test/raw/x.PDF", service.uploadCertificate(pdf()).url());
+        service.uploadCertificate(pdf());
+        verify(assetService).markUploaded(any(), any(), eq("https://res.example.test/raw/x.PDF"), any());
 
         raw.remove("format");
         raw.put("secure_url", "https://res.example.test/raw/x");
         CertificateUploadResponseDto noFormat = service.uploadCertificate(pdf());
+        verify(assetService).markUploaded(any(), any(), eq("https://res.example.test/raw/x"), any());
         assertEquals("https://res.example.test/raw/x", noFormat.url());
         assertEquals("raw", noFormat.resourceType());
     }

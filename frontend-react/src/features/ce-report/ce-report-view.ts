@@ -66,8 +66,8 @@ export function reportSummaryFields(report: CEReportResponse): ReportSummaryFiel
   ];
 }
 
-export function reportCertificateLabel(certificateUrl: string | null | undefined): string {
-  return certificateUrl ? 'On file' : 'Not attached';
+export function reportCertificateLabel(certificateUrl: string | null | undefined, certificateAssetId?: string | null): string {
+  return certificateUrl || certificateAssetId ? 'On file' : 'Not attached';
 }
 
 export function formatReportTimestamp(date: Date): string {

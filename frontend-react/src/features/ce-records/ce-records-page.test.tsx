@@ -264,6 +264,43 @@ describe('CE detail drawer, edit, certificate removal and delete', () => {
     await user.click(within(drawer).getByRole('button', { name: 'Remove Certificate' }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(recordId, expect.objectContaining({ credentialId, certificateUrl: null, certificatePublicId: null, certificateResourceType: null, certificateOriginalFilename: null })));
   });
+  it('views a managed certificate via an on-demand short-lived URL, not a stored link', async () => {
+    vi.mocked(ceRecordsApi.get).mockResolvedValue({ ...withCert(structuredClone(record)), certificateUrl: null, certificateAssetId: 'asset-1', certificateClassification: 'MANAGED_VERIFIED' });
+    const getUrl = vi.spyOn(ceRecordsApi, 'getCertificateUrl').mockResolvedValue({ url: 'https://files.example.test/short-lived', expiresAt: '2026-11-05T00:00:00Z' });
+    // Popup is opened synchronously on click (user activation), then navigated to the fresh URL.
+    const popup = { location: { href: 'about:blank' }, closed: false, close: vi.fn(), opener: {} as Window | null };
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
+    const { user } = open();
+    const drawer = await openDrawer(user);
+    const viewButton = await within(drawer).findByRole('button', { name: 'View certificate' });
+    expect(within(drawer).queryByRole('link', { name: 'View certificate' })).toBeNull();
+    await user.click(viewButton);
+    expect(openSpy).toHaveBeenCalledWith('', '_blank');
+    await waitFor(() => expect(getUrl).toHaveBeenCalledWith(recordId));
+    await waitFor(() => expect(popup.location.href).toBe('https://files.example.test/short-lived'));
+    expect(popup.opener).toBeNull();
+  });
+  it('closes the placeholder popup and shows an inline error when the delivery URL request fails', async () => {
+    vi.mocked(ceRecordsApi.get).mockResolvedValue({ ...withCert(structuredClone(record)), certificateUrl: null, certificateAssetId: 'asset-1', certificateClassification: 'MANAGED_VERIFIED' });
+    vi.spyOn(ceRecordsApi, 'getCertificateUrl').mockRejectedValue(new ApiError('http', 409, 'Certificate is not available.'));
+    const popup = { location: { href: 'about:blank' }, closed: false, close: vi.fn() };
+    vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
+    const { user } = open();
+    const drawer = await openDrawer(user);
+    await user.click(await within(drawer).findByRole('button', { name: 'View certificate' }));
+    expect(await within(drawer).findByRole('alert')).toHaveTextContent('Certificate is not available.');
+    expect(popup.close).toHaveBeenCalled();
+    expect(popup.location.href).toBe('about:blank');
+  });
+  it('shows a popup-blocked error when the browser blocks the window', async () => {
+    vi.mocked(ceRecordsApi.get).mockResolvedValue({ ...withCert(structuredClone(record)), certificateUrl: null, certificateAssetId: 'asset-1', certificateClassification: 'MANAGED_VERIFIED' });
+    vi.spyOn(ceRecordsApi, 'getCertificateUrl').mockResolvedValue({ url: 'https://files.example.test/short-lived', expiresAt: '2026-11-05T00:00:00Z' });
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    const { user } = open();
+    const drawer = await openDrawer(user);
+    await user.click(await within(drawer).findByRole('button', { name: 'View certificate' }));
+    expect(await within(drawer).findByRole('alert')).toHaveTextContent('Please allow pop-ups');
+  });
   it('shows the drawer error state with retry when the record cannot be loaded', async () => {
     vi.mocked(credentialsApi.list).mockResolvedValue([{ ...structuredClone(credential), ceRecords: [record, { ...record, id: 'missing' }] }]);
     vi.mocked(ceRecordsApi.get).mockRejectedValue(new ApiError('http', 404, 'CE record not found'));

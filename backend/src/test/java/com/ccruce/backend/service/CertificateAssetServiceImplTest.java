@@ -55,7 +55,7 @@ class CertificateAssetServiceImplTest {
         UUID userId = UUID.randomUUID();
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CertificateAsset asset = service.reserve(userId, "raw", "acls-cert.pdf");
+        CertificateAsset asset = service.reserve(userId, "raw", "acls-cert.pdf", "upload");
 
         assertEquals(userId, asset.getUserId());
         assertEquals(AssetStatus.RESERVED, asset.getStatus());

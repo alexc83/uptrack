@@ -11,6 +11,7 @@ export interface CERecordRequest extends CERecordFields, Partial<CertificateMeta
   /** Phase 1 (#24): managed attachment by registry asset UUID; when set, legacy fields are ignored by the backend. */
   certificateAssetId?: ApiId | null
 }
+export interface CertificateDeliveryUrl { url: string; expiresAt: string }
 export interface CERecordResponse extends CERecordFields, CertificateMetadata {
   id: ApiId
   /** Phase 1 (#24): additive; legacy certificate fields stay until Phase 3 (safeguard 1). */

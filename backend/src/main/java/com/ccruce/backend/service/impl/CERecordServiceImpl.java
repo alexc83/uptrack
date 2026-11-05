@@ -241,7 +241,7 @@ public class CERecordServiceImpl implements CERecordService {
                 ceRecord.getProvider(),
                 ceRecord.getHours(),
                 ceRecord.getDateCompleted(),
-                ceRecord.getCertificateUrl(),
+                certificateAssetService.exposedCertificateUrl(ceRecord),
                 ceRecord.getCertificatePublicId(),
                 ceRecord.getCertificateResourceType(),
                 ceRecord.getCertificateOriginalFilename(),

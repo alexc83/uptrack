@@ -30,6 +30,7 @@ export function CERecordForm({ initialValue, credentialOptions = [], showCredent
   const upload = useCertificateUpload();
   const saving = pending || isSubmitting;
   const certificateUrl = watch('certificateUrl');
+  const certificateAssetId = watch('certificateAssetId');
   const titleRegistration = register('title');
   async function handleFileSelected(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -37,11 +38,13 @@ export function CERecordForm({ initialValue, credentialOptions = [], showCredent
     if (!file) return;
     const response = await upload.upload(file);
     if (!response) return;
-    setValue('certificateUrl', response.url, { shouldDirty: true });
+    // Phase 3 (#23) Strategy A gate: when the backend suppresses the URL (flag on, authenticated
+    // asset) it is null and viewing goes through the delivery endpoint; when present (flag off)
+    // the Phase 2 anchor viewing applies unchanged.
+    setValue('certificateUrl', response.url ?? '', { shouldDirty: true });
     setValue('certificatePublicId', response.publicId, { shouldDirty: true });
     setValue('certificateResourceType', response.resourceType, { shouldDirty: true });
     setValue('certificateOriginalFilename', response.originalFilename ?? '', { shouldDirty: true });
-    // Phase 1 (#24): managed reference; legacy fields above stay populated for compatibility (safeguard 1).
     setValue('certificateAssetId', response.assetId, { shouldDirty: true });
   }
   function handleCertificateRemoved() {
@@ -62,7 +65,8 @@ export function CERecordForm({ initialValue, credentialOptions = [], showCredent
       <div className="col-span-full">
         <FormField label="Certificate" hint={CERTIFICATE_HELP}>{attributes => <FileInput {...attributes} accept={CERTIFICATE_ACCEPT} disabled={upload.pending || saving} onChange={event => { void handleFileSelected(event); }} />}</FormField>
         <div className="mt-2 space-y-2">
-          {upload.uploadedFileName && certificateUrl ? <div className="rounded-lg bg-[var(--ut-status-active-bg)] p-3 text-sm text-[var(--ut-status-active-text)]"><strong>Uploaded:</strong> {upload.uploadedFileName} {safeHttpUrl(certificateUrl) ? <a className="underline" href={safeHttpUrl(certificateUrl) ?? undefined} target="_blank" rel="noreferrer">Open uploaded file</a> : <span className="text-ut-muted">(link unavailable)</span>} <Button size="xs" color="alternative" type="button" onClick={handleCertificateRemoved}>Remove certificate</Button></div>
+          {upload.uploadedFileName && certificateAssetId ? <div className="rounded-lg bg-[var(--ut-status-active-bg)] p-3 text-sm text-[var(--ut-status-active-text)]"><strong>Uploaded:</strong> {upload.uploadedFileName} <Button size="xs" color="alternative" type="button" onClick={handleCertificateRemoved}>Remove certificate</Button></div>
+            : certificateAssetId ? <div className="rounded-lg bg-ut-hover p-3 text-sm"><strong>Certificate attached.</strong> <span className="text-ut-muted">View it from the record details.</span> <Button size="xs" color="alternative" type="button" onClick={handleCertificateRemoved}>Remove certificate</Button></div>
             : certificateUrl ? <div className="rounded-lg bg-ut-hover p-3 text-sm"><strong>Certificate attached.</strong> {safeHttpUrl(certificateUrl) ? <a className="underline" href={safeHttpUrl(certificateUrl) ?? undefined} target="_blank" rel="noreferrer">Open current file</a> : <span className="text-ut-muted">(link unavailable)</span>} <Button size="xs" color="alternative" type="button" onClick={handleCertificateRemoved}>Remove certificate</Button></div>
             : <p className="text-sm text-ut-muted">No certificate uploaded yet.</p>}
           {upload.status && <p role="status" className="text-sm text-ut-muted">{upload.status}</p>}
