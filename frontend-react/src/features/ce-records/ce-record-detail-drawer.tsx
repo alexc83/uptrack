@@ -31,18 +31,32 @@ export function CERecordDetailDrawer({ id, context, onClose }: { id: string; con
   const view = record ? buildCERecordDetailView(record, context) : null;
   // Phase 3 (#23): managed certificates are viewed via an on-demand short-lived URL
   // (bearer JWT cannot ride a plain anchor); external/legacy links keep the anchor.
+  // Popup is opened synchronously on the click to preserve user activation, then navigated
+  // to the fresh URL; on API failure the placeholder tab is closed and an inline error shows.
   async function viewCertificate() {
     if (!view?.hasManagedCertificate || viewing) return;
     setViewing(true);
     setViewError(undefined);
+    // Note: the initial open intentionally omits noopener so we get a window handle to navigate;
+    // opener is severed immediately after navigation for cross-origin isolation.
+    const popup = window.open('', '_blank');
+    let delivery;
     try {
-      const delivery = await ceRecordsApi.getCertificateUrl(id);
-      window.open(delivery.url, '_blank', 'noopener,noreferrer');
+      delivery = await ceRecordsApi.getCertificateUrl(id);
     } catch (cause) {
+      popup?.close();
       setViewError(cause instanceof ApiError ? cause.message : 'We could not open that certificate right now. Please try again.');
-    } finally {
       setViewing(false);
+      return;
     }
+    if (popup && !popup.closed) {
+      popup.location.href = delivery.url;
+      popup.opener = null;
+    } else {
+      const fallback = window.open(delivery.url, '_blank', 'noopener,noreferrer');
+      if (!fallback) setViewError('Please allow pop-ups for this site to view the certificate.');
+    }
+    setViewing(false);
   }
   async function removeCertificate() {
     if (!(record?.certificateUrl || record?.certificateAssetId) || removing) return;

@@ -88,6 +88,7 @@ class CertificateDeliveryServiceImplTest {
         asset.setResourceType("raw");
         asset.setPublicId("uptrack/users/u/certificates/x");
         asset.setOriginalFilename("cert.pdf");
+        asset.setDeliveryType("authenticated");
         return asset;
     }
 
@@ -130,6 +131,17 @@ class CertificateDeliveryServiceImplTest {
         record.setCertificateAssetId(null);
         when(ceRecordRepository.findById(recordId)).thenReturn(Optional.of(record));
         assertThrows(ResourceNotFoundException.class, () -> service.issueDeliveryUrl(recordId));
+    }
+
+    @Test
+    void uploadTypeAssetIsNotServedViaAuthenticatedUrl() {
+        CertificateAsset asset = attachedAsset();
+        asset.setDeliveryType("upload"); // current uploads until the Phase 4 migration
+        when(ceRecordRepository.findById(recordId)).thenReturn(Optional.of(managedRecord()));
+        when(assetService.findOwnedAsset(assetId, userId)).thenReturn(Optional.of(asset));
+
+        assertThrows(ConflictException.class, () -> service.issueDeliveryUrl(recordId));
+        verify(url, org.mockito.Mockito.never()).generate(anyString());
     }
 
     @Test

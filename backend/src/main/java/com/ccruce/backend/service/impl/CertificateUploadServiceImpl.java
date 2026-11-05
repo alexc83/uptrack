@@ -120,11 +120,15 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
             throw exception;
         }
 
-        assetService.markUploaded(reservation.getId(), userId, buildAssetUrl(uploadResult, returnedResourceType), originalFilename);
+        String deliveryUrl = buildAssetUrl(uploadResult, returnedResourceType);
+        assetService.markUploaded(reservation.getId(), userId, deliveryUrl, originalFilename);
 
+        // Phase 3 (#23): the upload response no longer carries the permanent public URL for a managed
+        // asset (the registry stores it internally; viewing goes through the authenticated endpoint).
+        // The asset itself remains delivery type 'upload' until the Phase 4 migration — unchanged.
         return new CertificateUploadResponseDto(
                 reservation.getId(),
-                buildAssetUrl(uploadResult, returnedResourceType),
+                null,
                 getRequiredString(uploadResult, "public_id"),
                 originalFilename,
                 returnedResourceType

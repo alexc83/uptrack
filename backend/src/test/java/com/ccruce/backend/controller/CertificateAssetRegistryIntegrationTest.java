@@ -117,7 +117,8 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.assetId").isString())
-                .andExpect(jsonPath("$.url").isString()) // safeguard 1: legacy fields kept
+                // Phase 3 (#23): upload response no longer carries the permanent URL.
+                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.nullValue()))
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).get("assetId").asText();
     }

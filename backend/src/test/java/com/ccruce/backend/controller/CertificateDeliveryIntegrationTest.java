@@ -110,6 +110,10 @@ class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTe
         String credentialId = createCredential(session, "RN License");
         String assetId = uploadCertificate(session);
         String recordId = createCERecordWithAsset(session, credentialId, assetId);
+        // Phase 4 migrates assets to delivery type 'authenticated'; simulate a migrated asset.
+        CertificateAsset asset = assetRepository.findById(UUID.fromString(assetId)).orElseThrow();
+        asset.setDeliveryType("authenticated");
+        assetRepository.save(asset);
 
         // Ordinary CE-record responses no longer expose the managed permanent URL.
         mockMvc.perform(get("/api/ce-records/{id}", recordId)
@@ -145,6 +149,18 @@ class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTe
     }
 
     @Test
+    void uploadTypeAssetIsRefusedUntilMigrated() throws Exception {
+        AuthSession session = registerUser("Uma UploadType", "uma.uploadtype@example.com");
+        String credentialId = createCredential(session, "RN License");
+        String assetId = uploadCertificate(session);
+        String recordId = createCERecordWithAsset(session, credentialId, assetId);
+        // Asset is still delivery type 'upload' (Phase 4 migrates it) -> 409, no URL issued.
+        mockMvc.perform(get("/api/ce-records/{id}/certificate-url", recordId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void inactiveAssetStateIsNotDeliveredAndLegacyRecordsKeepTheirOwnUrl() throws Exception {
         AuthSession session = registerUser("Ivy Inactive", "ivy.inactive@example.com");
         String credentialId = createCredential(session, "RN License");
@@ -153,6 +169,7 @@ class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTe
 
         // Asset not in an active state → 409, no URL generated.
         CertificateAsset asset = assetRepository.findById(UUID.fromString(assetId)).orElseThrow();
+        asset.setDeliveryType("authenticated");
         asset.setStatus(AssetStatus.PENDING_DELETION);
         assetRepository.save(asset);
         mockMvc.perform(get("/api/ce-records/{id}/certificate-url", recordId)

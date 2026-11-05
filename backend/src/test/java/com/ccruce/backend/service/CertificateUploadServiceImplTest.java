@@ -99,8 +99,8 @@ class CertificateUploadServiceImplTest {
         order.verify(uploader).upload(any(), anyMap());
         order.verify(assetService).markUploaded(eq(response.assetId()), any(), eq("https://res.example.test/x.png"), eq("a.png"));
         assertNotNull(response.assetId());
-        // Safeguard 1: legacy fields remain in the response for viewing compatibility.
-        assertEquals("https://res.example.test/x.png", response.url());
+        // Phase 3 (#23): the permanent public URL is not exposed in the upload response anymore.
+        assertEquals(null, response.url());
         assertEquals("uptrack/x", response.publicId());
     }
 
@@ -175,15 +175,20 @@ class CertificateUploadServiceImplTest {
         Map<String, Object> raw = new HashMap<>(Map.of("resource_type", "raw", "public_id", "uptrack/x",
                 "secure_url", "https://res.example.test/raw/x", "format", "pdf"));
         when(uploader.upload(any(), anyMap())).thenReturn(raw);
-        assertEquals("https://res.example.test/raw/x.pdf", service.uploadCertificate(pdf()).url());
+        assertEquals("raw", service.uploadCertificate(pdf()).resourceType());
+        // The raw format suffix is still computed for the registry's stored delivery URL...
+        verify(assetService).markUploaded(any(), any(), eq("https://res.example.test/raw/x.pdf"), any());
 
         raw.put("secure_url", "https://res.example.test/raw/x.PDF");
-        assertEquals("https://res.example.test/raw/x.PDF", service.uploadCertificate(pdf()).url());
+        service.uploadCertificate(pdf());
+        verify(assetService).markUploaded(any(), any(), eq("https://res.example.test/raw/x.PDF"), any());
 
         raw.remove("format");
         raw.put("secure_url", "https://res.example.test/raw/x");
         CertificateUploadResponseDto noFormat = service.uploadCertificate(pdf());
-        assertEquals("https://res.example.test/raw/x", noFormat.url());
+        verify(assetService).markUploaded(any(), any(), eq("https://res.example.test/raw/x"), any());
+        // ...but the upload response never carries the permanent URL (Phase 3).
+        assertEquals(null, noFormat.url());
         assertEquals("raw", noFormat.resourceType());
     }
 

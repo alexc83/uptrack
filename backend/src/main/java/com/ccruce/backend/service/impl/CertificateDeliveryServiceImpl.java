@@ -73,6 +73,13 @@ public class CertificateDeliveryServiceImpl implements CertificateDeliveryServic
         if (asset.getStatus() != AssetStatus.ATTACHED || !ceRecordId.equals(asset.getCeRecordId())) {
             throw new ConflictException("Certificate is not available.");
         }
+        // Delivery-type compatibility (Finding 1): authenticated URLs only work for assets stored
+        // with delivery type 'authenticated'. Current uploads are 'upload' (public) until the Phase 4
+        // migration; issuing an authenticated URL for them would fail at the provider. Refuse with 409 —
+        // never fall back to the public URL.
+        if (!"authenticated".equals(asset.getDeliveryType())) {
+            throw new ConflictException("Certificate is not available for authenticated delivery yet.");
+        }
 
         String url = generateAuthenticatedUrl(asset);
         return new CertificateDeliveryUrlDto(url, Instant.now().plusSeconds(ttlSeconds));

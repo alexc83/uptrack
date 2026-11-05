@@ -50,9 +50,9 @@ test('list, filters, create with certificate upload, detail, edit and delete', a
   await expect(viewButton).toBeVisible();
   const popupPromise = page.waitForEvent('popup');
   await viewButton.click();
-  const popup = await popupPromise;
+  const popup = await popupPromise; // opened synchronously on click (user activation preserved)
   await popup.close();
-  expect(api.certificateUrlReads).toBe(1); // short-lived URL fetched on demand, not stored
+  expect(api.certificateUrlReads).toBe(1); // short-lived URL fetched on demand per View click, never stored
   await drawer.getByRole('button', { name: 'Edit CE Record' }).click();
   await page.getByLabel('Title', { exact: true }).fill('Edited course');
   await page.getByRole('button', { name: 'Save Changes' }).click();

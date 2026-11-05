@@ -80,6 +80,7 @@ export async function ceRecordApiFixture(page: Page) {
     state.certificateUrlReads = (state.certificateUrlReads ?? 0) + 1;
     return route.fulfill({ status: 200, json: { url: 'https://files.example.test/short-lived-cert', expiresAt: new Date(Date.now() + 60_000).toISOString() } });
   });
+  await page.context().route(/^https:\/\/files\.example\.test\/.*$/, route => route.fulfill({ status: 200, contentType: 'application/pdf', body: 'fixture' }));
   await page.route(/^http:\/\/localhost:5173\/api\/uploads\/certificates$/, async route => {
     if (route.request().method() !== 'POST') return route.fallback();
     const match = /filename="([^"]+)"/.exec(route.request().postData() ?? '');
