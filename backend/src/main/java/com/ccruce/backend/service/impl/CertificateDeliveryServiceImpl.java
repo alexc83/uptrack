@@ -1,6 +1,7 @@
 package com.ccruce.backend.service.impl;
 
 import com.ccruce.backend.config.CertificateDeliveryProperties;
+import com.ccruce.backend.config.CloudinaryAuthTokenProperties;
 import com.ccruce.backend.dto.response.CertificateDeliveryUrlDto;
 import com.ccruce.backend.entity.CertificateAsset;
 import com.ccruce.backend.entity.CERecord;
@@ -22,7 +23,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -40,17 +43,21 @@ public class CertificateDeliveryServiceImpl implements CertificateDeliveryServic
     private final CertificateAssetService assetService;
     private final Cloudinary cloudinary;
     private final CertificateDeliveryProperties properties;
+    private final CloudinaryAuthTokenProperties tokenProperties;
 
     public CertificateDeliveryServiceImpl(CERecordRepository ceRecordRepository,
             UserRepository userRepository,
             CertificateAssetService assetService,
             Cloudinary cloudinary,
-            CertificateDeliveryProperties properties) {
+            CertificateDeliveryProperties properties,
+            CloudinaryAuthTokenProperties tokenProperties) {
+        tokenProperties.validateFor(properties);
         this.ceRecordRepository = ceRecordRepository;
         this.userRepository = userRepository;
         this.assetService = assetService;
         this.cloudinary = cloudinary;
         this.properties = properties;
+        this.tokenProperties = tokenProperties;
     }
 
     @Override
@@ -82,38 +89,51 @@ public class CertificateDeliveryServiceImpl implements CertificateDeliveryServic
             throw new ConflictException("Certificate is not available for authenticated delivery yet.");
         }
 
-        String url = generateAuthenticatedUrl(asset);
-        return new CertificateDeliveryUrlDto(url, Instant.now().plusSeconds(properties.ttlSeconds()));
+        Instant expiresAt = Instant.now().truncatedTo(ChronoUnit.SECONDS).plusSeconds(properties.ttlSeconds());
+        String url = generateAuthenticatedUrl(asset, expiresAt);
+        return new CertificateDeliveryUrlDto(url, expiresAt);
     }
 
-    private String generateAuthenticatedUrl(CertificateAsset asset) {
+    private String generateAuthenticatedUrl(CertificateAsset asset, Instant expiresAt) {
         try {
-            AuthToken token = new AuthToken()
-                    .duration(properties.ttlSeconds())
-                    .acl("/" + asset.getResourceType() + "/authenticated/" + asset.getPublicId());
-            Url url = cloudinary.url()
-                    .secure(true)
-                    .type("authenticated")
-                    .resourceType(asset.getResourceType())
-                    .authToken(token);
-            if ("raw".equals(asset.getResourceType())) {
-                String extension = extensionOf(asset.getOriginalFilename());
-                if (extension != null) {
-                    url.format(extension);
-                }
+            // Generate locally with the same SDK options twice: the exact delivery path, including
+            // cloud/SDK version/encoding/format, is the ACL. Never persist or log either URL.
+            String path = URI.create(deliveryUrl(asset).generate(asset.getPublicId())).getRawPath();
+            AuthToken token = new AuthToken(tokenProperties.key())
+                    .expiration(expiresAt.getEpochSecond())
+                    .acl(path);
+            String signed = deliveryUrl(asset).signed(true).authToken(token).generate(asset.getPublicId());
+            if (!path.equals(URI.create(signed).getRawPath())) {
+                throw new IllegalStateException("Certificate delivery path changed during signing.");
             }
-            return url.generate(asset.getPublicId());
+            return signed;
         } catch (RuntimeException exception) {
-            // URL generation is local signing; failure here must never degrade to a public URL.
+            // SDK errors may contain signing inputs. No cause/log/URL and never a public fallback.
             throw new UploadFailedException("Certificate delivery failed.");
         }
+    }
+
+    private Url deliveryUrl(CertificateAsset asset) {
+        Url url = cloudinary.url().secure(true).type("authenticated").resourceType(asset.getResourceType());
+        if ("raw".equals(asset.getResourceType())) {
+            String extension = extensionOf(asset.getOriginalFilename());
+            if (extension != null && !asset.getPublicId().toLowerCase(Locale.ROOT).endsWith("." + extension)) {
+                url.format(extension);
+            }
+        }
+        // Image URLs preserve original delivery; no forced PNG conversion or transformation.
+        return url;
     }
 
     private static String extensionOf(String filename) {
         if (filename == null || !filename.contains(".")) {
             return null;
         }
-        return filename.substring(filename.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
+        String extension = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
+        if (!java.util.Set.of("pdf", "jpg", "jpeg", "png", "webp", "gif").contains(extension)) {
+            throw new IllegalArgumentException("Unsupported certificate format.");
+        }
+        return extension;
     }
 
     private User getAuthenticatedUser() {

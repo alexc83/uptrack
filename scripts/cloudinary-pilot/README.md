@@ -130,19 +130,29 @@ inventory; asynchronous CDN invalidation is still manual. Assets from other runs
 Retain the journal, investigate in the **test** console, and re-run authorized cleanup; never treat
 failed/unverified cleanup as success. An unexpected upload identity requires manual investigation.
 
-## Merged application signer blocker
+## Application signing compatibility gate
 
-The helper shares UpTrack's SDK and URL/AuthToken building blocks, but intentionally does not
-reproduce its defective output. An offline self-test pins the exact merged construction and confirms
-it produces no `__cld_token__` parameter. The backend currently has an unkeyed `AuthToken`, omits
-`signed(true)`, and builds an ACL without the cloud segment/SDK version/actual format path.
-The helper uses the **separate token-auth key**, `signed(true)` and an ACL equal to the SDK-generated
-URI path (including cloud, `/v1/`, and extension). Raw extensions occur once.
+The helper's offline self-test pins the **historical** merged UpTrack construction (unkeyed token,
+missing `signed(true)`, incomplete ACL) and confirms it emits no AuthToken parameter. That diagnostic
+remains intentional. The separately authorized correction on `fix/23-cloudinary-authtoken-signing`
+uses the same SDK primitives as the helper: dedicated key, `signed(true)` and actual generated URI
+path as ACL. It also aligns token/API expiry and avoids duplicate raw extensions. See the
+[signing evidence](../../context/verification/issue-23-signing-report.md). Correction merge and
+acceptance are still required; neither offline test suite demonstrates live provider authorization.
 
-This corrects the earlier PR #58 documentation's mistaken instruction to use `apiSecret` as the
-AuthToken key. A separately authorized application fix and real-signing regression tests are required
-before application acceptance/activation. No backend source or activation flag is changed here.
-Helper success is not application parity and cannot authorize enabling authenticated delivery.
+For the application, `cloudinary.auth-token.key` binds `CLOUDINARY_AUTH_TOKEN_KEY` (default empty).
+Missing/invalid keys prevent startup only when delivery is enabled; flag OFF works without a key.
+The key must be 16–64 bytes in hex, separate from `CLOUDINARY_API_SECRET`; property diagnostics are
+redacted and JSON omits the key. Supply it through the owner secret manager only after setup is
+separately approved. Never enable environment/configuration-value dumps. The default delivery flag
+remains OFF; configuring a key is not activation authorization.
+
+Live parity must compare equivalent resource/format options: the helper selects PNG for its image
+fixture, while the application preserves original image delivery without conversion. Raw public IDs
+with an extension must not gain another; current extensionless application registry IDs retain the
+existing filename-format URL policy and must be checked against actual synthetic provider identities.
+Any upload/registry change identified by that check requires separate scope approval. No real key,
+provider URL, credential provisioning, SDK dependency upgrade, or application activation is included.
 
 ## Remaining manual pilot work
 

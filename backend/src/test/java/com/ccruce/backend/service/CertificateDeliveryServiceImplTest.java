@@ -48,7 +48,8 @@ class CertificateDeliveryServiceImplTest {
     private final Url url = mock(Url.class, RETURNS_SELF);
     private final CertificateDeliveryServiceImpl service =
             new CertificateDeliveryServiceImpl(ceRecordRepository, userRepository, assetService, cloudinary,
-                    new com.ccruce.backend.config.CertificateDeliveryProperties(true, 60));
+                    new com.ccruce.backend.config.CertificateDeliveryProperties(true, 60),
+                    new com.ccruce.backend.config.CloudinaryAuthTokenProperties("0123456789abcdef0123456789abcdef"));
 
     private final UUID userId = UUID.randomUUID();
     private final UUID recordId = UUID.randomUUID();
@@ -106,11 +107,12 @@ class CertificateDeliveryServiceImplTest {
 
         ArgumentCaptor<AuthToken> token = ArgumentCaptor.forClass(AuthToken.class);
         verify(url).authToken(token.capture());
-        assertEquals("/raw/authenticated/uptrack/users/u/certificates/x", token.getValue().asMap().get("acl").toString().replace("[", "").replace("]", ""));
-        verify(url).type("authenticated");
-        verify(url).secure(true);
-        verify(url).format("pdf");
-        verify(url).generate("uptrack/users/u/certificates/x");
+        assertEquals("/raw/authenticated/tok/uptrack/users/u/certificates/x.pdf", token.getValue().asMap().get("acl").toString().replace("[", "").replace("]", ""));
+        verify(url, org.mockito.Mockito.times(2)).type("authenticated");
+        verify(url).signed(true);
+        verify(url, org.mockito.Mockito.times(2)).secure(true);
+        verify(url, org.mockito.Mockito.times(2)).format("pdf");
+        verify(url, org.mockito.Mockito.times(2)).generate("uptrack/users/u/certificates/x");
     }
 
     @Test
@@ -169,7 +171,8 @@ class CertificateDeliveryServiceImplTest {
     @Test
     void flagDisabledIssuesNothing() {
         var disabled = new CertificateDeliveryServiceImpl(ceRecordRepository, userRepository, assetService, cloudinary,
-                new com.ccruce.backend.config.CertificateDeliveryProperties(false, 60));
+                new com.ccruce.backend.config.CertificateDeliveryProperties(false, 60),
+                new com.ccruce.backend.config.CloudinaryAuthTokenProperties(null));
         when(ceRecordRepository.findById(recordId)).thenReturn(Optional.of(managedRecord()));
         when(assetService.findOwnedAsset(assetId, userId)).thenReturn(Optional.of(attachedAsset()));
         assertThrows(ResourceNotFoundException.class, () -> disabled.issueDeliveryUrl(recordId));
