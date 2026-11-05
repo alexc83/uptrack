@@ -31,9 +31,15 @@
 14. In-place type change: does `explicit(type=authenticated)` preserve public_id and bytes? (Phase 4 copy-and-verify assumes **not** unless proven here.)
 15. Failure modes: expired/revoked token response codes; whether URL generation is purely local (no API call) during an API outage.
 
-## 2b. Runnable pilot script (no credentials committed)
+## 2b. Runnable pilot tooling (no credentials committed)
 
-`scripts/cloudinary-pilot/run-pilot.sh` — env-driven (`CLOUDINARY_CLOUD_NAME`/`API_KEY`/`API_SECRET` of the **test** cloud + `PILOT_CONFIRM_NONPRODUCTION=yes`), generates synthetic PDF/PNG fixtures itself, runs upload (both delivery types), logged-out access checks, Admin API probes, destroy-contract checks, reconciliation listings, and destroys everything it created. AuthToken URL generation (steps 7–9) is deliberately done via the SDK/backend delivery endpoint, not hand-rolled signatures. Expected results per step are printed inline and restated in §3.
+`scripts/cloudinary-pilot/` (see its `README.md`):
+
+- `run-pilot.sh` — env-driven runner. **Preflight gate (before any API call):** `PILOT_CONFIRM_NONPRODUCTION=yes`, `CLOUDINARY_CLOUD_NAME` present, `PILOT_EXPECTED_CLOUD_NAME` present and **exactly equal** to `CLOUDINARY_CLOUD_NAME`, test-cloud `CLOUDINARY_API_KEY`/`CLOUDINARY_API_SECRET` present; any failure aborts with exit 2. Cloud-name equality does not prove non-production — the owner must verify the cloud in the console. Modes: full run, `--cleanup-only` (resumes an interrupted run from `PILOT_STATE_FILE`), `--validate-state FILE` (offline), `PILOT_PREFLIGHT_ONLY=yes` (preflight + fixtures + SDK self-test, no API calls). Generates synthetic PDF/PNG fixtures itself; uploads both delivery types; checks public baseline, unsigned denial, signed-token 200, cross-asset ACL rejection, post-TTL denial; Admin probes; destroy contract (`ok`/`not found`) for both types; reconciliation listings; then destroys **only** assets it created (state file, `pilot/` prefix enforced, cleanup on exit/failure/interruption) and runs a post-run inventory that must be empty — leftovers are reported UNRESOLVED and fail the run. Secrets and token URLs are never printed; evidence is status + safe headers.
+- `AuthTokenUrlTool.java` — local AuthToken URL generator on the backend's SDK (cloudinary-core 2.5.0), no network. **Code-level finding [C] from SDK bytecode:** `Url.generate()` embeds the AuthToken only when `Url.signed(true)` is set, and the token must be keyed with the API secret (`new AuthToken(apiSecret)`); otherwise the token is silently omitted/empty. The tool implements the correct pattern and `--self-test` proves it offline. **The merged `CertificateDeliveryServiceImpl` currently omits both — blocking finding for Phase 3 acceptance; fix with tests before/with pilot execution.**
+- `test-tooling.sh` — 9 local safety cases (abort paths, mismatch abort before API calls, no-secret-leak preflight-only run, state-file validation). Never touches Cloudinary.
+
+Expected results per step are printed inline by the runner and restated in §3.
 
 ## 3. Acceptance for the pilot (live-provider; mocked tests cannot establish these)
 
