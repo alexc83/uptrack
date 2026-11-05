@@ -12,20 +12,7 @@
 
 ## Workflow
 
-This is the standard workflow we will use for every feature or fix:
-
-1. **Document** - Document the feature or fix in `@context/current-feature.md`.
-2. **Branch** - Create a new branch for the feature, fix, or task.
-3. **Implement** - Implement the work described in `@context/current-feature.md`.
-4. **Test** - Verify it works in the browser, API client, or appropriate interface. Run the relevant frontend and/or backend build commands and fix any errors. Add or update tests when appropriate.
-5. **Iterate** - Make revisions if needed.
-6. **Commit** - Only after the relevant build passes and the change is working.
-7. **Merge** - Merge into `main`.
-8. **Delete Branch** - Delete the branch after merge.
-9. **Review** - Review AI-generated code periodically and on demand.
-10. **Complete** - Mark the task as completed in `@context/current-feature.md` and add it to history.
-
-Do not commit without permission and until the relevant build passes. If a build fails, fix the issues first.
+Follow [AGENTS.md](../AGENTS.md) and the [issue-first development workflow](development-workflow.md). GitHub issues and PRs hold active scope, decisions, acceptance and progress. `current-feature.md` is historical evidence. Preserve all owner authorization and verification requirements; existing explicit authorization may cover a named sequence.
 
 ## Branching
 

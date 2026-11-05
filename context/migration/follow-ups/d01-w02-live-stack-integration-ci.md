@@ -1,3 +1,5 @@
+> **PM01 tracking:** [GitHub issue #44](https://github.com/alexc83/uptrack/issues/44) is the canonical active tracker. This document preserves investigation and proposed options; it is not implementation authorization.
+
 # D01-W02 — Isolated live React → Spring Boot → PostgreSQL integration tests in CI
 
 Status: **OPEN — future engineering initiative. Not part of D01; not authorized.** Recorded 2026-11-04 during the D01 audit.

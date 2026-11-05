@@ -1,3 +1,5 @@
+> **PM01 tracking:** [GitHub issue #43](https://github.com/alexc83/uptrack/issues/43) is the canonical active tracker. This document preserves investigation and proposed options; it is not implementation authorization.
+
 # D01-W01 — Explicit database schema migrations
 
 Status: **OPEN — technical debt / future engineering initiative. Not part of D01; not authorized.** Recorded 2026-11-04 during the D01 audit.
