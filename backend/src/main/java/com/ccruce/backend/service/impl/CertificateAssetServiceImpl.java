@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -68,7 +67,9 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
         CertificateAsset asset = new CertificateAsset();
         asset.setUserId(userId);
         // Server-generated identity: the client never supplies a Cloudinary public ID.
-        asset.setPublicId("uptrack/users/%s/certificates/%s".formatted(userId, UUID.randomUUID()));
+        // The extension is part of a raw asset's identity, not a delivery-time suffix.
+        String suffix = "raw".equals(resourceType) ? ".pdf" : "";
+        asset.setPublicId("uptrack/users/%s/certificates/%s%s".formatted(userId, UUID.randomUUID(), suffix));
         asset.setResourceType(resourceType);
         asset.setDeliveryType(deliveryType);
         asset.setCloudName(cloudinaryProperties.cloudName());
@@ -115,7 +116,10 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
     @Override
     @Transactional
     public void adoptFromProbe(CertificateAsset asset, UUID leaseToken, Map<String, Object> providerResource) {
-        String deliveryUrl = buildDeliveryUrl(providerResource, asset.getResourceType());
+        if (!CloudinaryAssetIdentity.matches(asset, providerResource)) {
+            throw new IllegalArgumentException("Provider certificate identity mismatch.");
+        }
+        String deliveryUrl = buildDeliveryUrl(providerResource);
         repository.adoptReservation(asset.getId(), leaseToken, deliveryUrl, OffsetDateTime.now());
     }
 
@@ -295,6 +299,9 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
             @SuppressWarnings("unchecked")
             Map<String, Object> resource = (Map<String, Object>) cloudinary.api().resource(
                     asset.getPublicId(), Map.of("resource_type", asset.getResourceType(), "type", asset.getDeliveryType()));
+            if (!CloudinaryAssetIdentity.matches(asset, resource)) {
+                return new ProbeResult(false, false, null, FailureClass.UNKNOWN.name());
+            }
             return new ProbeResult(true, true, resource, null);
         } catch (NotFound notFound) {
             return new ProbeResult(true, false, null, null);
@@ -304,21 +311,10 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
         }
     }
 
-    /** Delivery URL for a recovered asset: raw assets need the format suffix, mirroring upload-time handling. */
-    private static String buildDeliveryUrl(Map<String, Object> resource, String resourceType) {
+    /** Keep the provider's URL unchanged; never fabricate a second raw identity. */
+    private static String buildDeliveryUrl(Map<String, Object> resource) {
         Object secureUrl = resource.get("secure_url");
-        if (!(secureUrl instanceof String url) || url.isBlank()) {
-            return null;
-        }
-        if (!"raw".equals(resourceType)) {
-            return url;
-        }
-        Object format = resource.get("format");
-        if (format instanceof String f && !f.isBlank()
-                && !url.toLowerCase(Locale.ROOT).endsWith("." + f.toLowerCase(Locale.ROOT))) {
-            return url + "." + f;
-        }
-        return url;
+        return secureUrl instanceof String url && !url.isBlank() ? url : null;
     }
 
     private static String classifyFailure(Exception exception) {

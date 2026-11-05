@@ -55,8 +55,9 @@ class CertificateUploadServiceImplTest {
             CertificateAsset asset = new CertificateAsset();
             asset.setId(UUID.randomUUID());
             asset.setUserId(invocation.getArgument(0));
-            asset.setPublicId("uptrack/users/%s/certificates/%s".formatted(invocation.getArgument(0), UUID.randomUUID()));
             asset.setResourceType(invocation.getArgument(1));
+            asset.setDeliveryType(invocation.getArgument(3));
+            asset.setPublicId("uptrack/x");
             return asset;
         });
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
@@ -73,7 +74,7 @@ class CertificateUploadServiceImplTest {
     }
 
     private static Map<String, Object> result(String key, Object missingOrBad) {
-        Map<String, Object> map = new HashMap<>(Map.of("resource_type", "image", "public_id", "uptrack/x",
+        Map<String, Object> map = new HashMap<>(Map.of("resource_type", "image", "type", "upload", "public_id", "uptrack/x",
                 "secure_url", "https://res.example.test/x.png"));
         if (missingOrBad == null) map.remove(key); else map.put(key, missingOrBad);
         return map;
@@ -160,7 +161,7 @@ class CertificateUploadServiceImplTest {
 
     @Test
     void incompleteProviderResponsesAreRejected() throws IOException {
-        for (String key : List.of("resource_type", "public_id", "secure_url")) {
+        for (String key : List.of("resource_type", "public_id", "secure_url", "type")) {
             when(uploader.upload(any(), anyMap())).thenReturn(result(key, null));
             assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()), "missing " + key);
             when(uploader.upload(any(), anyMap())).thenReturn(result(key, "  "));
@@ -171,13 +172,26 @@ class CertificateUploadServiceImplTest {
     }
 
     @Test
-    void rawResourceGetsFormatSuffixOnlyWhenMissingFromUrl() throws IOException {
-        Map<String, Object> raw = new HashMap<>(Map.of("resource_type", "raw", "public_id", "uptrack/x",
+    void mismatchedProviderIdentityIsReconciledWithoutAttachingOrDeletingAnotherAsset() throws IOException {
+        for (var mismatch : Map.of("public_id", "another-asset", "resource_type", "raw", "type", "authenticated").entrySet()) {
+            Map<String, Object> response = result(null, null);
+            response.put(mismatch.getKey(), mismatch.getValue());
+            when(uploader.upload(any(), anyMap())).thenReturn(response);
+            assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()));
+        }
+        verify(assetService, org.mockito.Mockito.times(3)).scheduleReconciliation(any());
+        verify(assetService, never()).markUploaded(any(), any(), any(), any());
+        verify(uploader, never()).destroy(anyString(), anyMap());
+    }
+
+    @Test
+    void rawResourceKeepsProviderUrlWithoutInventingFormatSuffix() throws IOException {
+        Map<String, Object> raw = new HashMap<>(Map.of("resource_type", "raw", "type", "upload", "public_id", "uptrack/x",
                 "secure_url", "https://res.example.test/raw/x", "format", "pdf"));
         when(uploader.upload(any(), anyMap())).thenReturn(raw);
         assertEquals("raw", service.uploadCertificate(pdf()).resourceType());
-        // The raw format suffix is still computed for the registry's stored delivery URL...
-        verify(assetService).markUploaded(any(), any(), eq("https://res.example.test/raw/x.pdf"), any());
+        // Provider URLs are authoritative; do not infer an extension from metadata.
+        verify(assetService).markUploaded(any(), any(), eq("https://res.example.test/raw/x"), any());
 
         raw.put("secure_url", "https://res.example.test/raw/x.PDF");
         service.uploadCertificate(pdf());
@@ -186,7 +200,7 @@ class CertificateUploadServiceImplTest {
         raw.remove("format");
         raw.put("secure_url", "https://res.example.test/raw/x");
         CertificateUploadResponseDto noFormat = service.uploadCertificate(pdf());
-        verify(assetService).markUploaded(any(), any(), eq("https://res.example.test/raw/x"), any());
+        verify(assetService, org.mockito.Mockito.times(2)).markUploaded(any(), any(), eq("https://res.example.test/raw/x"), any());
         assertEquals("https://res.example.test/raw/x", noFormat.url());
         assertEquals("raw", noFormat.resourceType());
     }

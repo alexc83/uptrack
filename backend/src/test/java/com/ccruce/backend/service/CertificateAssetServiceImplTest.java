@@ -64,6 +64,7 @@ class CertificateAssetServiceImplTest {
         assertEquals("acls-cert.pdf", asset.getOriginalFilename(), "filename must survive crash/recovery");
         assertTrue(asset.getPublicId().startsWith("uptrack/users/%s/certificates/".formatted(userId)),
                 "public id must be server-generated under the owner folder");
+        assertTrue(asset.getPublicId().endsWith(".pdf"), "raw extension is reserved before provider I/O");
         verify(repository).save(asset);
         verify(cloudinary, never()).uploader();
     }
@@ -78,6 +79,36 @@ class CertificateAssetServiceImplTest {
         when(repository.findById(assetId)).thenReturn(Optional.of(foreign));
 
         assertTrue(service.findOwnedAsset(assetId, userId).isEmpty(), "foreign asset must look nonexistent");
+    }
+
+    @Test
+    void imageReservationHasNoFormatSuffix() {
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        CertificateAsset asset = service.reserve(UUID.randomUUID(), "image", "scan.png", "authenticated");
+        String basename = asset.getPublicId().substring(asset.getPublicId().lastIndexOf('/') + 1);
+        assertEquals(UUID.fromString(basename).toString(), basename);
+    }
+
+    @Test
+    void rawIdentityStaysExactForProbeAndDeletion() throws Exception {
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        CertificateAsset asset = service.reserve(UUID.randomUUID(), "raw", "scan.PDF", "authenticated");
+        String id = asset.getPublicId();
+        assertTrue(id.endsWith(".pdf") && !id.endsWith(".pdf.pdf"));
+        com.cloudinary.api.ApiResponse response = mock(com.cloudinary.api.ApiResponse.class);
+        when(response.get("public_id")).thenReturn(id);
+        when(response.get("resource_type")).thenReturn("raw");
+        when(response.get("type")).thenReturn("authenticated");
+        org.mockito.Mockito.doReturn(response).when(api).resource(anyString(), anyMap());
+        assertTrue(service.probeAtProvider(asset).probeSucceeded());
+        verify(api).resource(id, Map.of("resource_type", "raw", "type", "authenticated"));
+        Uploader uploader = mock(Uploader.class);
+        when(cloudinary.uploader()).thenReturn(uploader);
+        when(uploader.destroy(anyString(), anyMap())).thenReturn(Map.of("result", "ok"));
+        service.destroyAtProvider(asset);
+        verify(uploader).destroy(id, Map.of("resource_type", "raw", "type", "authenticated", "invalidate", true));
+        when(response.get("public_id")).thenReturn(id + ".pdf");
+        assertFalse(service.probeAtProvider(asset).probeSucceeded(), "a different provider identity is not adopted");
     }
 
     @Test
@@ -107,6 +138,9 @@ class CertificateAssetServiceImplTest {
         asset.setResourceType("raw");
 
         com.cloudinary.api.ApiResponse response = mock(com.cloudinary.api.ApiResponse.class);
+        when(response.get("public_id")).thenReturn(asset.getPublicId());
+        when(response.get("resource_type")).thenReturn(asset.getResourceType());
+        when(response.get("type")).thenReturn(asset.getDeliveryType());
         when(response.get("secure_url")).thenReturn("https://res.example.test/raw/upload/x");
         when(response.get("format")).thenReturn("pdf");
         org.mockito.Mockito.doReturn(response).when(api).resource(anyString(), anyMap());
@@ -129,14 +163,16 @@ class CertificateAssetServiceImplTest {
     }
 
     @Test
-    void adoptFromProbeRestoresFullDeliveryMetadataIncludingRawFormatSuffix() {
+    void adoptFromProbeKeepsExactProviderIdentityAndUrl() {
         CertificateAsset asset = new CertificateAsset();
         asset.setId(UUID.randomUUID());
         asset.setResourceType("raw");
+        asset.setPublicId("uptrack/x.pdf");
         UUID token = UUID.randomUUID();
 
         service.adoptFromProbe(asset, token, Map.of(
-                "secure_url", "https://res.example.test/raw/upload/x", "format", "pdf"));
+                "public_id", asset.getPublicId(), "resource_type", "raw", "type", "upload",
+                "secure_url", "https://res.example.test/raw/upload/x.pdf", "format", "pdf"));
 
         ArgumentCaptor<String> url = ArgumentCaptor.forClass(String.class);
         verify(repository).adoptReservation(eq(asset.getId()), eq(token), url.capture(), any());
@@ -144,7 +180,7 @@ class CertificateAssetServiceImplTest {
                 "recovered raw asset must keep a viewable delivery URL");
 
         asset.setResourceType("image");
-        service.adoptFromProbe(asset, token, Map.of("secure_url", "https://res.example.test/image/upload/x.png"));
+        service.adoptFromProbe(asset, token, Map.of("public_id", asset.getPublicId(), "resource_type", "image", "type", "upload", "secure_url", "https://res.example.test/image/upload/x.png"));
         verify(repository).adoptReservation(eq(asset.getId()), eq(token), eq("https://res.example.test/image/upload/x.png"), any());
     }
 

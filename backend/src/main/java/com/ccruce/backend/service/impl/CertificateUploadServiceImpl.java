@@ -83,7 +83,7 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
             // The client filename is persisted at reservation time so a recovered upload
             // (provider success + app crash) still has complete authoritative metadata.
             // Strategy A gate: flag off (default) -> delivery type 'upload' and URLs stay exposed;
-            // flag on (post-pilot only) -> new assets are 'authenticated'.
+            // flag on (after separately authorized activation only) -> new assets are 'authenticated'.
             String deliveryType = deliveryProperties.enabled() ? "authenticated" : "upload";
             reservation = assetService.reserve(userId, resourceType, originalFilename, deliveryType);
         } catch (RuntimeException exception) {
@@ -104,6 +104,10 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
             throw new UploadFailedException("Certificate upload failed.");
         }
 
+        if (uploadResult == null) {
+            assetService.scheduleReconciliation(reservation.getId());
+            throw new UploadFailedException("Certificate upload failed.");
+        }
         Object providerError = uploadResult.get("error");
         if (providerError != null) {
             if (providerError instanceof Map<?, ?> errorMap && isClientErrorCode(errorMap.get("http_code"))) {
@@ -119,7 +123,9 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
         String secureUrl;
         try {
             returnedResourceType = getRequiredString(uploadResult, "resource_type");
-            getRequiredString(uploadResult, "public_id");
+            if (!CloudinaryAssetIdentity.matches(reservation, uploadResult)) {
+                throw new UploadFailedException("Certificate upload failed.");
+            }
             secureUrl = getRequiredString(uploadResult, "secure_url");
         } catch (UploadFailedException exception) {
             // Uncertain outcome: the asset may exist; reconcile via the existence probe.
@@ -127,10 +133,10 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
             throw exception;
         }
 
-        String deliveryUrl = buildAssetUrl(uploadResult, returnedResourceType);
+        String deliveryUrl = secureUrl; // Exact provider URL; raw extension is already part of the reserved ID.
         assetService.markUploaded(reservation.getId(), userId, deliveryUrl, originalFilename);
 
-        // Phase 3 (#23) Strategy A gate: only while the flag is ON (post-pilot) is the permanent URL
+        // Phase 3 (#23) Strategy A gate: only while the flag is ON (after separately authorized activation) is the permanent URL
         // withheld — new uploads are then 'authenticated' and viewing uses the delivery endpoint.
         // Flag OFF (default) preserves the Phase 2 response exactly.
         return new CertificateUploadResponseDto(
@@ -238,21 +244,6 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
         return "image";
     }
 
-    private String buildAssetUrl(Map<String, Object> uploadResult, String resourceType) {
-        String secureUrl = getRequiredString(uploadResult, "secure_url");
-
-        if (!"raw".equals(resourceType)) {
-            return secureUrl;
-        }
-
-        String format = getOptionalString(uploadResult, "format");
-        if (format == null || secureUrl.toLowerCase(Locale.ROOT).endsWith("." + format.toLowerCase(Locale.ROOT))) {
-            return secureUrl;
-        }
-
-        return secureUrl + "." + format;
-    }
-
     private String getRequiredString(Map<String, Object> result, String key) {
         Object value = result.get(key);
         if (value instanceof String stringValue && !stringValue.isBlank()) {
@@ -262,12 +253,4 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
         throw new UploadFailedException("Certificate upload failed.");
     }
 
-    private String getOptionalString(Map<String, Object> result, String key) {
-        Object value = result.get(key);
-        if (value instanceof String stringValue && !stringValue.isBlank()) {
-            return stringValue;
-        }
-
-        return null;
-    }
 }

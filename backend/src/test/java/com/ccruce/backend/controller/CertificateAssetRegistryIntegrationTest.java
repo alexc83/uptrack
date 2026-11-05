@@ -84,6 +84,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
             Map<String, Object> options = invocation.getArgument(1);
             return Map.of(
                     "resource_type", options.get("resource_type"),
+                    "type", options.getOrDefault("type", "upload"),
                     "public_id", options.get("public_id"),
                     "secure_url", "https://res.example.test/%s/upload/%s".formatted(options.get("resource_type"), options.get("public_id")),
                     "format", "pdf");
@@ -416,14 +417,17 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
         // Retry becomes due; probe says the asset exists (upload succeeded before the crash): adopt.
         makeProbeEligible(stale);
         com.cloudinary.api.ApiResponse response = Mockito.mock(com.cloudinary.api.ApiResponse.class);
+        when(response.get("public_id")).thenReturn(stale.getPublicId());
+        when(response.get("resource_type")).thenReturn(stale.getResourceType());
+        when(response.get("type")).thenReturn(stale.getDeliveryType());
         when(response.get("secure_url")).thenReturn("https://res.example.test/raw/upload/" + stale.getPublicId());
         when(response.get("format")).thenReturn("pdf");
         org.mockito.Mockito.doReturn(response).when(api).resource(anyString(), anyMap());
         sweeper.reconcileBatch();
         CertificateAsset recovered = assetById(stale.getId().toString());
         assertEquals(AssetStatus.PENDING, recovered.getStatus());
-        assertEquals("https://res.example.test/raw/upload/" + stale.getPublicId() + ".pdf", recovered.getDeliveryUrl(),
-                "recovered raw asset gets the format suffix for viewing");
+        assertEquals("https://res.example.test/raw/upload/" + stale.getPublicId(), recovered.getDeliveryUrl(),
+                "recovered raw asset retains the provider URL and exact reserved identity");
         assertEquals("cert.pdf", recovered.getOriginalFilename());
 
         // Second uncertain upload; probe says the asset does NOT exist: UPLOAD_FAILED.
@@ -474,6 +478,9 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
         // Provider recovers and the probe confirms the asset: adopt with full metadata.
         makeProbeEligible(afterFailure);
         com.cloudinary.api.ApiResponse response = Mockito.mock(com.cloudinary.api.ApiResponse.class);
+        when(response.get("public_id")).thenReturn(stale.getPublicId());
+        when(response.get("resource_type")).thenReturn(stale.getResourceType());
+        when(response.get("type")).thenReturn(stale.getDeliveryType());
         when(response.get("secure_url")).thenReturn("https://res.example.test/raw/upload/" + stale.getPublicId());
         when(response.get("format")).thenReturn("pdf");
         org.mockito.Mockito.doReturn(response).when(api).resource(anyString(), anyMap());

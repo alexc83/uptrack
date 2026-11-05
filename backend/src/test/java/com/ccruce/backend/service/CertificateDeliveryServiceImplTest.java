@@ -13,9 +13,7 @@ import com.ccruce.backend.repository.CERecordRepository;
 import com.ccruce.backend.repository.UserRepository;
 import com.ccruce.backend.security.AuthenticatedUser;
 import com.ccruce.backend.service.impl.CertificateDeliveryServiceImpl;
-import com.cloudinary.AuthToken;
 import com.cloudinary.Cloudinary;
-import com.cloudinary.Url;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.RETURNS_SELF;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,23 +42,21 @@ class CertificateDeliveryServiceImplTest {
     private final UserRepository userRepository = mock(UserRepository.class);
     private final CertificateAssetService assetService = mock(CertificateAssetService.class);
     private final Cloudinary cloudinary = mock(Cloudinary.class);
-    private final Url url = mock(Url.class, RETURNS_SELF);
     private final CertificateDeliveryServiceImpl service =
             new CertificateDeliveryServiceImpl(ceRecordRepository, userRepository, assetService, cloudinary,
                     new com.ccruce.backend.config.CertificateDeliveryProperties(true, 60),
-                    new com.ccruce.backend.config.CloudinaryAuthTokenProperties("0123456789abcdef0123456789abcdef"));
+                    new com.ccruce.backend.config.CloudinaryProperties("test-cloud", "key", "secret"));
 
     private final UUID userId = UUID.randomUUID();
     private final UUID recordId = UUID.randomUUID();
     private final UUID assetId = UUID.randomUUID();
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         User user = new User();
         user.setId(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(cloudinary.url()).thenReturn(url);
-        when(url.generate(anyString())).thenReturn("https://res.example.test/raw/authenticated/tok/uptrack/users/u/certificates/x.pdf");
+        when(cloudinary.privateDownload(anyString(), org.mockito.ArgumentMatchers.nullable(String.class), org.mockito.ArgumentMatchers.anyMap())).thenReturn("https://api.example.test/raw/download?signature=synthetic");
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 new AuthenticatedUser(userId, "u@example.test", "User"), null, List.of()));
     }
@@ -88,6 +83,7 @@ class CertificateDeliveryServiceImplTest {
         asset.setStatus(AssetStatus.ATTACHED);
         asset.setCeRecordId(recordId);
         asset.setResourceType("raw");
+        asset.setCloudName("test-cloud");
         asset.setPublicId("uptrack/users/u/certificates/x");
         asset.setOriginalFilename("cert.pdf");
         asset.setDeliveryType("authenticated");
@@ -95,24 +91,20 @@ class CertificateDeliveryServiceImplTest {
     }
 
     @Test
-    void issuesShortLivedTokenUrlBoundToTheAsset() {
+    void issuesShortLivedDownloadBoundToTheAsset() throws Exception {
         when(ceRecordRepository.findById(recordId)).thenReturn(Optional.of(managedRecord()));
         when(assetService.findOwnedAsset(assetId, userId)).thenReturn(Optional.of(attachedAsset()));
 
         CertificateDeliveryUrlDto result = service.issueDeliveryUrl(recordId);
 
-        assertEquals("https://res.example.test/raw/authenticated/tok/uptrack/users/u/certificates/x.pdf", result.url());
+        assertEquals("https://api.example.test/raw/download?signature=synthetic", result.url());
         assertTrue(result.expiresAt().isAfter(Instant.now().plusSeconds(55))
                 && result.expiresAt().isBefore(Instant.now().plusSeconds(61)), "60s TTL");
 
-        ArgumentCaptor<AuthToken> token = ArgumentCaptor.forClass(AuthToken.class);
-        verify(url).authToken(token.capture());
-        assertEquals("/raw/authenticated/tok/uptrack/users/u/certificates/x.pdf", token.getValue().asMap().get("acl").toString().replace("[", "").replace("]", ""));
-        verify(url, org.mockito.Mockito.times(2)).type("authenticated");
-        verify(url).signed(true);
-        verify(url, org.mockito.Mockito.times(2)).secure(true);
-        verify(url, org.mockito.Mockito.times(2)).format("pdf");
-        verify(url, org.mockito.Mockito.times(2)).generate("uptrack/users/u/certificates/x");
+        ArgumentCaptor<java.util.Map<String, Object>> options = ArgumentCaptor.forClass(java.util.Map.class);
+        verify(cloudinary).privateDownload(eq("uptrack/users/u/certificates/x"), org.mockito.ArgumentMatchers.isNull(), options.capture());
+        assertEquals(java.util.Map.of("resource_type", "raw", "type", "authenticated",
+                "expires_at", result.expiresAt().getEpochSecond(), "attachment", false), options.getValue());
     }
 
     @Test
@@ -144,7 +136,7 @@ class CertificateDeliveryServiceImplTest {
         when(assetService.findOwnedAsset(assetId, userId)).thenReturn(Optional.of(asset));
 
         assertThrows(ConflictException.class, () -> service.issueDeliveryUrl(recordId));
-        verify(url, org.mockito.Mockito.never()).generate(anyString());
+        org.mockito.Mockito.verifyNoInteractions(cloudinary);
     }
 
     @Test
@@ -155,14 +147,14 @@ class CertificateDeliveryServiceImplTest {
         when(assetService.findOwnedAsset(assetId, userId)).thenReturn(Optional.of(asset));
 
         assertThrows(ConflictException.class, () -> service.issueDeliveryUrl(recordId));
-        verify(url, org.mockito.Mockito.never()).generate(anyString());
+        org.mockito.Mockito.verifyNoInteractions(cloudinary);
     }
 
     @Test
-    void urlGenerationFailureNeverFallsBackToPublicUrl() {
+    void urlGenerationFailureNeverFallsBackToPublicUrl() throws Exception {
         when(ceRecordRepository.findById(recordId)).thenReturn(Optional.of(managedRecord()));
         when(assetService.findOwnedAsset(assetId, userId)).thenReturn(Optional.of(attachedAsset()));
-        when(url.generate(anyString())).thenThrow(new IllegalStateException("signing key broken"));
+        when(cloudinary.privateDownload(anyString(), org.mockito.ArgumentMatchers.nullable(String.class), org.mockito.ArgumentMatchers.anyMap())).thenThrow(new java.io.IOException("sensitive SDK inputs"));
 
         UploadFailedException thrown = assertThrows(UploadFailedException.class, () -> service.issueDeliveryUrl(recordId));
         assertEquals("Certificate delivery failed.", thrown.getMessage());
@@ -172,11 +164,11 @@ class CertificateDeliveryServiceImplTest {
     void flagDisabledIssuesNothing() {
         var disabled = new CertificateDeliveryServiceImpl(ceRecordRepository, userRepository, assetService, cloudinary,
                 new com.ccruce.backend.config.CertificateDeliveryProperties(false, 60),
-                new com.ccruce.backend.config.CloudinaryAuthTokenProperties(null));
+                new com.ccruce.backend.config.CloudinaryProperties("test-cloud", "key", "secret"));
         when(ceRecordRepository.findById(recordId)).thenReturn(Optional.of(managedRecord()));
         when(assetService.findOwnedAsset(assetId, userId)).thenReturn(Optional.of(attachedAsset()));
         assertThrows(ResourceNotFoundException.class, () -> disabled.issueDeliveryUrl(recordId));
-        verify(url, org.mockito.Mockito.never()).generate(anyString());
+        org.mockito.Mockito.verifyNoInteractions(cloudinary);
     }
 
     @Test

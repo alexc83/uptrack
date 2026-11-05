@@ -6,7 +6,6 @@ import com.ccruce.backend.enums.AssetStatus;
 import com.ccruce.backend.repository.CertificateAssetRepository;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Uploader;
-import com.cloudinary.Url;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.RETURNS_SELF;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,7 +47,6 @@ class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTe
     private Cloudinary cloudinary;
 
     private Uploader uploader;
-    private Url url;
 
     @Autowired
     private CertificateAssetRepository assetRepository;
@@ -57,15 +54,14 @@ class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTe
     @BeforeEach
     void setUpCloudinaryMock() throws Exception {
         uploader = Mockito.mock(Uploader.class);
-        url = mock(Url.class, RETURNS_SELF);
         when(cloudinary.uploader()).thenReturn(uploader);
-        when(cloudinary.url()).thenReturn(url);
-        when(url.generate(anyString())).thenAnswer(invocation ->
-                "https://res.example.test/authenticated/tok/" + invocation.getArgument(0));
+        when(cloudinary.privateDownload(anyString(), org.mockito.ArgumentMatchers.nullable(String.class), anyMap()))
+                .thenAnswer(invocation -> "https://api.example.test/download?public_id=" + invocation.getArgument(0));
         when(uploader.upload(any(), anyMap())).thenAnswer(invocation -> {
             Map<String, Object> options = invocation.getArgument(1);
             return Map.of(
                     "resource_type", options.get("resource_type"),
+                    "type", options.getOrDefault("type", "upload"),
                     "public_id", options.get("public_id"),
                     "secure_url", "https://res.example.test/%s/upload/%s".formatted(options.get("resource_type"), options.get("public_id")),
                     "format", "pdf");
@@ -111,7 +107,7 @@ class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTe
         String credentialId = createCredential(session, "RN License");
         String assetId = uploadCertificate(session);
         String recordId = createCERecordWithAsset(session, credentialId, assetId);
-        // Phase 4 migrates assets to delivery type 'authenticated'; simulate a migrated asset.
+        // Flag-on uploads already use authenticated storage; the registry remains authoritative.
         CertificateAsset asset = assetRepository.findById(UUID.fromString(assetId)).orElseThrow();
         asset.setDeliveryType("authenticated");
         assetRepository.save(asset);
@@ -128,7 +124,9 @@ class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTe
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.url").isString())
-                .andExpect(jsonPath("$.expiresAt").isString());
+                .andExpect(jsonPath("$.expiresAt").isString())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
     }
 
     @Test
@@ -166,9 +164,11 @@ class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTe
         // Registry records delivery type 'authenticated' and the upload carried type=authenticated.
         CertificateAsset asset = assetRepository.findById(UUID.fromString(assetId)).orElseThrow();
         assertEquals("authenticated", asset.getDeliveryType());
+        org.junit.jupiter.api.Assertions.assertTrue(asset.getPublicId().endsWith(".pdf"));
         org.mockito.ArgumentCaptor<Map<String, Object>> options = org.mockito.ArgumentCaptor.forClass(Map.class);
         org.mockito.Mockito.verify(uploader).upload(any(), options.capture());
         assertEquals("authenticated", options.getValue().get("type"));
+        assertEquals(asset.getPublicId(), options.getValue().get("public_id"));
 
         // Attach: managed CE response suppresses the permanent URL when the asset is authenticated.
         String recordId = createCERecordWithAsset(session, credentialId, assetId);

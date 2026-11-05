@@ -264,9 +264,10 @@ describe('CE detail drawer, edit, certificate removal and delete', () => {
     await user.click(within(drawer).getByRole('button', { name: 'Remove Certificate' }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(recordId, expect.objectContaining({ credentialId, certificateUrl: null, certificatePublicId: null, certificateResourceType: null, certificateOriginalFilename: null })));
   });
-  it('views a managed certificate via an on-demand short-lived URL, not a stored link', async () => {
+  it.each(['raw', 'image'])('views a managed %s certificate through a freshly issued privateDownload URL', async (resourceType) => {
+    const downloadUrl = `https://api.cloudinary.com/v1_1/test-cloud/${resourceType}/download?public_id=synthetic&expires_at=2000000060&signature=offline`;
     vi.mocked(ceRecordsApi.get).mockResolvedValue({ ...withCert(structuredClone(record)), certificateUrl: null, certificateAssetId: 'asset-1', certificateClassification: 'MANAGED_VERIFIED' });
-    const getUrl = vi.spyOn(ceRecordsApi, 'getCertificateUrl').mockResolvedValue({ url: 'https://files.example.test/short-lived', expiresAt: '2026-11-05T00:00:00Z' });
+    const getUrl = vi.spyOn(ceRecordsApi, 'getCertificateUrl').mockResolvedValue({ url: downloadUrl, expiresAt: '2026-11-05T00:00:00Z' });
     // Popup is opened synchronously on click (user activation), then navigated to the fresh URL.
     const popup = { location: { href: 'about:blank' }, closed: false, close: vi.fn(), opener: {} as Window | null };
     const openSpy = vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
@@ -277,7 +278,7 @@ describe('CE detail drawer, edit, certificate removal and delete', () => {
     await user.click(viewButton);
     expect(openSpy).toHaveBeenCalledWith('', '_blank');
     await waitFor(() => expect(getUrl).toHaveBeenCalledWith(recordId));
-    await waitFor(() => expect(popup.location.href).toBe('https://files.example.test/short-lived'));
+    await waitFor(() => expect(popup.location.href).toBe(downloadUrl));
     expect(popup.opener).toBeNull();
   });
   it('closes the placeholder popup and shows an inline error when the delivery URL request fails', async () => {

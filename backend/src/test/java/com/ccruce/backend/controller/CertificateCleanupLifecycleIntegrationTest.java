@@ -83,6 +83,7 @@ class CertificateCleanupLifecycleIntegrationTest extends AbstractControllerInteg
             Map<String, Object> options = invocation.getArgument(1);
             return Map.of(
                     "resource_type", options.get("resource_type"),
+                    "type", options.getOrDefault("type", "upload"),
                     "public_id", options.get("public_id"),
                     "secure_url", "https://res.example.test/%s/upload/%s".formatted(options.get("resource_type"), options.get("public_id")),
                     "format", "pdf");

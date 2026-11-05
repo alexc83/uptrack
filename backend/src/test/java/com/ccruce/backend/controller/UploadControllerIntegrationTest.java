@@ -109,19 +109,20 @@ class UploadControllerIntegrationTest extends AbstractControllerIntegrationTest 
                 "raw".equals(options.get("resource_type"))
                         && Boolean.FALSE.equals(options.get("use_filename"))
                         && !options.containsKey("filename_override")
-        ))).thenReturn(Map.of(
-                "secure_url", "https://res.cloudinary.com/demo/raw/upload/v1/uptrack/users/%s/certificates/acls-cert.pdf".formatted(session.userId()),
-                "public_id", "uptrack/users/%s/certificates/acls-cert".formatted(session.userId()),
-                "format", "pdf",
-                "resource_type", "raw"
-        ));
+        ))).thenAnswer(invocation -> {
+            Map<String, Object> options = invocation.getArgument(1);
+            return Map.of("secure_url", "https://res.example.test/raw/upload/v1/" + options.get("public_id"),
+                    "public_id", options.get("public_id"), "resource_type", "raw", "type", "upload");
+        });
 
         mockMvc.perform(multipart("/api/uploads/certificates")
                         .file(file)
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.url").value("https://res.cloudinary.com/demo/raw/upload/v1/uptrack/users/%s/certificates/acls-cert.pdf".formatted(session.userId())))
-                .andExpect(jsonPath("$.publicId").value("uptrack/users/%s/certificates/acls-cert".formatted(session.userId())))
+                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.endsWith(".pdf")))
+                .andExpect(jsonPath("$.publicId").value(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.startsWith("uptrack/users/%s/certificates/".formatted(session.userId())),
+                        org.hamcrest.Matchers.endsWith(".pdf"))))
                 .andExpect(jsonPath("$.originalFilename").value("acls-cert.pdf"))
                 .andExpect(jsonPath("$.resourceType").value("raw"));
     }

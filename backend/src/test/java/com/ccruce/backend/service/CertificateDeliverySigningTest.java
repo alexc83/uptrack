@@ -1,157 +1,158 @@
 package com.ccruce.backend.service;
 
 import com.ccruce.backend.config.CertificateDeliveryProperties;
-import com.ccruce.backend.config.CloudinaryAuthTokenProperties;
+import com.ccruce.backend.config.CloudinaryProperties;
 import com.ccruce.backend.dto.response.CertificateDeliveryUrlDto;
-import com.ccruce.backend.entity.CERecord;
-import com.ccruce.backend.entity.CertificateAsset;
-import com.ccruce.backend.entity.User;
+import com.ccruce.backend.entity.*;
 import com.ccruce.backend.enums.AssetStatus;
 import com.ccruce.backend.exception.UploadFailedException;
 import com.ccruce.backend.repository.CERecordRepository;
 import com.ccruce.backend.repository.UserRepository;
 import com.ccruce.backend.security.AuthenticatedUser;
 import com.ccruce.backend.service.impl.CertificateDeliveryServiceImpl;
-import com.cloudinary.AuthToken;
 import com.cloudinary.Cloudinary;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/** Real SDK URL generation/HMAC, zero provider I/O. Assertions never dump URLs/tokens/keys. */
+/** Real installed SDK + independent API signature verification. No provider I/O or live-enforcement claim. */
 @ExtendWith(OutputCaptureExtension.class)
 class CertificateDeliverySigningTest {
-    // Public synthetic vectors. API secret deliberately differs and is not hex.
-    private static final String KEY = "0123456789abcdef0123456789abcdef";
-    private static final String API_SECRET = "local-fixture-api-secret";
+    private static final String SECRET = "public-synthetic-api-secret";
+    private static final String CLOUD = "local-fixture-cloud";
     private final CERecordRepository records = mock(CERecordRepository.class);
     private final UserRepository users = mock(UserRepository.class);
     private final CertificateAssetService assets = mock(CertificateAssetService.class);
-    private final Cloudinary sdk = spy(new Cloudinary(Map.of("cloud_name", "local-fixture-cloud",
-            "api_key", "local-fixture-key", "api_secret", API_SECRET)));
-    private final UUID userId = UUID.randomUUID(), recordId = UUID.randomUUID(), assetId = UUID.randomUUID();
+    private final Cloudinary sdk = spy(new Cloudinary(Map.of("cloud_name", CLOUD,
+            "api_key", "public-synthetic-api-key", "api_secret", SECRET)));
+    private final UUID userId=UUID.randomUUID(), recordId=UUID.randomUUID(), assetId=UUID.randomUUID();
     private CertificateAsset asset;
 
     @BeforeEach void setUp() {
-        User user = new User(); user.setId(userId);
-        CERecord record = new CERecord(); record.setId(recordId); record.setUser(user); record.setCertificateAssetId(assetId);
-        asset = new CertificateAsset();
-        asset.setId(assetId); asset.setUserId(userId); asset.setStatus(AssetStatus.ATTACHED); asset.setCeRecordId(recordId);
-        asset.setResourceType("raw"); asset.setPublicId("uptrack/users/u/certificates/sample");
-        asset.setOriginalFilename("certificate.pdf"); asset.setDeliveryType("authenticated");
+        User user=new User();user.setId(userId);
+        CERecord record=new CERecord();record.setId(recordId);record.setUser(user);record.setCertificateAssetId(assetId);
+        asset=new CertificateAsset();asset.setId(assetId);asset.setUserId(userId);asset.setStatus(AssetStatus.ATTACHED);
+        asset.setCeRecordId(recordId);asset.setCloudName(CLOUD);asset.setResourceType("raw");
+        asset.setPublicId("uptrack/users/u/certificates/sample.pdf");asset.setOriginalFilename("original.pdf");
+        asset.setDeliveryType("authenticated");
         when(users.findById(userId)).thenReturn(Optional.of(user));
         when(records.findById(recordId)).thenReturn(Optional.of(record));
-        when(assets.findOwnedAsset(assetId, userId)).thenReturn(Optional.of(asset));
+        when(assets.findOwnedAsset(assetId,userId)).thenReturn(Optional.of(asset));
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
-                new AuthenticatedUser(userId, "synthetic@example.test", "Synthetic"), null, List.of()));
-        doThrow(new AssertionError("provider upload client forbidden")).when(sdk).uploader();
-        doThrow(new AssertionError("provider Admin client forbidden")).when(sdk).api();
+                new AuthenticatedUser(userId,"synthetic@example.test","Synthetic"),null,List.of()));
+        doThrow(new AssertionError("provider Upload forbidden")).when(sdk).uploader();
+        doThrow(new AssertionError("provider Admin forbidden")).when(sdk).api();
+        doThrow(new AssertionError("permanent CDN signing forbidden")).when(sdk).url();
     }
     @AfterEach void clear() {
         SecurityContextHolder.clearContext();
-        verify(sdk, never()).uploader(); verify(sdk, never()).api();
+        verify(sdk,never()).uploader();verify(sdk,never()).api();verify(sdk,never()).url();
     }
-    private CertificateDeliveryServiceImpl service(String key, long ttl) {
-        return new CertificateDeliveryServiceImpl(records, users, assets, sdk,
-                new CertificateDeliveryProperties(true, ttl), new CloudinaryAuthTokenProperties(key));
+    private CertificateDeliveryServiceImpl service(long ttl) {
+        return new CertificateDeliveryServiceImpl(records,users,assets,sdk,
+                new CertificateDeliveryProperties(true,ttl),new CloudinaryProperties(CLOUD,"unused","unused"));
     }
-    private String token(CertificateDeliveryUrlDto result) {
-        String query = URI.create(result.url()).getRawQuery();
-        assertNotNull(query, "SDK must emit a token query");
-        var tokens = Arrays.stream(query.split("&")).filter(x -> x.startsWith("__cld_token__=")).toList();
-        assertEquals(1, tokens.size(), "exactly one AuthToken parameter");
-        return tokens.getFirst().substring("__cld_token__=".length());
+    private Map<String,String> query(CertificateDeliveryUrlDto result) {
+        Map<String,String> q=new TreeMap<>();
+        for (String pair:URI.create(result.url()).getRawQuery().split("&")) {
+            String[] p=pair.split("=",2);
+            assertNull(q.put(URLDecoder.decode(p[0],StandardCharsets.UTF_8),URLDecoder.decode(p[1],StandardCharsets.UTF_8)),"unique fields");
+        }
+        return q;
     }
-    private void verifySignature(CertificateDeliveryUrlDto result, String key) throws Exception {
-        URI uri = URI.create(result.url());
-        String token = token(result);
-        String decoded = URLDecoder.decode(token, StandardCharsets.UTF_8);
-        String fields = "exp=" + result.expiresAt().getEpochSecond() + "~acl=" + uri.getRawPath() + "~hmac=";
-        assertTrue(decoded.startsWith(fields), "token expiry and ACL must match response and actual path");
-        assertTrue("https".equals(uri.getScheme()) && "res.cloudinary.com".equals(uri.getHost()), "secure SDK delivery host");
-        String sdkToken = new AuthToken(key).expiration(result.expiresAt().getEpochSecond()).acl(uri.getRawPath()).generate();
-        assertTrue(sdkToken.equals("__cld_token__=" + token), "exact SDK fixed-expiry HMAC agreement");
-        // Independent test of SDK's encoded HMAC fields. Production signing uses SDK only.
-        int delimiter = token.lastIndexOf("~hmac=");
-        assertTrue(delimiter > 0, "HMAC must be present");
-        Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(new SecretKeySpec(HexFormat.of().parseHex(key), "HmacSHA256"));
-        String expected = HexFormat.of().formatHex(mac.doFinal(token.substring(0, delimiter).getBytes(StandardCharsets.UTF_8)));
-        assertTrue(expected.equals(token.substring(delimiter + 6)), "independent HMAC agreement");
-        assertFalse(result.url().contains(key) || result.url().contains(API_SECRET), "no key/secret disclosure");
+    private String independentSignature(Map<String,String> query) throws Exception {
+        Map<String,String> signed=new TreeMap<>(query);signed.remove("signature");signed.remove("api_key");
+        String input=String.join("&",signed.entrySet().stream().map(e->e.getKey()+"="+e.getValue()).toList())+SECRET;
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(input.getBytes(StandardCharsets.UTF_8)));
     }
-    @Test void rawPdfHasRealTokenExactAclAndSingleConsistentExpiry() throws Exception {
-        Instant before = Instant.now();
-        var result = service(KEY, 60).issueDeliveryUrl(recordId);
-        assertTrue(URI.create(result.url()).getRawPath().equals(
-                "/local-fixture-cloud/raw/authenticated/v1/uptrack/users/u/certificates/sample.pdf"), "raw SDK path");
+    private Map<String,String> verifySignature(CertificateDeliveryUrlDto result) throws Exception {
+        URI uri=URI.create(result.url());Map<String,String> q=query(result);
+        assertTrue("https".equals(uri.getScheme())&&"api.cloudinary.com".equals(uri.getHost()),"API download, not CDN");
+        assertTrue(uri.getPath().equals("/v1_1/"+CLOUD+"/"+asset.getResourceType()+"/download"),"exact cloud/resource endpoint");
+        assertTrue(q.get("public_id").equals(asset.getPublicId()),"public ID preserved exactly");
+        assertTrue(q.get("type").equals("authenticated"),"explicit authenticated storage type");
+        assertTrue(q.get("expires_at").equals(Long.toString(result.expiresAt().getEpochSecond())),"DTO and signed deadline agree");
+        assertTrue(q.get("attachment").equals("false"),"inline viewing requested");
+        assertTrue(q.get("signature").equals(independentSignature(q)),"independent API-secret digest matches SDK");
+        assertFalse(q.containsKey("__cld_token__")||result.url().contains(SECRET),"no premium token or secret disclosure");
+        assertNull(sdk.config.authToken,"no global premium key");
+        return q;
+    }
+    @Test void rawPdfUsesExactExtensionBearingIdentityAndNoConversionFormat() throws Exception {
+        Instant before=Instant.now();var result=service(60).issueDeliveryUrl(recordId);
+        Map<String,String> q=verifySignature(result);
+        assertFalse(q.containsKey("format"),"raw format is part of public ID; no conversion/appended suffix");
+        assertEquals(0,result.expiresAt().getNano());
         assertTrue(!result.expiresAt().isBefore(before.minusSeconds(1).plusSeconds(60))
-                && !result.expiresAt().isAfter(Instant.now().plusSeconds(60)), "configured TTL bounds");
-        assertEquals(0, result.expiresAt().getNano(), "token and DTO share epoch-second expiry");
-        verifySignature(result, KEY);
+                &&!result.expiresAt().isAfter(Instant.now().plusSeconds(60)),"60-second bounds");
     }
-    @Test void rawExtensionIsNotDuplicatedIncludingMixedCaseAndEncodedPublicId() throws Exception {
-        for (String id : List.of("sample.pdf", "sample.PDF", "folder with space/sample.pdf")) {
-            asset.setPublicId("uptrack/users/u/certificates/" + id); asset.setOriginalFilename("CERTIFICATE.PDF");
-            var result = service(KEY, 60).issueDeliveryUrl(recordId);
-            String path = URI.create(result.url()).getRawPath();
-            assertTrue(path.toLowerCase().endsWith(".pdf") && !path.toLowerCase().endsWith(".pdf.pdf"), "exactly one raw extension");
-            verifySignature(result, KEY);
+    @Test void historicalRawIdsAreNeverRewrittenFromFilename() throws Exception {
+        for(String id:List.of("sample","sample.pdf","sample.PDF","space folder/sample.pdf")) {
+            asset.setPublicId("uptrack/users/u/certificates/"+id);
+            assertFalse(verifySignature(service(60).issueDeliveryUrl(recordId)).containsKey("format"));
         }
     }
-    @Test void imagesKeepOriginalDeliveryWithoutForcedFormatOrTransform() throws Exception {
-        asset.setResourceType("image");
-        for (String filename : List.of("original.jpg", "original.png", "original.webp", "original.gif")) {
-            asset.setOriginalFilename(filename);
-            var result = service(KEY, 60).issueDeliveryUrl(recordId);
-            assertTrue(URI.create(result.url()).getRawPath().equals(
-                    "/local-fixture-cloud/image/authenticated/v1/uptrack/users/u/certificates/sample"), "original image, no forced PNG/transform");
-            verifySignature(result, KEY);
+    @Test void imagesKeepTheirValidatedFormatWithoutForcedPngOrTransform() throws Exception {
+        asset.setResourceType("image");asset.setPublicId("uptrack/users/u/certificates/image");
+        for(String format:List.of("jpg","jpeg","png","webp","gif")) {
+            asset.setOriginalFilename("original."+format.toUpperCase(Locale.ROOT));
+            var q=verifySignature(service(60).issueDeliveryUrl(recordId));
+            assertTrue(format.equals(q.get("format")),"original format selected");
+            assertFalse(q.containsKey("transformation"));
         }
     }
-    @Test void assetKeyAndLifetimeChangeTokens() throws Exception {
-        var first = service(KEY, 60).issueDeliveryUrl(recordId);
-        asset.setPublicId("uptrack/users/u/certificates/other");
-        var other = service(KEY, 60).issueDeliveryUrl(recordId);
-        assertFalse(token(first).equals(token(other)), "asset-specific token"); verifySignature(other, KEY);
-        String otherKey = "ab".repeat(32); // public synthetic vector
-        var rotated = service(otherKey, 60).issueDeliveryUrl(recordId);
-        assertFalse(token(other).equals(token(rotated)), "key-specific signature"); verifySignature(rotated, otherKey);
-        for (long ttl : new long[]{1, 3600}) {
-            var changed = service(KEY, ttl).issueDeliveryUrl(recordId);
-            verifySignature(changed, KEY);
-            assertFalse(token(changed).equals(token(other)), "lifetime-specific token");
+    @Test void expiryAssetFormatTypeAndDispositionAreCryptographicallyBound() throws Exception {
+        asset.setResourceType("image");asset.setOriginalFilename("original.png");
+        Map<String,String> q=verifySignature(service(60).issueDeliveryUrl(recordId));
+        for(String field:List.of("expires_at","public_id","format","type","attachment")) {
+            Map<String,String> altered=new TreeMap<>(q);altered.put(field,q.get(field)+"changed");
+            assertFalse(q.get("signature").equals(independentSignature(altered)),"tampering changes signed digest");
+        }
+        // Resource type/cloud are endpoint components, not API signature fields: their selection is
+        // checked above. This test does not claim provider cross-resource rejection or live expiry.
+    }
+    @Test void supportedTtlBoundariesAreSigned() throws Exception {
+        for(long ttl:new long[]{1,3600}) {
+            Instant start=Instant.now();var result=service(ttl).issueDeliveryUrl(recordId);verifySignature(result);
+            assertTrue(!result.expiresAt().isBefore(start.minusSeconds(1).plusSeconds(ttl)));
+            assertTrue(!result.expiresAt().isAfter(Instant.now().plusSeconds(ttl)));
         }
     }
-    @Test void invalidMetadataFailsWithoutPublicFallbackOrSensitiveCause(CapturedOutput output) {
-        asset.setOriginalFilename("unsafe.unsupported"); asset.setDeliveryUrl("https://public.example.test/should-never-be-returned");
-        var error = assertThrows(UploadFailedException.class, () -> service(KEY, 60).issueDeliveryUrl(recordId));
-        assertTrue("Certificate delivery failed.".equals(error.getMessage()), "generic delivery failure");
-        assertNull(error.getCause(), "do not retain SDK signing inputs in cause chain");
-        assertFalse(output.getAll().contains(KEY) || output.getAll().contains(API_SECRET), "no secrets in failure logs");
+    @Test void invalidMetadataAndForeignCloudFailClosed(CapturedOutput output) {
+        asset.setResourceType("video");assertSafeFailure();
+        asset.setResourceType("image");asset.setOriginalFilename("unsafe.svg");assertSafeFailure();
+        asset.setOriginalFilename(null);assertSafeFailure();
+        asset.setResourceType("raw");asset.setCloudName("different-cloud");assertSafeFailure();
+        asset.setCloudName(CLOUD);asset.setPublicId(" ");assertSafeFailure();
+        assertFalse(output.getAll().contains(SECRET));
     }
-    @Test void successDoesNotLogKeysOrFullTokens(CapturedOutput output) {
-        var result = service(KEY, 60).issueDeliveryUrl(recordId);
-        assertFalse(output.getAll().contains(KEY) || output.getAll().contains(API_SECRET)
-                || output.getAll().contains(token(result)) || output.getAll().contains(result.url()), "no signed inputs/output in logs");
+    private void assertSafeFailure() {
+        asset.setDeliveryUrl("https://public.example.test/no-fallback");
+        var error=assertThrows(UploadFailedException.class,()->service(60).issueDeliveryUrl(recordId));
+        assertEquals("Certificate delivery failed.",error.getMessage());assertNull(error.getCause());
+    }
+    @Test void checkedSdkFailureAndMissingApiSecretAreSanitized(CapturedOutput output) throws Exception {
+        doThrow(new Exception("sensitive "+SECRET)).when(sdk).privateDownload(anyString(),isNull(),anyMap());
+        assertSafeFailure();
+        reset(sdk);
+        sdk.config.apiSecret=null;
+        assertSafeFailure();
+        assertFalse(output.getAll().contains(SECRET));
+    }
+    @Test void successDoesNotLogUrlSignatureOrApiSecret(CapturedOutput output) {
+        var result=service(60).issueDeliveryUrl(recordId);
+        assertFalse(output.getAll().contains(SECRET)||output.getAll().contains(result.url())
+                ||output.getAll().contains(query(result).get("signature")),"no bearer URL/signature in logs");
     }
 }

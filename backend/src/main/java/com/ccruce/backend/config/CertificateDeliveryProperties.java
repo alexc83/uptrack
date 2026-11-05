@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Phase 3 (#23) rollout gate — server-controlled, default OFF.
  * enabled=false (default): uploads use delivery type 'upload', permanent URLs stay in
  * upload/CE/report responses, and the authenticated delivery endpoint issues nothing.
- * enabled=true (only after the non-production pilot passes): new uploads are 'authenticated'.
+ * enabled=true (only after separately authorized deployment activation): new uploads are 'authenticated'.
  */
 @ConfigurationProperties(prefix = "app.certificates.delivery")
 public record CertificateDeliveryProperties(
