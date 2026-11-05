@@ -38,9 +38,6 @@ cloudinary:
   cloud-name: test-cloud
   api-key: test-key
   api-secret: test-secret
-  auth-token:
-    # Public synthetic SDK test vector. Never a provisioned credential.
-    key: 0123456789abcdef0123456789abcdef
 ---
 # Test-only PostgreSQL overrides (D01-C), applied only when the ci-postgres profile is added to "test"
 # with SPRING_PROFILES_INCLUDE=ci-postgres. They live in this file, after the H2 document, because an

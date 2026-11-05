@@ -1,3 +1,5 @@
+> **Historical / superseded (2026-11-05):** the owner abandoned premium AuthTokens and all further pilot work. This document/tooling is retained as historical evidence, not an execution prerequisite. Active design: `context/specs/issue-23-authenticated-delivery.md`; current verification: `context/verification/issue-23-private-download-report.md`. Do not provision or run a pilot from these instructions.
+
 > **Canonical issue:** [GitHub issue #23](https://github.com/alexc83/uptrack/issues/23) · **Spec:** [issue-23-authenticated-delivery.md](issue-23-authenticated-delivery.md) · **Status: PLAN ONLY — execution requires separate owner approval. No credentials are stored here or in GitHub; none are requested in issues/PRs/files.**
 
 # Issue #23 — Non-production Cloudinary pilot plan (authenticated delivery)

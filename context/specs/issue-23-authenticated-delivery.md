@@ -1,95 +1,110 @@
-> **Canonical tracker:** [GitHub issue #23](https://github.com/alexc83/uptrack/issues/23) — S05-003 permanent public delivery URLs; do not create duplicates.
-> **Related:** #24 (registry, Phase 1, [spec](issue-24-certificate-asset-registry.md)), #20 (lifecycle/migration, Phases 2+4, [spec](issue-20-certificate-lifecycle.md)), #19 (Phase 0, [spec](issue-19-pdf-diagnosis.md)).
+# Issue #23 — authenticated certificate storage and temporary API downloads
 
-# READY Specification — Issue #23: Authenticated certificate delivery (Phase 3)
+Canonical tracker: [Issue #23](https://github.com/alexc83/uptrack/issues/23).
+Related: #24 (registry), #20 (durable lifecycle and Phase 4 historical remediation).
 
-**Status: READY.** Owner approved the v3 architecture as the basis of this READY specification on 2026-11-05. **READY is not implementation authorization.** Phase 3 was separately authorized and merged default-off; the focused signer correction is separately authorized on `fix/23-cloudinary-authtoken-signing`. Merge, live pilot, provisioning, deployment and activation remain unauthorized for that correction.
+## Approved scope
 
-Evidence tags: **[C]** confirmed in current `main` code/tests · **[H]** hypothesis · **[LV]** requires controlled non-production Cloudinary pilot.
+Owner-authorized on 2026-11-05: finish application implementation using authenticated
+Cloudinary storage, Java SDK `privateDownload`, and Spring JWT/ownership checks.
+Premium CDN AuthTokens and test-cloud pilots are abandoned. No new architecture,
+dependency, provider access, provisioning or paid feature is required by this PR.
+Merge, deployment, production activation and Phase 4 remain separately authorized.
 
-## 1. Current-code findings
+## Delivery contract
 
-- **[C]** Upload response and `ce_records.certificate_url` carry permanent public `upload`-type Cloudinary `secure_url`s; anyone holding a URL can fetch the document; no expiry/revocation. Actual account-level public retrieval is **[LV]** (S05-003).
-- **[C]** Frontend renders certificate links through `safeHttpUrl` (absolute http/https only) in the CE form and detail drawer; CE report/print shows a label only ("On file"/"Not attached"). Auth is Bearer JWT, stateless, `allowCredentials=false` — a plain `<a href>` to a backend endpoint cannot carry the token, so delivery must be **URL issuance**, not endpoint links.
-- **[C]** cloudinary-core 2.5.0 exposes `Url.type/signed/authToken`, `AuthToken(duration/expiration/acl/generate)`, `Uploader.destroy`, Admin API `resources*`/`resource` — **capability, not proven private-delivery semantics** [LV]. PR #30 (cloudinary-http5 2.6.0) is compatible and orthogonal.
+`GET /api/ce-records/{id}/certificate-url` retains the existing response
+`{url, expiresAt}` and configurable default 60-second TTL (1–3600 seconds).
 
-## 2. Approved architecture
+Before signing, enforce the server-controlled rollout flag, JWT principal, record
+ownership, owned registry asset, ATTACHED state, matching record association,
+`delivery_type=authenticated`, and configured cloud identity. Missing/foreign
+records remain 404, unauthenticated requests 401, unavailable/public assets 409.
+Failures never issue a stored/public URL. The response is `Cache-Control: no-store,
+private`; ordinary record/report DTOs suppress authenticated assets' stored URLs
+independently of the flag.
 
-Authenticated Cloudinary delivery: UpTrack verifies CE-record ownership **before** issuing a temporary access URL. Initial proposed default URL lifetime **60 seconds** (`app.certificates.delivery.ttl-seconds`), subject to the pilot. Once Phase 3 is operational, permanent managed-certificate delivery URLs are removed from ordinary API responses (Phase 1 safeguard: keep them until then).
+Sign locally with installed Java SDK 2.5.0:
 
-## 2a. Activation gate — Strategy A with default-off flag (owner decision 2026-11-05)
+```java
+cloudinary.privateDownload(exactRegistryPublicId, format, Map.of(
+    "resource_type", resourceType,
+    "type", "authenticated",
+    "expires_at", expiresAt.getEpochSecond(),
+    "attachment", false));
+```
 
-`app.certificates.delivery.enabled` (env `CERTIFICATE_DELIVERY_ENABLED`, **default false**, server-controlled; TTL via `app.certificates.delivery.ttl-seconds`, default 60).
+The API secret signs the request. There is no separate token-auth key, AuthToken
+configuration or permanent signed CDN URL. The exact epoch-second deadline is
+shared by the SDK parameters and response. Checked/runtime signing errors are
+sanitized without a retained sensitive cause. URLs/signatures/secrets are not logged.
 
-- **Flag OFF (default, current state):** exact Phase 2 behavior — uploads use delivery type `upload`, the upload response and ordinary CE-record/report responses carry the permanent `certificateUrl` for managed assets, React anchors work unchanged, and the delivery endpoint answers **404** (issues nothing). PR #57 therefore merges safely with the flag off.
-- **Flag ON (pilot-gated, separately authorized):** new uploads use `type=authenticated`, the registry records `delivery_type='authenticated'`, and the delivery endpoint issues short-lived AuthToken URLs for those assets only (upload-type assets still 409).
-- **URL suppression is asset-based, not flag-based:** `certificateUrl` is nulled in responses only when the managed asset's `delivery_type='authenticated'`. Turning the flag off later can never expose an authenticated asset's stored URL. React picks the mechanism from the response shape (URL present → anchor; absent but `certificateAssetId` present → View button → delivery endpoint) — no client-controlled security decision, no flag in the frontend.
-- **Mixed populations:** `upload`-type managed assets remain viewable via their public URL under an explicitly documented temporary compatibility policy until Phase 4 retirement; `LEGACY_UNVERIFIED` and `EXTERNAL_LINK` records are untouched. Publicly reachable assets are never represented as private.
-- **Lifecycle propagation by delivery type:** reserve-first registration, upload options, ambiguous-upload Admin probes, durable cleanup `destroy`, and reconciliation all pass the asset's delivery `type`; reconciliation inventories all four `resource_type × delivery_type` combinations with unambiguous 4-part identity keys.
-- **Rollback:** the flag is one-way in practice — authenticated assets never regain a public URL, so "flag off after authenticated uploads exist" disables the endpoint for them; rollback = re-enable the flag (documented in the verification report). Already-created assets never change delivery type because of a flag change. No public-URL fallback exists in the authenticated path under any configuration.
+## Raw PDF and image identities
 
-## 3. Mandatory pilot verification questions [LV]
+New PDF/raw reservations include `.pdf` in the **public ID before any upload**.
+Images retain extensionless server-generated public IDs. Client filenames never
+supply provider identity. Uploads use the reserved ID, explicit resource type,
+no overwrite, and authenticated delivery after activation. Provider responses
+must match the reserved public ID/resource/delivery type before becoming PENDING.
+Null/incomplete/mismatched responses schedule reconciliation of the reserved ID;
+never adopt or destroy an unrelated returned ID.
 
-Before Phase 3 code is finalized, a controlled pilot on a **dedicated non-production cloud** with **synthetic certificates only** and separately owner-approved credentials must answer:
+Delivery always uses the exact stored public ID. Raw assets are not transformed:
+pass a null format, which the SDK omits, retaining the full raw ID including its
+extension. This applies to historical extensionless raw rows too: never append,
+strip, guess or probe alternative IDs. Images use their validated original
+JPG/JPEG/PNG/WebP/GIF filename format; no forced PNG or transformations.
 
-1. Is `authenticated` delivery enabled on the account, and does `type=authenticated` work for **both `raw` and `image`**?
-2. Raw PDF: logged-out fetch of the plain public URL on an `upload`-type asset (baseline 200); on an `authenticated` asset: plain URL denied (401/404)? signed URL (`sign_url`) 200? AuthToken URL with `duration=60` → 200 before expiry, denied after — **measure actual TTL and clock-skew tolerance**.
-3. Does AuthToken `acl` path restriction work for `raw`? What `Content-Type`/`Content-Disposition` (inline vs attachment) is served — compatible with browser preview **and** download?
-4. Do authenticated `image` assets still serve **transformations** (e.g. thumbnails), or originals only?
-5. **Caching:** cache headers on authenticated URLs; is the `auth_token` query param part of the CDN cache key; does `destroy(..., invalidate=true)` purge cached copies for both delivery types; how long can an edge retain a retired public URL?
-6. After an asset becomes `authenticated`, is the **historical public URL** refused immediately or served from cache — with and without `invalidate`?
-7. Does an **in-place** delivery-type change (`explicit` API, `type=authenticated`) preserve public ID and bytes? (Phase 4 copy-and-verify assumes **not** unless proven.)
-8. Admin API pagination/rate limits for `resources(prefix=…)` reconciliation listing; reliability of the `resource(public_id)` existence probe used by the upload sweeper.
-9. Failure modes: expired/revoked token responses; whether URL generation is purely local signing or an API call (outage behavior).
+This raw mapping combines the documented extension-bearing raw ID contract with
+the SDK's omission of empty format for original-byte retrieval. Offline tests
+verify the exact request/signature; actual provider acceptance of omitted raw
+format, including old extensionless raw identities, is **not live verified**.
+It must not be represented as an experimentally proven provider behavior.
 
-## 4. Delivery design
+Upload/recovery store the provider's `secure_url` unchanged, with no fabricated
+raw URL suffix. Admin probes and adoption verify the exact identity triplet;
+delete/retry/reconciliation continue using the stored public ID and explicit
+resource/delivery type. No historical registry IDs or database schema change.
 
-- New endpoint `GET /api/ce-records/{id}/certificate-url` (Bearer JWT): authentication → CE record ownership → registry row `ATTACHED` with `ce_record_id = id` → 404 for non-owners (indistinguishable from missing) → `{url, expiresAt}` built via `cloudinary.url().secure(true).type("authenticated").resourceType(rt)` + a keyed `AuthToken(expiration=expiresAt, acl=actual SDK-generated URI raw path)` and `signed(true)`. Rate-limited; issuance audit-logged.
-- Raw PDFs and images both covered per pilot answers; browser preview and download supported; CDN caching is per-token (short-lived); `invalidate=true` on destroy busts cached copies.
-- **Limitations (explicit):** a signed/AuthToken URL is private only while the asset's delivery type is `authenticated` — legacy `upload`-type assets remain publicly reachable at their old URLs until Phase 4 retires them; the 60 s lifetime forbids stored links (UI refetches on every open, including print/report); issued URLs cannot be revoked (lifetime bounds exposure); provider outage → 5xx, never a fallback to the public URL; `EXTERNAL_LINK` records keep their public-by-nature external URLs via `safeHttpUrl`.
-- DTO changes at Phase 3: managed assets with `delivery_type='authenticated'` no longer expose the permanent Cloudinary URL in `CERecordResponseDto`/`CEReportRecordDto` (Phase 1 safeguard 1: only at Phase 3; asset-based, per §2a).
+## Rollout and compatibility
 
-## 4a. Dedicated token key and offline signer correction
+`CERTIFICATE_DELIVERY_ENABLED` remains **false by default** and is not changed.
+Flag OFF preserves existing public upload/ordinary-link compatibility; the new
+endpoint issues nothing. Thus this PR does not make current production uploads
+private and does not resolve historical public exposure by itself.
 
-`cloudinary.auth-token.key` binds `${CLOUDINARY_AUTH_TOKEN_KEY:}` into a dedicated redacted
-configuration type. This is the provider's **separate** token-authentication key, never an API-secret
-fallback. With delivery OFF, an absent key preserves startup and ordinary certificate workflows.
-With delivery ON, a missing/blank/nonhex/odd-length key or a key outside **16–64 bytes encoded as hex**
-prevents startup with a sanitized message. Validation follows binding so rejection diagnostics cannot
-quote the supplied value; `toString` is redacted and JSON serialization omits the key. No global SDK
-auth token is installed on the upload/Admin client. Do not enable configuration/environment dumps or
-expose diagnostic endpoints containing property values; this repository does not install Actuator.
+After separately authorized activation, new uploads use `type=authenticated` and
+ordinary DTOs withhold their permanent URL. React's existing View button obtains
+a fresh JWT-authorized URL and opens it on demand for PDF/image viewing. Each click
+requests fresh access. Legacy/external links and existing public managed assets
+keep their anchors pending Phase 4. Turning the flag off never exposes an
+already-authenticated asset URL; it disables temporary access to those assets.
 
-The signer derives ACL from `URI.getRawPath()` of the intended SDK delivery URL, then generates the
-same URL with `new AuthToken(tokenKey).expiration(expiresAt.getEpochSecond()).acl(path)` and
-`signed(true)`. It checks that the final path is unchanged. `expiresAt` is captured once in epoch
-seconds and shared with the response. Raw format is added only when not already present on the
-public ID (case-insensitive); images retain original delivery with no forced PNG/transform. SDK
-exceptions are discarded in favor of the existing generic failure, never a permanent-URL fallback.
-No stored public IDs, upload identities or cleanup contracts are modified.
+Historical public assets are not renamed, copied, changed or deleted in this PR.
+#20 retains Phase 4 migration/retirement; #23 stays open until activation, provider
+acceptance and unresolved permanent public access are addressed. No duplicate
+follow-up tracker is needed while those canonical issues remain open.
 
-Real-SDK offline tests cover the emitted parameter, HMAC (also independently recomputed in tests),
-full ACL/encoding/version path, raw extension cases, original images, expiry, key/identity changes
-and redaction. These establish local signing correctness **only**. Pilot parity must still resolve
-raw extensionless registry identities against actual provider assets, compare equivalent app/helper
-resource/format inputs, and verify token delivery/denial/expiry/ACL/caching at the provider before any
-activation. See [signing verification](../verification/issue-23-signing-report.md).
+## Evidence and limitations
 
-## 5. React compatibility (Phase 3)
+Required automated checks: full backend H2, disposable PostgreSQL 17 backend,
+frontend typecheck/lint/Vitest/build, full mocked Chromium functional suite.
+Real-SDK offline tests independently verify API signatures and explicit expiry,
+exact raw/image identities, formats, resource endpoints, checked errors and
+redaction. They do not assert provider expiry or unsigned-delivery enforcement.
+React tests cover API download URLs and existing public/external compatibility.
 
-With the flag ON, "View certificate" becomes an on-demand action: `certificatesApi.getDeliveryUrl(ceRecordId)` (Bearer) → open returned URL (`window.open` / `img` / `iframe` src for preview); 404 → "No certificate"; expiry → refetch on click. CE form, detail drawer, credential drawer and report/print flows updated in the same PR; `safeHttpUrl` remains for `EXTERNAL_LINK` values. Browser checks in CI (chromium) plus owner-run Edge/Chrome/Firefox/WebKit.
+Live provider rejection of unsigned/tampered/expired URLs, PDF MIME/disposition,
+range/preview behavior, CDN/cache behavior, quotas and delivery restrictions remain
+unverified. Free accounts may need the PDF/ZIP delivery setting; this PR does not
+change it. API downloads bypass CDN caching and documentation warns of twice the
+bandwidth. SDK `privateDownload` ignores transformation/custom filename options;
+none are used. No live pilot or provider calls are authorized or performed.
 
-## 6. Acceptance criteria (Phase 3)
+Sources:
+- [Access controls and temporary downloads](https://cloudinary.com/documentation/control_access_to_media#providing_time_limited_access_to_private_media_assets)
+- [Raw IDs and authenticated uploads](https://cloudinary.com/documentation/upload_parameters)
+- [Upload/download API reference](https://cloudinary.com/documentation/image_upload_api_reference)
+- [Free-plan PDF delivery restrictions](https://cloudinary.com/documentation/image_delivery_options)
 
-- Pilot evidence recorded (`context/verification/issue-23-report.md`) answering §3; non-production credentials only; no production Cloudinary access.
-- Owner/non-owner access: non-owner → 404; unauthenticated → 401; expired token denied (mocked signing + pilot).
-- Permanent managed URLs absent from API responses at Phase 3; viewing/preview/download/print work in the browser; `frontend` + `e2e-chromium` green.
-- No existing test weakened; mocked Cloudinary in CI.
-
-## 7. Verification matrix (Phase 3)
-
-Unit: real-SDK AuthToken URL/HMAC/ACL/expiry tests with synthetic keys and no provider calls, plus existing mocked authorization/failure tests and startup/redaction tests. Integration (H2 + PG17, mocked): delivery endpoint authz matrix, no-managed-asset → 404, `EXTERNAL_LINK` passthrough. Security regression: cross-user attempts, no URL leakage in responses, rate limits. Frontend: Vitest delivery-flow specs (success/404/401/refetch-on-expiry), typecheck/lint/build, focused Playwright. Live [LV]: pilot only. Required CI: `backend`, `backend-postgres`, `frontend`, `e2e-chromium`.
-
-## 8. Remaining owner decisions
-
-TTL default 60 s (confirm/adjust); pilot credentials provisioning; rollback/retirement sequencing with issue #20; focused signer correction implementation is authorized; merge, pilot/provisioning, deployment, activation and Phase 4 each remain outside this authorization.
+Verification: [current implementation report](../verification/issue-23-private-download-report.md).

@@ -1,3 +1,5 @@
+> **Historical / superseded (2026-11-05):** the owner abandoned premium AuthTokens and all further pilot work. This document/tooling is retained as historical evidence, not an execution prerequisite. Active design: `context/specs/issue-23-authenticated-delivery.md`; current verification: `context/verification/issue-23-private-download-report.md`. Do not provision or run a pilot from these instructions.
+
 # Issue #23 — backend AuthToken signing correction
 
 Date: 2026-11-05. Canonical [Issue #23](https://github.com/alexc83/uptrack/issues/23).

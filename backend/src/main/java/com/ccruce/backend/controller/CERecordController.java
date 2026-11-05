@@ -7,6 +7,7 @@ import com.ccruce.backend.service.CertificateDeliveryService;
 import com.ccruce.backend.service.CERecordService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,7 +37,8 @@ public class CERecordController {
     /** Phase 3 (#23): ownership-checked short-lived authenticated delivery URL; never a public fallback. */
     @GetMapping("/{id}/certificate-url")
     public ResponseEntity<CertificateDeliveryUrlDto> getCertificateDeliveryUrl(@PathVariable UUID id) {
-        return ResponseEntity.ok(certificateDeliveryService.issueDeliveryUrl(id));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore().cachePrivate())
+                .body(certificateDeliveryService.issueDeliveryUrl(id));
     }
 
     @PostMapping

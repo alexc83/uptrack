@@ -48,9 +48,6 @@ cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
-  auth-token:
-    # Separate provider token-auth key; unused while delivery is OFF. Never use the API secret.
-    key: ${CLOUDINARY_AUTH_TOKEN_KEY:}
 
 app:
   cors:
@@ -67,10 +64,10 @@ app:
     delivery:
       # Phase 3 (#23) rollout gate — server-controlled, DEFAULT OFF. While off, uploads stay
       # delivery type 'upload' and permanent URLs remain in responses (Phase 2 behavior); the
-      # authenticated delivery endpoint issues nothing. Enable only after the non-production
-      # Cloudinary pilot passes; production activation is separately authorized.
+      # authenticated delivery endpoint issues nothing. Deployment/activation require separate
+      # authorization; automated tests do not prove live-provider confidentiality.
       enabled: ${CERTIFICATE_DELIVERY_ENABLED:false}
-      # Short-lived authenticated delivery URL lifetime; pilot-verified before production use.
+      # Explicit expiry for signed API download URLs; live provider enforcement remains unverified.
       ttl-seconds: ${CERTIFICATE_DELIVERY_TTL_SECONDS:60}
   upload:
     # Concurrent certificate validate+upload operations; excess requests get 503, never queue.

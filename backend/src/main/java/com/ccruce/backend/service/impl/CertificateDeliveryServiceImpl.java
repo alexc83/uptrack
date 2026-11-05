@@ -1,7 +1,7 @@
 package com.ccruce.backend.service.impl;
 
 import com.ccruce.backend.config.CertificateDeliveryProperties;
-import com.ccruce.backend.config.CloudinaryAuthTokenProperties;
+import com.ccruce.backend.config.CloudinaryProperties;
 import com.ccruce.backend.dto.response.CertificateDeliveryUrlDto;
 import com.ccruce.backend.entity.CertificateAsset;
 import com.ccruce.backend.entity.CERecord;
@@ -16,9 +16,7 @@ import com.ccruce.backend.repository.UserRepository;
 import com.ccruce.backend.security.AuthenticatedUser;
 import com.ccruce.backend.service.CertificateAssetService;
 import com.ccruce.backend.service.CertificateDeliveryService;
-import com.cloudinary.AuthToken;
 import com.cloudinary.Cloudinary;
-import com.cloudinary.Url;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -28,12 +26,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.Map;
 
-/**
- * Phase 3 (issue #23): ownership-checked, short-lived authenticated delivery URLs. The token is an
- * HMAC AuthToken bound (acl) to the single intended asset, generated locally — no provider call, so
- * there is no outage path and never a fallback to a permanent public URL. SDK-generated URL shape is
- * provisional until the non-production pilot verifies it (spec §3).
+/** Ownership-checked, time-limited API downloads. Signing is local; no provider call or public fallback.
+ * Uses the ordinary API secret, not premium CDN AuthTokens. Provider enforcement is not proved offline.
  */
 @Service
 public class CertificateDeliveryServiceImpl implements CertificateDeliveryService {
@@ -43,21 +39,20 @@ public class CertificateDeliveryServiceImpl implements CertificateDeliveryServic
     private final CertificateAssetService assetService;
     private final Cloudinary cloudinary;
     private final CertificateDeliveryProperties properties;
-    private final CloudinaryAuthTokenProperties tokenProperties;
+    private final CloudinaryProperties cloudProperties;
 
     public CertificateDeliveryServiceImpl(CERecordRepository ceRecordRepository,
             UserRepository userRepository,
             CertificateAssetService assetService,
             Cloudinary cloudinary,
             CertificateDeliveryProperties properties,
-            CloudinaryAuthTokenProperties tokenProperties) {
-        tokenProperties.validateFor(properties);
+            CloudinaryProperties cloudProperties) {
         this.ceRecordRepository = ceRecordRepository;
         this.userRepository = userRepository;
         this.assetService = assetService;
         this.cloudinary = cloudinary;
         this.properties = properties;
-        this.tokenProperties = tokenProperties;
+        this.cloudProperties = cloudProperties;
     }
 
     @Override
@@ -96,41 +91,36 @@ public class CertificateDeliveryServiceImpl implements CertificateDeliveryServic
 
     private String generateAuthenticatedUrl(CertificateAsset asset, Instant expiresAt) {
         try {
-            // Generate locally with the same SDK options twice: the exact delivery path, including
-            // cloud/SDK version/encoding/format, is the ACL. Never persist or log either URL.
-            String path = URI.create(deliveryUrl(asset).generate(asset.getPublicId())).getRawPath();
-            AuthToken token = new AuthToken(tokenProperties.key())
-                    .expiration(expiresAt.getEpochSecond())
-                    .acl(path);
-            String signed = deliveryUrl(asset).signed(true).authToken(token).generate(asset.getPublicId());
-            if (!path.equals(URI.create(signed).getRawPath())) {
-                throw new IllegalStateException("Certificate delivery path changed during signing.");
+            if (!cloudProperties.cloudName().equals(asset.getCloudName())
+                    || asset.getPublicId() == null || asset.getPublicId().isBlank()) {
+                throw new IllegalArgumentException("Invalid certificate identity.");
+            }
+            String format = switch (asset.getResourceType()) {
+                // Raw public IDs include their extension. Do not append it as a format or rewrite
+                // historical extensionless IDs. Raw assets are delivered as stored, never converted.
+                case "raw" -> null;
+                case "image" -> imageFormat(asset.getOriginalFilename());
+                default -> throw new IllegalArgumentException("Unsupported certificate resource type.");
+            };
+            String signed = cloudinary.privateDownload(asset.getPublicId(), format, Map.of(
+                    "resource_type", asset.getResourceType(), "type", "authenticated",
+                    "expires_at", expiresAt.getEpochSecond(), "attachment", false));
+            if (signed == null || !"https".equals(URI.create(signed).getScheme())) {
+                throw new IllegalStateException("Invalid certificate download URL.");
             }
             return signed;
-        } catch (RuntimeException exception) {
-            // SDK errors may contain signing inputs. No cause/log/URL and never a public fallback.
+        } catch (Exception exception) {
+            // SDK exceptions can contain signing inputs; no retained cause, logging or URL fallback.
             throw new UploadFailedException("Certificate delivery failed.");
         }
     }
 
-    private Url deliveryUrl(CertificateAsset asset) {
-        Url url = cloudinary.url().secure(true).type("authenticated").resourceType(asset.getResourceType());
-        if ("raw".equals(asset.getResourceType())) {
-            String extension = extensionOf(asset.getOriginalFilename());
-            if (extension != null && !asset.getPublicId().toLowerCase(Locale.ROOT).endsWith("." + extension)) {
-                url.format(extension);
-            }
-        }
-        // Image URLs preserve original delivery; no forced PNG conversion or transformation.
-        return url;
-    }
-
-    private static String extensionOf(String filename) {
+    private static String imageFormat(String filename) {
         if (filename == null || !filename.contains(".")) {
-            return null;
+            throw new IllegalArgumentException("Missing certificate format.");
         }
         String extension = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
-        if (!java.util.Set.of("pdf", "jpg", "jpeg", "png", "webp", "gif").contains(extension)) {
+        if (!java.util.Set.of("jpg", "jpeg", "png", "webp", "gif").contains(extension)) {
             throw new IllegalArgumentException("Unsupported certificate format.");
         }
         return extension;

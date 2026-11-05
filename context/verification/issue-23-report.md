@@ -1,3 +1,5 @@
+> **Current implementation:** [zero-cost privateDownload report](issue-23-private-download-report.md). The sections below record earlier Phase 3 work; AuthToken/pilot next steps are superseded by the owner decision on 2026-11-05. Issue #23 remains open for unresolved activation/provider/historical exposure.
+
 > **Canonical issue:** [GitHub issue #23](https://github.com/alexc83/uptrack/issues/23) · **Spec:** [context/specs/issue-23-authenticated-delivery.md](../specs/issue-23-authenticated-delivery.md) · **Pilot plan:** [context/specs/issue-23-cloudinary-pilot-plan.md](../specs/issue-23-cloudinary-pilot-plan.md) · **Phase:** 3 only — live Cloudinary testing, Phase 4, deployment NOT authorized/performed.
 
 # Issue #23 Phase 3 verification report — authenticated certificate delivery (mocked provider)

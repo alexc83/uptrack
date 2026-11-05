@@ -42,6 +42,7 @@ class CertificateUploadConcurrencyTest {
             asset.setUserId(invocation.getArgument(0));
             asset.setPublicId("uptrack/users/%s/certificates/%s".formatted(invocation.getArgument(0), UUID.randomUUID()));
             asset.setResourceType(invocation.getArgument(1));
+            asset.setDeliveryType(invocation.getArgument(3));
             return asset;
         });
         var entered = new CountDownLatch(1);
@@ -49,7 +50,7 @@ class CertificateUploadConcurrencyTest {
         when(uploader.upload(any(), anyMap())).thenAnswer(invocation -> {
             entered.countDown();
             assertTrue(release.await(10, TimeUnit.SECONDS));
-            return Map.of("resource_type", "image", "public_id", "uptrack/test/x",
+            return Map.of("resource_type", "image", "public_id", ((Map<?, ?>) invocation.getArgument(1)).get("public_id"), "type", "upload",
                     "secure_url", "https://res.example.test/x.png");
         });
 
