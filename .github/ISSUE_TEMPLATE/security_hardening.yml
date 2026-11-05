@@ -1,0 +1,40 @@
+name: "Security and hardening work"
+description: "Track sanitized security work; report sensitive findings privately"
+labels: [security]
+body:
+  - type: markdown
+    attributes:
+      value: "Search existing issues first. Sensitive findings: https://github.com/alexc83/uptrack/security/advisories/new — never post credentials or user data here."
+  - type: textarea
+    id: finding
+    attributes:
+      label: "Sanitized finding and affected boundary"
+      description: "Confirmed versus suspected behavior; no confidential exploit details."
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: "Evidence and limitations"
+      description: "Safe evidence, baseline/build, uncertainty and impact; priority is not severity."
+    validations:
+      required: true
+  - type: textarea
+    id: decision
+    attributes:
+      label: "Owner decisions and scope"
+      description: "List required decisions and exclusions."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "Verification criteria"
+      description: "Describe safe synthetic checks and authorization boundaries."
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: Related issues, specification and evidence
+      description: Link existing work; do not duplicate it.

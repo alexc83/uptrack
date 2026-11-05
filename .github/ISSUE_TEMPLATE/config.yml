@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a sensitive security vulnerability privately
+    url: https://github.com/alexc83/uptrack/security/advisories/new
+    about: Do not disclose sensitive details in public issues.
