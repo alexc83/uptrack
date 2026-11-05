@@ -7,14 +7,13 @@
 
 Evidence tags: **[C]** confirmed in current `main` code/tests · **[H]** hypothesis · **[LV]** requires controlled non-production Cloudinary pilot.
 
-## 1. Current-code findings
+## 1. Current-code findings (updated after Phase 1 merged, PR #55 / `6cc94dd`)
 
-- **[C]** `CredentialServiceImpl.deleteCredential` only calls `credentialRepository.delete`; `Credential.ceRecords` is `cascade=ALL, orphanRemoval=true`, so CE rows vanish with **no Cloudinary cleanup** — certificate files are orphaned. Pinned by `CertificateCleanupFailureIntegrationTest.deletingCredentialCascadesCeRecordsWithoutDeletingCloudinaryAssets` (characterization test to be replaced on fix).
-- **[C]** `CERecordServiceImpl.deleteCERecord` destroys the asset **before** the row delete in one `@Transactional`; provider failure → 502 "Certificate cleanup failed.", record kept. Update (replace/remove) rolls the whole update back on cleanup failure. Cloudinary outage therefore blocks CE delete/replace.
-- **[C]** Upload-then-abandon leaves unreferenced assets (`removePending()` only clears form state); no reconciliation exists.
-- **[H]** Reverse inconsistency: asset destroyed first, later row delete/commit failure → dangling reference.
-- **[C]** No account-deletion endpoint exists; any future user delete would orphan everything via JPA cascade.
-- **[C]** No inventory/reconciliation between DB references and the `uptrack/users/<uid>/certificates` folders.
+- **[C]** Phase 1 (issue #24) introduced the `certificate_assets` registry, reserve-first uploads with an Admin-API probe sweeper, ownership-validated attach by asset UUID, and `MANAGED_VERIFIED` / `LEGACY_UNVERIFIED` / `EXTERNAL_LINK` classification. Managed CE delete/replace/remove record `PENDING_DELETION` in the CE-record transaction; the provider destroy runs after commit (Phase 1 interim) — Phase 2 replaces this with the durable worker below so exactly one mechanism owns provider deletion.
+- **[C]** `CredentialServiceImpl.deleteCredential` still only cascades CE rows; **Phase 2 fixes this** by marking managed assets `PENDING_DELETION` in the same transaction before the cascade. Legacy publicId-only CE records have no registry row and are **never auto-registered or auto-deleted** (safeguard, §6 of the Phase 2 plan) — historical assets are reconciled only in Phase 4.
+- **[C]** Legacy (non-managed) CE paths keep the pre-existing synchronous in-transaction destroy with 502 on provider failure — unchanged by Phase 2; pinned by `CertificateCleanupFailureIntegrationTest`.
+- **[C]** Upload-then-abandon leaves unattached `PENDING` assets; Phase 2 expires them after the 24 h grace. No reconciliation of unknown provider assets exists; Phase 2 ships **dry-run only**.
+- **[C]** No account-deletion endpoint exists; any future user delete must reuse the same marking path.
 
 ## 2. Approved architecture
 
@@ -29,11 +28,13 @@ Durable PostgreSQL-backed deletion retries (outbox-style status machine in `cert
 
 ## 4. Lifecycle scenarios (all must be tested)
 
-Successful upload · upload succeeded but DB registration failed (covered by reserve-first + probe, #24) · abandoned form (24 h expiry of unattached `PENDING`) · CE create (attach) · replacement (old asset marked in the same tx as the row update) · removal · CE delete (mark `PENDING_DELETION`, delete row, provider call deferred) · credential delete (load CE assets, mark all, then cascade delete in one tx) · Cloudinary outage (rows stay `PENDING_DELETION`, user ops never blocked) · DB rollback (no mark persisted, asset untouched) · duplicate cleanup (unique key + fenced claims + idempotent destroy) · interrupted job · app restart · retry exhaustion → `CLEANUP_FAILED` · historical orphans (reconciliation).
+Successful upload · upload succeeded but DB registration failed (covered by reserve-first + probe, #24) · abandoned form (24 h expiry of unattached `PENDING`) · CE create (attach) · replacement (old asset marked in the same tx as the row update; worker destroys it later) · removal · CE delete (mark `PENDING_DELETION`, delete row, provider call deferred to the worker — the Phase 1 afterCommit hook is removed) · credential delete (load CE records, mark managed assets, then cascade delete in one tx) · Cloudinary outage (rows stay `PENDING_DELETION` with backoff, user ops never blocked) · DB rollback (no mark persisted, asset untouched) · duplicate cleanup (unique key + fenced claims + idempotent destroy, not-found = success) · interrupted job · app restart · retry exhaustion → `CLEANUP_FAILED` · historical orphans (dry-run reconciliation only in Phase 2).
 
-## 5. Restricted reconciliation (dry-run first)
+**Phase 1 → Phase 2 transition notes:** existing `PENDING_DELETION` rows (e.g. Phase 1 post-commit-outage stragglers) are eligible for the worker on its first run; the worker treats provider not-found as success, so a Phase 1 crash between destroy and `markDeleted` self-heals. The Phase 1 `afterCommit` destroy in `CERecordServiceImpl` is removed in the same PR that introduces the worker, so only one deletion mechanism owns each managed asset.
 
-Config flag `app.cleanup.reconcile.enabled=false` (default off). When explicitly enabled: list Cloudinary assets under prefix `uptrack/` via Admin API (paginated), join with the registry, classify: managed-and-referenced / managed-unattached / missing-in-cloudinary / unknown-provider-assets. **Dry-run report only by default**; deletes only for verified orphans older than the grace period, in bounded batches, behind the explicit flag; any listing/pagination/API failure **aborts the run** — never delete from an incomplete inventory. Sanitized output; no secrets in logs; configured account only.
+## 5. Restricted reconciliation (Phase 2: dry-run only — no deletions)
+
+`CertificateReconciliationService.dryRunInventory()` lists Cloudinary assets under prefix `uptrack/` via the Admin API (paginated, `image` + `raw`), joins with the registry, and classifies: managed-listed / missing-in-cloudinary / **unknown-provider-assets** (listed at the provider, absent from the registry). **Phase 2 never deletes anything**: unknown assets are reported and explicitly kept out of automatic deletion; any listing/pagination/API failure aborts the run (incomplete inventory is never acted on). The scheduled dry-run report runs only behind `app.cleanup.reconcile.enabled` (default false). Automatic reconciliation deletion of unknown assets requires complete inventory evidence and separate owner authorization (Phase 4). Sanitized output; no secrets in logs; configured account only.
 
 ## 6. Dual-identity historical migration (Phase 4; mandatory correction)
 
@@ -53,7 +54,7 @@ Historical CE metadata stays `LEGACY_UNVERIFIED` (issue #24 safeguard 2) until U
 - Fenced lease protocol implemented and tested, including stale-fence no-op writes (0 rows affected) after lease expiry/reassignment.
 - All 15 lifecycle scenarios covered on H2 and PostgreSQL 17 in CI; cleanup failure no longer returns 502 or blocks user operations; failures remain visible/retryable; exhaustion → `CLEANUP_FAILED`.
 - 24 h abandoned-upload expiry tested; confirmed deletions have no grace.
-- Reconciliation dry-run produces a report and deletes nothing; abort-on-incomplete-inventory tested.
+- Reconciliation is dry-run only in Phase 2: produces a classification report, deletes nothing, and abort-on-incomplete-inventory is tested; unknown provider assets are never auto-deleted.
 - Migration: dual-identity rows, resumable batches, verify-before-cutover, retire-after-window via fenced cleanup, rollback rehearsed in non-production without re-exposure.
 - Cloudinary mocked in all CI; no existing test weakened (the credential-cascade characterization test is replaced by the new behavior).
 

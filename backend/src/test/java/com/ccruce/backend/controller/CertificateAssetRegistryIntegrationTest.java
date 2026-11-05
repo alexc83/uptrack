@@ -68,6 +68,9 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
     @Autowired
     private CertificateReservationSweeper sweeper;
 
+    @Autowired
+    private com.ccruce.backend.service.impl.CertificateCleanupWorker cleanupWorker;
+
     @BeforeEach
     void setUpCloudinaryMock() {
         uploader = Mockito.mock(Uploader.class);
@@ -221,9 +224,8 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                                 """.formatted(ownerCredential, assetId)))
                 .andExpect(status().isConflict());
 
-        // Replace (Finding 1): the old managed asset is destroyed synchronously like a legacy
-        // certificate — PENDING_DELETION is recorded before the provider call, then DELETED.
-        String oldPublicId = assetById(assetId).getPublicId();
+        // Replace (Phase 2): the old managed asset is marked PENDING_DELETION in the CE-record
+        // transaction; the provider destroy is owned by the durable cleanup worker, not the request.
         String assetId2 = uploadCertificate(owner);
         mockMvc.perform(put("/api/ce-records/{id}", firstId)
                         .header("Authorization", bearerToken(owner))
@@ -235,26 +237,32 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                 .andExpect(jsonPath("$.certificateAssetId").value(assetId2));
 
         CertificateAsset oldAsset = assetById(assetId);
-        assertEquals(AssetStatus.DELETED, oldAsset.getStatus());
+        assertEquals(AssetStatus.PENDING_DELETION, oldAsset.getStatus());
         assertNull(oldAsset.getCeRecordId());
         assertEquals(AssetStatus.ATTACHED, assetById(assetId2).getStatus());
-        verify(uploader).destroy(eq(oldPublicId), eq(Map.of("resource_type", "raw", "invalidate", true)));
+        verify(uploader, never()).destroy(anyString(), anyMap());
 
-        // Delete the record: the managed asset is destroyed and marked DELETED in the same transaction.
+        // Delete the record: asset marked PENDING_DELETION, still no provider call in the request.
         mockMvc.perform(delete("/api/ce-records/{id}", firstId)
                         .header("Authorization", bearerToken(owner)))
                 .andExpect(status().isNoContent());
+        assertEquals(AssetStatus.PENDING_DELETION, assetById(assetId2).getStatus());
+        verify(uploader, never()).destroy(anyString(), anyMap());
+
+        // The durable worker performs the destroys and marks both DELETED.
+        org.mockito.Mockito.doReturn(Map.of("result", "ok")).when(uploader).destroy(anyString(), anyMap());
+        cleanupWorker.processDeletionBatch();
+        assertEquals(AssetStatus.DELETED, assetById(assetId).getStatus());
         assertEquals(AssetStatus.DELETED, assetById(assetId2).getStatus());
         verify(uploader, org.mockito.Mockito.times(2)).destroy(anyString(), anyMap());
     }
 
     @Test
-    void managedDeleteProviderFailureLeavesDurablePendingDeletionAndNoDanglingReference() throws Exception {
+    void managedDeleteNeverDependsOnCloudinaryAvailability() throws Exception {
         stubSuccessfulUpload();
         AuthSession session = registerUser("Fiona Failure", "fiona.failure@example.com");
         String credentialId = createCredential(session, "RN License");
         String assetId = uploadCertificate(session);
-        String publicId = assetById(assetId).getPublicId();
 
         String created = mockMvc.perform(post("/api/ce-records")
                         .header("Authorization", bearerToken(session))
@@ -266,13 +274,13 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                 .andReturn().getResponse().getContentAsString();
         String ceRecordId = objectMapper.readTree(created).get("id").asText();
 
-        // Transaction-safety review: the destroy runs only AFTER commit. Provider outage during the
-        // post-commit destroy -> delete still succeeds (204), the CE row is gone, and the registry
-        // durably records PENDING_DELETION so Phase 2 retries the (idempotent) destroy.
+        // Phase 2: even with the provider completely down, CE delete succeeds and durably records
+        // PENDING_DELETION; the worker retries later.
         org.mockito.Mockito.doThrow(new IOException("outage")).when(uploader).destroy(anyString(), anyMap());
         mockMvc.perform(delete("/api/ce-records/{id}", ceRecordId)
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNoContent());
+        verify(uploader, never()).destroy(anyString(), anyMap());
 
         mockMvc.perform(get("/api/ce-records/{id}", ceRecordId)
                         .header("Authorization", bearerToken(session)))
@@ -280,7 +288,25 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
         CertificateAsset asset = assetById(assetId);
         assertEquals(AssetStatus.PENDING_DELETION, asset.getStatus());
         assertNull(asset.getCeRecordId());
-        verify(uploader).destroy(eq(publicId), eq(Map.of("resource_type", "raw", "invalidate", true)));
+
+        // Worker run during the outage: failure is recorded with backoff, still PENDING_DELETION.
+        cleanupWorker.processDeletionBatch();
+        CertificateAsset afterFailure = assetById(assetId);
+        assertEquals(AssetStatus.PENDING_DELETION, afterFailure.getStatus());
+        assertEquals(1, afterFailure.getCleanupAttempts());
+        assertNotNull(afterFailure.getNextRetryAt());
+        assertEquals("NETWORK", afterFailure.getLastFailureClass());
+
+        // Provider recovers: worker destroys and marks DELETED.
+        org.mockito.Mockito.doReturn(Map.of("result", "ok")).when(uploader).destroy(anyString(), anyMap());
+        assetRepository.save(withRetryDue(afterFailure));
+        cleanupWorker.processDeletionBatch();
+        assertEquals(AssetStatus.DELETED, assetById(assetId).getStatus());
+    }
+
+    private CertificateAsset withRetryDue(CertificateAsset asset) {
+        asset.setNextRetryAt(OffsetDateTime.now().minusMinutes(1));
+        return asset;
     }
 
     @Test

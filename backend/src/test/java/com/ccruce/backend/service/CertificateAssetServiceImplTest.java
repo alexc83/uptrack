@@ -9,6 +9,7 @@ import com.ccruce.backend.repository.CertificateAssetRepository;
 import com.ccruce.backend.service.impl.CertificateAssetServiceImpl;
 import com.cloudinary.Api;
 import com.cloudinary.Cloudinary;
+import com.cloudinary.Uploader;
 import com.cloudinary.api.exceptions.NotFound;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class CertificateAssetServiceImplTest {
     private final Cloudinary cloudinary = mock(Cloudinary.class);
     private final Api api = mock(Api.class);
     private final CertificateAssetServiceImpl service = new CertificateAssetServiceImpl(
-            repository, cloudinary, new CloudinaryProperties("test-cloud", "key", "secret"), 60, 300);
+            repository, cloudinary, new CloudinaryProperties("test-cloud", "key", "secret"), 60, 300, 300, 10);
 
     @BeforeEach
     void setUp() {
@@ -145,6 +146,54 @@ class CertificateAssetServiceImplTest {
         asset.setResourceType("image");
         service.adoptFromProbe(asset, token, Map.of("secure_url", "https://res.example.test/image/upload/x.png"));
         verify(repository).adoptReservation(eq(asset.getId()), eq(token), eq("https://res.example.test/image/upload/x.png"), any());
+    }
+
+    @Test
+    void destroyAtProviderValidatesTheProviderResponseContract() throws Exception {
+        CertificateAsset asset = new CertificateAsset();
+        asset.setId(UUID.randomUUID());
+        asset.setPublicId("uptrack/users/u/certificates/x");
+        asset.setResourceType("raw");
+        Uploader uploader = mock(Uploader.class);
+        when(cloudinary.uploader()).thenReturn(uploader);
+
+        // result=ok → DELETED
+        org.mockito.Mockito.doReturn(Map.of("result", "ok")).when(uploader).destroy(anyString(), anyMap());
+        assertEquals(CertificateAssetService.DestroyResult.Outcome.DELETED, service.destroyAtProvider(asset).outcome());
+
+        // result="not found" → NOT_FOUND (counts as successful cleanup)
+        org.mockito.Mockito.doReturn(Map.of("result", "not found")).when(uploader).destroy(anyString(), anyMap());
+        assertEquals(CertificateAssetService.DestroyResult.Outcome.NOT_FOUND, service.destroyAtProvider(asset).outcome());
+
+        // missing/unexpected result → AMBIGUOUS, never DELETED
+        org.mockito.Mockito.doReturn(Map.of("unexpected", true)).when(uploader).destroy(anyString(), anyMap());
+        var ambiguous = service.destroyAtProvider(asset);
+        assertEquals(CertificateAssetService.DestroyResult.Outcome.AMBIGUOUS, ambiguous.outcome());
+        assertEquals(FailureClass.UNKNOWN.name(), ambiguous.failureClass());
+
+        // null response (no throw) → AMBIGUOUS, never DELETED
+        org.mockito.Mockito.doReturn(null).when(uploader).destroy(anyString(), anyMap());
+        assertEquals(CertificateAssetService.DestroyResult.Outcome.AMBIGUOUS, service.destroyAtProvider(asset).outcome());
+
+        // error payload with 4xx → FAILED / PROVIDER_4XX; 5xx → PROVIDER_5XX
+        org.mockito.Mockito.doReturn(Map.of("error", Map.of("message", "bad", "http_code", 400)))
+                .when(uploader).destroy(anyString(), anyMap());
+        var err4 = service.destroyAtProvider(asset);
+        assertEquals(CertificateAssetService.DestroyResult.Outcome.FAILED, err4.outcome());
+        assertEquals(FailureClass.PROVIDER_4XX.name(), err4.failureClass());
+        org.mockito.Mockito.doReturn(Map.of("error", Map.of("message", "oops", "http_code", 500)))
+                .when(uploader).destroy(anyString(), anyMap());
+        assertEquals(FailureClass.PROVIDER_5XX.name(), service.destroyAtProvider(asset).failureClass());
+
+        // exception with NotFound cause → NOT_FOUND; IOException → FAILED/NETWORK; timeout → PROVIDER_TIMEOUT
+        org.mockito.Mockito.doThrow(new IOException("wrapped", new NotFound("gone"))).when(uploader).destroy(anyString(), anyMap());
+        assertEquals(CertificateAssetService.DestroyResult.Outcome.NOT_FOUND, service.destroyAtProvider(asset).outcome());
+        org.mockito.Mockito.doThrow(new IOException("reset")).when(uploader).destroy(anyString(), anyMap());
+        var net = service.destroyAtProvider(asset);
+        assertEquals(CertificateAssetService.DestroyResult.Outcome.FAILED, net.outcome());
+        assertEquals(FailureClass.NETWORK.name(), net.failureClass());
+        org.mockito.Mockito.doThrow(new SocketTimeoutException("slow")).when(uploader).destroy(anyString(), anyMap());
+        assertEquals(FailureClass.PROVIDER_TIMEOUT.name(), service.destroyAtProvider(asset).failureClass());
     }
 
     @Test

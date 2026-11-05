@@ -2,6 +2,8 @@ package com.ccruce.backend.service;
 
 import com.ccruce.backend.entity.CertificateAsset;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,7 +50,38 @@ public interface CertificateAssetService {
     /** Admin API existence probe for unresolved reservations. */
     ProbeResult probeAtProvider(CertificateAsset asset);
 
+    /** Phase 2: fenced lease claim for a PENDING_DELETION row; returns the fence token or null if held. */
+    UUID claimDeletion(CertificateAsset asset, String workerId);
+
+    /** Phase 2: provider destroy outside any DB transaction, with explicit response validation. */
+    DestroyResult destroyAtProvider(CertificateAsset asset);
+
+    /** Phase 2: fenced completion of a deletion after a successful destroy. */
+    void completeDeletion(UUID assetId, UUID leaseToken);
+
+    /** Phase 2: fenced failure with bounded backoff; exhaustion (maxAttempts) transitions to CLEANUP_FAILED. */
+    void registerCleanupFailure(CertificateAsset asset, UUID leaseToken, String failureClass);
+
+    /** Phase 2: move unattached PENDING assets older than the grace cutoff to PENDING_DELETION. */
+    int expireAbandonedUploads(OffsetDateTime graceCutoff);
+
+    List<CertificateAsset> findEligibleDeletions(OffsetDateTime now, int batchSize);
+
     /** probeSucceeded=false: the probe itself failed (retry later with backoff). exists=false: confirmed absent. */
     record ProbeResult(boolean probeSucceeded, boolean exists, Map<String, Object> resource, String failureClass) {
+    }
+
+    /**
+     * Destroy outcome. DELETED and NOT_FOUND both count as successful cleanup; FAILED and AMBIGUOUS
+     * stay retryable with a sanitized failure class. An asset is never marked DELETED merely because
+     * the provider call returned without throwing.
+     */
+    record DestroyResult(Outcome outcome, String failureClass) {
+        public enum Outcome {
+            DELETED,
+            NOT_FOUND,
+            FAILED,
+            AMBIGUOUS
+        }
     }
 }

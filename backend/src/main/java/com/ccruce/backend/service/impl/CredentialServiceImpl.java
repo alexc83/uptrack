@@ -18,10 +18,12 @@ import com.ccruce.backend.repository.CERecordRepository;
 import com.ccruce.backend.repository.CredentialRepository;
 import com.ccruce.backend.repository.UserRepository;
 import com.ccruce.backend.security.AuthenticatedUser;
+import com.ccruce.backend.service.CertificateAssetService;
 import com.ccruce.backend.service.CredentialService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -38,15 +40,18 @@ public class CredentialServiceImpl implements CredentialService {
     private final CredentialRepository credentialRepository;
     private final CERecordRepository ceRecordRepository;
     private final UserRepository userRepository;
+    private final CertificateAssetService certificateAssetService;
 
     public CredentialServiceImpl(
             CredentialRepository credentialRepository,
             CERecordRepository ceRecordRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            CertificateAssetService certificateAssetService
     ) {
         this.credentialRepository = credentialRepository;
         this.ceRecordRepository = ceRecordRepository;
         this.userRepository = userRepository;
+        this.certificateAssetService = certificateAssetService;
     }
 
     @Override
@@ -134,10 +139,23 @@ public class CredentialServiceImpl implements CredentialService {
         return toResponse(credentialRepository.save(credential));
     }
 
+    /**
+     * Phase 2 (issue #20, D01-W04): before the JPA cascade removes the credential's CE records, mark
+     * their MANAGED certificate assets PENDING_DELETION in the same transaction, so the durable cleanup
+     * worker removes them independently of the deleted rows. Legacy publicId-only metadata stays
+     * LEGACY_UNVERIFIED and is never auto-registered or auto-deleted here — historical assets are
+     * reconciled only in Phase 4 with owner approval.
+     */
     @Override
+    @Transactional
     public void deleteCredential(UUID id) {
         Credential credential = getExistingCredential(id);
         ensureCredentialBelongsToAuthenticatedUser(credential);
+        for (CERecord ceRecord : ceRecordRepository.findAllByCredentialId(credential.getId())) {
+            if (ceRecord.getCertificateAssetId() != null) {
+                certificateAssetService.markPendingDeletion(ceRecord.getCertificateAssetId(), ceRecord.getId());
+            }
+        }
         credentialRepository.delete(credential);
     }
 
