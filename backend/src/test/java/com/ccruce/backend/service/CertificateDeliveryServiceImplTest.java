@@ -47,7 +47,8 @@ class CertificateDeliveryServiceImplTest {
     private final Cloudinary cloudinary = mock(Cloudinary.class);
     private final Url url = mock(Url.class, RETURNS_SELF);
     private final CertificateDeliveryServiceImpl service =
-            new CertificateDeliveryServiceImpl(ceRecordRepository, userRepository, assetService, cloudinary, 60);
+            new CertificateDeliveryServiceImpl(ceRecordRepository, userRepository, assetService, cloudinary,
+                    new com.ccruce.backend.config.CertificateDeliveryProperties(true, 60));
 
     private final UUID userId = UUID.randomUUID();
     private final UUID recordId = UUID.randomUUID();
@@ -163,6 +164,16 @@ class CertificateDeliveryServiceImplTest {
 
         UploadFailedException thrown = assertThrows(UploadFailedException.class, () -> service.issueDeliveryUrl(recordId));
         assertEquals("Certificate delivery failed.", thrown.getMessage());
+    }
+
+    @Test
+    void flagDisabledIssuesNothing() {
+        var disabled = new CertificateDeliveryServiceImpl(ceRecordRepository, userRepository, assetService, cloudinary,
+                new com.ccruce.backend.config.CertificateDeliveryProperties(false, 60));
+        when(ceRecordRepository.findById(recordId)).thenReturn(Optional.of(managedRecord()));
+        when(assetService.findOwnedAsset(assetId, userId)).thenReturn(Optional.of(attachedAsset()));
+        assertThrows(ResourceNotFoundException.class, () -> disabled.issueDeliveryUrl(recordId));
+        verify(url, org.mockito.Mockito.never()).generate(anyString());
     }
 
     @Test

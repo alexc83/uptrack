@@ -187,7 +187,7 @@ describe('CE create dialog', () => {
     expect(within(dialog).getByText(/Uploaded:/).parentElement).toHaveTextContent('new.pdf');
     await fillForm(user, within(dialog));
     await user.click(within(dialog).getByRole('button', { name: 'Save CE Record' }));
-    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ certificateAssetId: 'asset-1', certificateUrl: null, certificatePublicId: 'pub-1', certificateResourceType: 'raw', certificateOriginalFilename: 'new.pdf' })));
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ certificateAssetId: 'asset-1', certificateUrl: 'https://files.example.test/new.pdf', certificatePublicId: 'pub-1', certificateResourceType: 'raw', certificateOriginalFilename: 'new.pdf' })));
     expect(upload).toHaveBeenCalledTimes(1);
   });
   it('surfaces upload failures and does not submit while uploading', async () => {

@@ -10,6 +10,7 @@ import com.ccruce.backend.entity.Credential;
 import com.ccruce.backend.enums.CredentialStatus;
 import com.ccruce.backend.exception.UnauthorizedException;
 import com.ccruce.backend.repository.CERecordRepository;
+import com.ccruce.backend.service.CertificateAssetService;
 import com.ccruce.backend.repository.CredentialRepository;
 import com.ccruce.backend.security.AuthenticatedUser;
 import com.ccruce.backend.service.DashboardService;
@@ -35,13 +36,16 @@ public class DashboardServiceImpl implements DashboardService {
 
     private final CredentialRepository credentialRepository;
     private final CERecordRepository ceRecordRepository;
+    private final CertificateAssetService certificateAssetService;
 
     public DashboardServiceImpl(
             CredentialRepository credentialRepository,
-            CERecordRepository ceRecordRepository
+            CERecordRepository ceRecordRepository,
+            CertificateAssetService certificateAssetService
     ) {
         this.credentialRepository = credentialRepository;
         this.ceRecordRepository = ceRecordRepository;
+        this.certificateAssetService = certificateAssetService;
     }
 
     @Override
@@ -189,7 +193,7 @@ public class DashboardServiceImpl implements DashboardService {
                 ceRecord.getProvider(),
                 ceRecord.getHours(),
                 ceRecord.getDateCompleted(),
-                ceRecord.getCertificateAssetId() != null ? null : ceRecord.getCertificateUrl(),
+                certificateAssetService.exposedCertificateUrl(ceRecord),
                 ceRecord.getCertificatePublicId(),
                 ceRecord.getCertificateResourceType(),
                 ceRecord.getCertificateOriginalFilename(),

@@ -38,9 +38,10 @@ export function CERecordForm({ initialValue, credentialOptions = [], showCredent
     if (!file) return;
     const response = await upload.upload(file);
     if (!response) return;
-    // Phase 3 (#23): the managed reference is the asset UUID; the permanent public URL is
-    // deliberately not stored client-side — viewing goes through the authenticated endpoint.
-    setValue('certificateUrl', '', { shouldDirty: true });
+    // Phase 3 (#23) Strategy A gate: when the backend suppresses the URL (flag on, authenticated
+    // asset) it is null and viewing goes through the delivery endpoint; when present (flag off)
+    // the Phase 2 anchor viewing applies unchanged.
+    setValue('certificateUrl', response.url ?? '', { shouldDirty: true });
     setValue('certificatePublicId', response.publicId, { shouldDirty: true });
     setValue('certificateResourceType', response.resourceType, { shouldDirty: true });
     setValue('certificateOriginalFilename', response.originalFilename ?? '', { shouldDirty: true });

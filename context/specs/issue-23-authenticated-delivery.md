@@ -17,6 +17,17 @@ Evidence tags: **[C]** confirmed in current `main` code/tests · **[H]** hypothe
 
 Authenticated Cloudinary delivery: UpTrack verifies CE-record ownership **before** issuing a temporary access URL. Initial proposed default URL lifetime **60 seconds** (`app.certificates.delivery.ttl-seconds`), subject to the pilot. Once Phase 3 is operational, permanent managed-certificate delivery URLs are removed from ordinary API responses (Phase 1 safeguard: keep them until then).
 
+## 2a. Activation gate — Strategy A with default-off flag (owner decision 2026-11-05)
+
+`app.certificates.delivery.enabled` (env `CERTIFICATE_DELIVERY_ENABLED`, **default false**, server-controlled; TTL via `app.certificates.delivery.ttl-seconds`, default 60).
+
+- **Flag OFF (default, current state):** exact Phase 2 behavior — uploads use delivery type `upload`, the upload response and ordinary CE-record/report responses carry the permanent `certificateUrl` for managed assets, React anchors work unchanged, and the delivery endpoint answers **404** (issues nothing). PR #57 therefore merges safely with the flag off.
+- **Flag ON (pilot-gated, separately authorized):** new uploads use `type=authenticated`, the registry records `delivery_type='authenticated'`, and the delivery endpoint issues short-lived AuthToken URLs for those assets only (upload-type assets still 409).
+- **URL suppression is asset-based, not flag-based:** `certificateUrl` is nulled in responses only when the managed asset's `delivery_type='authenticated'`. Turning the flag off later can never expose an authenticated asset's stored URL. React picks the mechanism from the response shape (URL present → anchor; absent but `certificateAssetId` present → View button → delivery endpoint) — no client-controlled security decision, no flag in the frontend.
+- **Mixed populations:** `upload`-type managed assets remain viewable via their public URL under an explicitly documented temporary compatibility policy until Phase 4 retirement; `LEGACY_UNVERIFIED` and `EXTERNAL_LINK` records are untouched. Publicly reachable assets are never represented as private.
+- **Lifecycle propagation by delivery type:** reserve-first registration, upload options, ambiguous-upload Admin probes, durable cleanup `destroy`, and reconciliation all pass the asset's delivery `type`; reconciliation inventories all four `resource_type × delivery_type` combinations with unambiguous 4-part identity keys.
+- **Rollback:** the flag is one-way in practice — authenticated assets never regain a public URL, so "flag off after authenticated uploads exist" disables the endpoint for them; rollback = re-enable the flag (documented in the verification report). Already-created assets never change delivery type because of a flag change. No public-URL fallback exists in the authenticated path under any configuration.
+
 ## 3. Mandatory pilot verification questions [LV]
 
 Before Phase 3 code is finalized, a controlled pilot on a **dedicated non-production cloud** with **synthetic certificates only** and separately owner-approved credentials must answer:
@@ -36,11 +47,11 @@ Before Phase 3 code is finalized, a controlled pilot on a **dedicated non-produc
 - New endpoint `GET /api/ce-records/{id}/certificate-url` (Bearer JWT): authentication → CE record ownership → registry row `ATTACHED` with `ce_record_id = id` → 404 for non-owners (indistinguishable from missing) → `{url, expiresAt}` built via `cloudinary.url().secure(true).type("authenticated").resourceType(rt)` + `AuthToken(duration=ttl, acl pinned to the asset path)`. Rate-limited; issuance audit-logged.
 - Raw PDFs and images both covered per pilot answers; browser preview and download supported; CDN caching is per-token (short-lived); `invalidate=true` on destroy busts cached copies.
 - **Limitations (explicit):** a signed/AuthToken URL is private only while the asset's delivery type is `authenticated` — legacy `upload`-type assets remain publicly reachable at their old URLs until Phase 4 retires them; the 60 s lifetime forbids stored links (UI refetches on every open, including print/report); issued URLs cannot be revoked (lifetime bounds exposure); provider outage → 5xx, never a fallback to the public URL; `EXTERNAL_LINK` records keep their public-by-nature external URLs via `safeHttpUrl`.
-- DTO changes at Phase 3: managed assets no longer expose the permanent Cloudinary URL in `CERecordResponseDto`/`CEReportRecordDto` (Phase 1 safeguard 1: only at Phase 3).
+- DTO changes at Phase 3: managed assets with `delivery_type='authenticated'` no longer expose the permanent Cloudinary URL in `CERecordResponseDto`/`CEReportRecordDto` (Phase 1 safeguard 1: only at Phase 3; asset-based, per §2a).
 
 ## 5. React compatibility (Phase 3)
 
-"View certificate" becomes an on-demand action: `certificatesApi.getDeliveryUrl(ceRecordId)` (Bearer) → open returned URL (`window.open` / `img` / `iframe` src for preview); 404 → "No certificate"; expiry → refetch on click. CE form, detail drawer, credential drawer and report/print flows updated in the same PR; `safeHttpUrl` remains for `EXTERNAL_LINK` values. Browser checks in CI (chromium) plus owner-run Edge/Chrome/Firefox/WebKit.
+With the flag ON, "View certificate" becomes an on-demand action: `certificatesApi.getDeliveryUrl(ceRecordId)` (Bearer) → open returned URL (`window.open` / `img` / `iframe` src for preview); 404 → "No certificate"; expiry → refetch on click. CE form, detail drawer, credential drawer and report/print flows updated in the same PR; `safeHttpUrl` remains for `EXTERNAL_LINK` values. Browser checks in CI (chromium) plus owner-run Edge/Chrome/Firefox/WebKit.
 
 ## 6. Acceptance criteria (Phase 3)
 

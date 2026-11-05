@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -39,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Phase 3 (issue #23) delivery endpoint, Cloudinary fully mocked: authorized issuance, cross-user 404,
  * missing record/asset, inactive state, managed URLs removed from ordinary responses, legacy compatibility.
  */
-@SpringBootTest
+@SpringBootTest(properties = "app.certificates.delivery.enabled=true")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTest {
@@ -149,12 +150,74 @@ class CertificateDeliveryIntegrationTest extends AbstractControllerIntegrationTe
     }
 
     @Test
+    void flagOnUploadsAuthenticatedAssetsAndSuppressesUrl() throws Exception {
+        AuthSession session = registerUser("Eric Enabled", "eric.enabled@example.com");
+        String credentialId = createCredential(session, "RN License");
+
+        MockMultipartFile file = new MockMultipartFile("file", "cert.pdf", "application/pdf", CertificateFixtures.pdf());
+        String uploadResponse = mockMvc.perform(multipart("/api/uploads/certificates").file(file)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.nullValue())) // suppressed when enabled
+                .andExpect(jsonPath("$.assetId").isString())
+                .andReturn().getResponse().getContentAsString();
+        String assetId = objectMapper.readTree(uploadResponse).get("assetId").asText();
+
+        // Registry records delivery type 'authenticated' and the upload carried type=authenticated.
+        CertificateAsset asset = assetRepository.findById(UUID.fromString(assetId)).orElseThrow();
+        assertEquals("authenticated", asset.getDeliveryType());
+        org.mockito.ArgumentCaptor<Map<String, Object>> options = org.mockito.ArgumentCaptor.forClass(Map.class);
+        org.mockito.Mockito.verify(uploader).upload(any(), options.capture());
+        assertEquals("authenticated", options.getValue().get("type"));
+
+        // Attach: managed CE response suppresses the permanent URL when the asset is authenticated.
+        String recordId = createCERecordWithAsset(session, credentialId, assetId);
+        mockMvc.perform(get("/api/ce-records/{id}", recordId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.certificateUrl").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.certificateAssetId").value(assetId));
+
+        // Endpoint issues for the authenticated asset.
+        mockMvc.perform(get("/api/ce-records/{id}/certificate-url", recordId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").isString());
+    }
+
+    @Test
+    void existingUploadTypeAssetsStayViewableViaUrlWhenEnabled() throws Exception {
+        // Mixed population: an upload-type managed asset created before activation keeps its URL
+        // (temporary compatibility policy) and is refused by the authenticated endpoint (409).
+        AuthSession session = registerUser("Mia Mixed", "mia.mixed@example.com");
+        String credentialId = createCredential(session, "RN License");
+        String assetId = uploadCertificate(session); // enabled=true here, so this is authenticated;
+        // simulate a pre-activation upload-type asset instead:
+        CertificateAsset asset = assetRepository.findById(UUID.fromString(assetId)).orElseThrow();
+        asset.setDeliveryType("upload");
+        assetRepository.save(asset);
+        String recordId = createCERecordWithAsset(session, credentialId, assetId);
+
+        mockMvc.perform(get("/api/ce-records/{id}", recordId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.certificateUrl").isString()) // public asset: URL stays (documented policy)
+                .andExpect(jsonPath("$.certificateAssetId").value(assetId));
+        mockMvc.perform(get("/api/ce-records/{id}/certificate-url", recordId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isConflict()); // never an authenticated URL for a public asset
+    }
+
+    @Test
     void uploadTypeAssetIsRefusedUntilMigrated() throws Exception {
         AuthSession session = registerUser("Uma UploadType", "uma.uploadtype@example.com");
         String credentialId = createCredential(session, "RN License");
         String assetId = uploadCertificate(session);
         String recordId = createCERecordWithAsset(session, credentialId, assetId);
-        // Asset is still delivery type 'upload' (Phase 4 migrates it) -> 409, no URL issued.
+        // Simulate a pre-activation asset: delivery type 'upload' -> 409, no URL issued.
+        CertificateAsset asset = assetRepository.findById(UUID.fromString(assetId)).orElseThrow();
+        asset.setDeliveryType("upload");
+        assetRepository.save(asset);
         mockMvc.perform(get("/api/ce-records/{id}/certificate-url", recordId)
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isConflict());

@@ -1,6 +1,7 @@
 package com.ccruce.backend.service;
 
 import com.ccruce.backend.entity.CertificateAsset;
+import com.ccruce.backend.entity.CERecord;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -12,7 +13,7 @@ public interface CertificateAssetService {
 
     /** Persist a RESERVED registry row (server-generated identity + original filename) in its own
      *  committed transaction, before any Cloudinary call. */
-    CertificateAsset reserve(UUID userId, String resourceType, String originalFilename);
+    CertificateAsset reserve(UUID userId, String resourceType, String originalFilename, String deliveryType);
 
     /** Confirmed provider success: RESERVED -> PENDING with delivery metadata. Returns false if the row is no longer RESERVED. */
     boolean markUploaded(UUID assetId, UUID userId, String deliveryUrl, String originalFilename);
@@ -37,6 +38,17 @@ public interface CertificateAssetService {
 
     /** Ownership-checked lookup: foreign or unknown ids are empty (caller answers 404). */
     Optional<CertificateAsset> findOwnedAsset(UUID assetId, UUID userId);
+
+    /** Unscoped lookup for response mapping (delivery-type decisions are server-side). */
+    Optional<CertificateAsset> findAsset(UUID assetId);
+
+    /**
+     * The certificate URL to expose in an ordinary API response. Asset-based, not flag-based:
+     * an 'authenticated' asset's stored URL is NEVER exposed (even if the flag is later turned
+     * off); 'upload'-type managed assets and legacy/external records keep their URL (temporary
+     * compatibility policy until Phase 4 — those assets are public at the provider regardless).
+     */
+    String exposedCertificateUrl(CERecord record);
 
     /** Attach a PENDING asset to a CE record atomically. Throws ConflictException if already attached. */
     void attach(UUID assetId, UUID userId, UUID ceRecordId);

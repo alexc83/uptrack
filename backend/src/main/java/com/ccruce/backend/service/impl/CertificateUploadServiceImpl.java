@@ -1,5 +1,6 @@
 package com.ccruce.backend.service.impl;
 
+import com.ccruce.backend.config.CertificateDeliveryProperties;
 import com.ccruce.backend.entity.CertificateAsset;
 import com.ccruce.backend.service.CertificateAssetService;
 import com.ccruce.backend.validation.CertificateFileValidator;
@@ -36,6 +37,7 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
     private final Cloudinary cloudinary;
     private final CertificateFileValidator fileValidator;
     private final CertificateAssetService assetService;
+    private final CertificateDeliveryProperties deliveryProperties;
     // Bounds concurrent decode+upload work (image decode can use ~160 MB per 40 Mpx
     // frame). tryAcquire never queues: when all slots are busy the request is rejected
     // with 503 instead of letting one client block everyone else.
@@ -44,11 +46,13 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
     public CertificateUploadServiceImpl(Cloudinary cloudinary,
             CertificateFileValidator fileValidator,
             CertificateAssetService assetService,
+            CertificateDeliveryProperties deliveryProperties,
             @Value("${app.upload.max-concurrent:4}") int maxConcurrentUploads) {
         if (maxConcurrentUploads < 1) throw new IllegalStateException("Upload concurrency must be positive.");
         this.cloudinary = cloudinary;
         this.fileValidator = fileValidator;
         this.assetService = assetService;
+        this.deliveryProperties = deliveryProperties;
         this.uploadSlots = new Semaphore(maxConcurrentUploads);
     }
 
@@ -78,7 +82,10 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
         try {
             // The client filename is persisted at reservation time so a recovered upload
             // (provider success + app crash) still has complete authoritative metadata.
-            reservation = assetService.reserve(userId, resourceType, originalFilename);
+            // Strategy A gate: flag off (default) -> delivery type 'upload' and URLs stay exposed;
+            // flag on (post-pilot only) -> new assets are 'authenticated'.
+            String deliveryType = deliveryProperties.enabled() ? "authenticated" : "upload";
+            reservation = assetService.reserve(userId, resourceType, originalFilename, deliveryType);
         } catch (RuntimeException exception) {
             log.warn("Certificate asset reservation failed before provider call.");
             throw new UploadFailedException("Certificate upload failed.");
@@ -123,12 +130,12 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
         String deliveryUrl = buildAssetUrl(uploadResult, returnedResourceType);
         assetService.markUploaded(reservation.getId(), userId, deliveryUrl, originalFilename);
 
-        // Phase 3 (#23): the upload response no longer carries the permanent public URL for a managed
-        // asset (the registry stores it internally; viewing goes through the authenticated endpoint).
-        // The asset itself remains delivery type 'upload' until the Phase 4 migration — unchanged.
+        // Phase 3 (#23) Strategy A gate: only while the flag is ON (post-pilot) is the permanent URL
+        // withheld — new uploads are then 'authenticated' and viewing uses the delivery endpoint.
+        // Flag OFF (default) preserves the Phase 2 response exactly.
         return new CertificateUploadResponseDto(
                 reservation.getId(),
-                null,
+                deliveryProperties.enabled() ? null : deliveryUrl,
                 getRequiredString(uploadResult, "public_id"),
                 originalFilename,
                 returnedResourceType
@@ -189,14 +196,18 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
     private Map<String, Object> buildUploadOptions(CertificateAsset reservation, String resourceType) {
         // The reserved public_id already contains the per-user folder; overwrite is disabled so a
         // retried upload can never replace a different asset.
-        return Map.of(
+        Map<String, Object> options = new java.util.HashMap<>(Map.of(
                 "public_id", reservation.getPublicId(),
                 "resource_type", resourceType,
                 "use_filename", false,
                 "unique_filename", false,
                 "overwrite", false,
                 "allowed_formats", List.of("pdf", "jpg", "jpeg", "png", "webp", "gif")
-        );
+        ));
+        if (deliveryProperties.enabled()) {
+            options.put("type", "authenticated");
+        }
+        return options;
     }
 
     private UUID getAuthenticatedUserId() {

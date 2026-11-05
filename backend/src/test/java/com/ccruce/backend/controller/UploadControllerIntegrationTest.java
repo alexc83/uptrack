@@ -120,8 +120,7 @@ class UploadControllerIntegrationTest extends AbstractControllerIntegrationTest 
                         .file(file)
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isCreated())
-                // Phase 3 (#23): the permanent public URL is no longer exposed in the upload response.
-                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.url").value("https://res.cloudinary.com/demo/raw/upload/v1/uptrack/users/%s/certificates/acls-cert.pdf".formatted(session.userId())))
                 .andExpect(jsonPath("$.publicId").value("uptrack/users/%s/certificates/acls-cert".formatted(session.userId())))
                 .andExpect(jsonPath("$.originalFilename").value("acls-cert.pdf"))
                 .andExpect(jsonPath("$.resourceType").value("raw"));

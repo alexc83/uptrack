@@ -2,6 +2,7 @@ package com.ccruce.backend.service.impl;
 
 import com.ccruce.backend.config.CloudinaryProperties;
 import com.ccruce.backend.entity.CertificateAsset;
+import com.ccruce.backend.entity.CERecord;
 import com.ccruce.backend.enums.AssetStatus;
 import com.ccruce.backend.enums.FailureClass;
 import com.ccruce.backend.exception.ConflictException;
@@ -63,13 +64,13 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public CertificateAsset reserve(UUID userId, String resourceType, String originalFilename) {
+    public CertificateAsset reserve(UUID userId, String resourceType, String originalFilename, String deliveryType) {
         CertificateAsset asset = new CertificateAsset();
         asset.setUserId(userId);
         // Server-generated identity: the client never supplies a Cloudinary public ID.
         asset.setPublicId("uptrack/users/%s/certificates/%s".formatted(userId, UUID.randomUUID()));
         asset.setResourceType(resourceType);
-        asset.setDeliveryType("upload");
+        asset.setDeliveryType(deliveryType);
         asset.setCloudName(cloudinaryProperties.cloudName());
         asset.setStatus(AssetStatus.RESERVED);
         // Persisted at reservation time (Finding 3): the client filename is authoritative and must
@@ -138,6 +139,24 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<CertificateAsset> findAsset(UUID assetId) {
+        return repository.findById(assetId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String exposedCertificateUrl(CERecord record) {
+        if (record.getCertificateAssetId() == null) {
+            return record.getCertificateUrl();
+        }
+        // NB: Optional.map with a null result would collapse to empty — use an explicit check.
+        return repository.findById(record.getCertificateAssetId())
+                .filter(asset -> "authenticated".equals(asset.getDeliveryType()))
+                .isPresent() ? null : record.getCertificateUrl();
+    }
+
+    @Override
     @Transactional
     public void attach(UUID assetId, UUID userId, UUID ceRecordId) {
         int updated = repository.attachIfPending(assetId, userId, ceRecordId, OffsetDateTime.now());
@@ -187,7 +206,7 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> result = (Map<String, Object>) cloudinary.uploader().destroy(asset.getPublicId(),
-                    Map.of("resource_type", asset.getResourceType(), "invalidate", true));
+                    Map.of("resource_type", asset.getResourceType(), "type", asset.getDeliveryType(), "invalidate", true));
             response = result;
         } catch (Exception exception) {
             if (isNotFound(exception)) {
@@ -275,7 +294,7 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> resource = (Map<String, Object>) cloudinary.api().resource(
-                    asset.getPublicId(), Map.of("resource_type", asset.getResourceType()));
+                    asset.getPublicId(), Map.of("resource_type", asset.getResourceType(), "type", asset.getDeliveryType()));
             return new ProbeResult(true, true, resource, null);
         } catch (NotFound notFound) {
             return new ProbeResult(true, false, null, null);

@@ -241,9 +241,7 @@ public class CERecordServiceImpl implements CERecordService {
                 ceRecord.getProvider(),
                 ceRecord.getHours(),
                 ceRecord.getDateCompleted(),
-                // Phase 3 (#23): managed assets are delivered via the authenticated endpoint only;
-                // legacy/external links keep their URL for compatibility.
-                ceRecord.getCertificateAssetId() != null ? null : ceRecord.getCertificateUrl(),
+                certificateAssetService.exposedCertificateUrl(ceRecord),
                 ceRecord.getCertificatePublicId(),
                 ceRecord.getCertificateResourceType(),
                 ceRecord.getCertificateOriginalFilename(),

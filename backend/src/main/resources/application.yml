@@ -62,7 +62,12 @@ app:
     max-request-body-bytes: ${MAX_REQUEST_BODY_BYTES:1048576}
   certificates:
     delivery:
-      # Phase 3 (#23): short-lived authenticated delivery URL lifetime; pilot-verified before production use.
+      # Phase 3 (#23) rollout gate — server-controlled, DEFAULT OFF. While off, uploads stay
+      # delivery type 'upload' and permanent URLs remain in responses (Phase 2 behavior); the
+      # authenticated delivery endpoint issues nothing. Enable only after the non-production
+      # Cloudinary pilot passes; production activation is separately authorized.
+      enabled: ${CERTIFICATE_DELIVERY_ENABLED:false}
+      # Short-lived authenticated delivery URL lifetime; pilot-verified before production use.
       ttl-seconds: ${CERTIFICATE_DELIVERY_TTL_SECONDS:60}
   upload:
     # Concurrent certificate validate+upload operations; excess requests get 503, never queue.

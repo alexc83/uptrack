@@ -1,5 +1,6 @@
 package com.ccruce.backend.service.impl;
 
+import com.ccruce.backend.config.CertificateDeliveryProperties;
 import com.ccruce.backend.dto.response.CertificateDeliveryUrlDto;
 import com.ccruce.backend.entity.CertificateAsset;
 import com.ccruce.backend.entity.CERecord;
@@ -17,7 +18,6 @@ import com.ccruce.backend.service.CertificateDeliveryService;
 import com.cloudinary.AuthToken;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Url;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -39,25 +39,26 @@ public class CertificateDeliveryServiceImpl implements CertificateDeliveryServic
     private final UserRepository userRepository;
     private final CertificateAssetService assetService;
     private final Cloudinary cloudinary;
-    private final long ttlSeconds;
+    private final CertificateDeliveryProperties properties;
 
     public CertificateDeliveryServiceImpl(CERecordRepository ceRecordRepository,
             UserRepository userRepository,
             CertificateAssetService assetService,
             Cloudinary cloudinary,
-            @Value("${app.certificates.delivery.ttl-seconds:60}") long ttlSeconds) {
-        if (ttlSeconds < 1 || ttlSeconds > 3600) {
-            throw new IllegalStateException("Certificate delivery TTL must be between 1 and 3600 seconds.");
-        }
+            CertificateDeliveryProperties properties) {
         this.ceRecordRepository = ceRecordRepository;
         this.userRepository = userRepository;
         this.assetService = assetService;
         this.cloudinary = cloudinary;
-        this.ttlSeconds = ttlSeconds;
+        this.properties = properties;
     }
 
     @Override
     public CertificateDeliveryUrlDto issueDeliveryUrl(UUID ceRecordId) {
+        // Strategy A gate: while the flag is OFF the endpoint issues nothing (404, indistinguishable).
+        if (!properties.enabled()) {
+            throw new ResourceNotFoundException("CE record not found for id: " + ceRecordId);
+        }
         User user = getAuthenticatedUser();
         CERecord record = ceRecordRepository.findById(ceRecordId)
                 .filter(candidate -> candidate.getUser().getId().equals(user.getId()))
@@ -82,13 +83,13 @@ public class CertificateDeliveryServiceImpl implements CertificateDeliveryServic
         }
 
         String url = generateAuthenticatedUrl(asset);
-        return new CertificateDeliveryUrlDto(url, Instant.now().plusSeconds(ttlSeconds));
+        return new CertificateDeliveryUrlDto(url, Instant.now().plusSeconds(properties.ttlSeconds()));
     }
 
     private String generateAuthenticatedUrl(CertificateAsset asset) {
         try {
             AuthToken token = new AuthToken()
-                    .duration(ttlSeconds)
+                    .duration(properties.ttlSeconds())
                     .acl("/" + asset.getResourceType() + "/authenticated/" + asset.getPublicId());
             Url url = cloudinary.url()
                     .secure(true)

@@ -117,8 +117,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.assetId").isString())
-                // Phase 3 (#23): upload response no longer carries the permanent URL.
-                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.url").isString()) // flag OFF: Phase 2 response contract preserved
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).get("assetId").asText();
     }
@@ -170,9 +169,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.certificateAssetId").value(assetId))
                 .andExpect(jsonPath("$.certificateClassification").value("MANAGED_VERIFIED"))
-                // Phase 3 (#23): managed records no longer expose the permanent Cloudinary URL;
-                // viewing goes through GET /certificate-url (covered by CertificateDeliveryIntegrationTest).
-                .andExpect(jsonPath("$.certificateUrl").doesNotExist())
+                .andExpect(jsonPath("$.certificateUrl").isString()) // flag OFF: URL preserved
                 .andExpect(jsonPath("$.certificatePublicId").isString());
 
         CertificateAsset asset = assetById(assetId);
@@ -494,8 +491,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                                 """.formatted(credentialId, assetId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.certificateClassification").value("MANAGED_VERIFIED"))
-                // Phase 3: managed URL is not exposed; delivery metadata lives in the registry.
-                .andExpect(jsonPath("$.certificateUrl").doesNotExist())
+                .andExpect(jsonPath("$.certificateUrl").isString()) // flag OFF: URL preserved
                 .andExpect(jsonPath("$.certificateOriginalFilename").value("recovered-cert.pdf"));
         assertEquals(AssetStatus.ATTACHED, assetById(assetId).getStatus());
     }

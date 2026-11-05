@@ -64,14 +64,14 @@ export async function ceRecordApiFixture(page: Page) {
     }
     if (method === 'POST') {
       const owner = state.credentials.find(item => item.id === body?.credentialId);
-      const created: CERecordResponse = { id: newId, title: body!.title, provider: body!.provider, hours: body!.hours, dateCompleted: body!.dateCompleted, certificateUrl: body!.certificateAssetId ? null : body!.certificateUrl ?? null, certificatePublicId: body!.certificatePublicId ?? null, certificateResourceType: body!.certificateResourceType ?? null, certificateOriginalFilename: body!.certificateOriginalFilename ?? null, certificateAssetId: body!.certificateAssetId ?? null, certificateClassification: body!.certificateAssetId ? 'MANAGED_VERIFIED' : null };
+      const created: CERecordResponse = { id: newId, title: body!.title, provider: body!.provider, hours: body!.hours, dateCompleted: body!.dateCompleted, certificateUrl: body!.certificateUrl ?? null, certificatePublicId: body!.certificatePublicId ?? null, certificateResourceType: body!.certificateResourceType ?? null, certificateOriginalFilename: body!.certificateOriginalFilename ?? null, certificateAssetId: body!.certificateAssetId ?? null, certificateClassification: body!.certificateAssetId ? 'MANAGED_VERIFIED' : null };
       if (owner) owner.ceRecords = [...owner.ceRecords, created];
       return route.fulfill({ status: 201, json: created });
     }
     // PUT
     const found = id ? findRecord(id) : null;
     if (!found || !body) return fail(route, 404, 'CE record not found');
-    const updated: CERecordResponse = { ...found.record, title: body.title, provider: body.provider, hours: body.hours, dateCompleted: body.dateCompleted, certificateUrl: body.certificateAssetId ? null : body.certificateUrl ?? null, certificatePublicId: body.certificatePublicId ?? null, certificateResourceType: body.certificateResourceType ?? null, certificateOriginalFilename: body.certificateOriginalFilename ?? null, certificateAssetId: body.certificateAssetId ?? null, certificateClassification: body.certificateAssetId ? 'MANAGED_VERIFIED' : found.record.certificateClassification };
+    const updated: CERecordResponse = { ...found.record, title: body.title, provider: body.provider, hours: body.hours, dateCompleted: body.dateCompleted, certificateUrl: body.certificateUrl ?? null, certificatePublicId: body.certificatePublicId ?? null, certificateResourceType: body.certificateResourceType ?? null, certificateOriginalFilename: body.certificateOriginalFilename ?? null, certificateAssetId: body.certificateAssetId ?? null, certificateClassification: body.certificateAssetId ? 'MANAGED_VERIFIED' : found.record.certificateClassification };
     found.owner.ceRecords = found.owner.ceRecords.map(item => (item.id === id ? updated : item));
     return route.fulfill({ status: 200, json: updated });
   });

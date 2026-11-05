@@ -57,12 +57,13 @@ Plus the per-step expected values: account setting on; raw+image authenticated d
 
 **Blocker:** PR #57 as-is makes new managed uploads unviewable (uploads are `type=upload`, the endpoint requires `authenticated`, and responses no longer carry the public URL).
 
-**Recommended strategy — A with a default-off activation flag (staged within A):**
+**Owner decision (2026-11-05): Strategy A approved and implemented on `fix/23-authenticated-certificate-delivery`:**
+1. `app.certificates.delivery.enabled` (default **false**) implemented as `CertificateDeliveryProperties` + `application.yml` (`CERTIFICATE_DELIVERY_ENABLED`). While false, Phase 2 behavior is preserved exactly: uploads `type=upload`, upload/CE/report responses carry the permanent URL for managed assets, React anchors work, the delivery endpoint issues nothing (404).
 1. Add `app.certificates.delivery.enabled` (default **false**). While false, Phase 2 behavior is preserved exactly: upload response carries the public URL, CE responses carry `certificateUrl` for managed assets, frontend anchors work, endpoint inactive.
-2. Pilot passes on the test cloud → implement: uploads with `"type": "authenticated"` when enabled; registry `delivery_type='authenticated'`; destroy/probe/reconciliation pass the delivery `type`; endpoint serves authenticated assets; DTO nulling active only when enabled.
-3. Enable the flag in non-prod, run the §3 acceptance workflow, then production.
+2. When enabled: uploads use `"type": "authenticated"`; registry records `delivery_type='authenticated'`; destroy/probe/reconciliation pass the delivery `type`; the endpoint serves authenticated assets; response URL suppression is **asset-based** (only `authenticated` assets lose their URL), so the flag can be turned off without ever exposing an authenticated asset's stored URL. Existing `upload`-type assets stay viewable via their public URL under the documented temporary compatibility policy until Phase 4.
+3. Pilot passes on the test cloud → enable the flag in non-prod → run the §3 acceptance workflow → production activation separately authorized.
 
-Strategy B (hold the whole PR until coordinated activation) is equivalent but keeps PR #57 unmergeable longer; A-with-flag lets #57 merge safely (flag off) once the flag code lands. **No public-URL fallback in the authenticated path, ever.**
+**No public-URL fallback in the authenticated path, ever.** The pilot must additionally verify the items in §3 (authenticated destroy, probe, and delivery for both `raw` and `image`, old public URL behavior, caching) — see the pilot acceptance workflow above.
 
 ## 4. Out of scope
 

@@ -55,6 +55,7 @@ class CertificateReconciliationServiceTest {
         asset.setResourceType(resourceType);
         asset.setPublicId(publicId);
         asset.setStatus(AssetStatus.PENDING);
+        asset.setDeliveryType("upload");
         return asset;
     }
 
@@ -145,7 +146,9 @@ class CertificateReconciliationServiceTest {
         org.mockito.Mockito.doReturn(null).when(imageResponse).get("next_cursor");
         org.mockito.Mockito.doAnswer(invocation -> {
             Map<String, Object> options = invocation.getArgument(0);
-            return "raw".equals(options.get("resource_type")) ? rawResponse : imageResponse;
+            boolean raw = "raw".equals(options.get("resource_type"));
+            boolean authenticated = "authenticated".equals(options.get("type"));
+            return raw && !authenticated ? rawResponse : imageResponse;
         }).when(api).resources(anyMap());
 
         List<CertificateAsset> registryAssets = List.of(
