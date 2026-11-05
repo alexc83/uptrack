@@ -154,7 +154,8 @@ class CertificateCleanupLifecycleIntegrationTest extends AbstractControllerInteg
                         .header("Authorization", bearerToken(session)))
                 .andExpect(status().isNotFound()); // already cascaded
 
-        // Worker cleans up the marked assets.
+        // Worker cleans up the marked assets (provider confirms result=ok).
+        Mockito.doReturn(Map.of("result", "ok")).when(uploader).destroy(anyString(), anyMap());
         cleanupWorker.processDeletionBatch();
         assertEquals(AssetStatus.DELETED, assetById(assetA).getStatus());
         assertEquals(AssetStatus.DELETED, assetById(assetB).getStatus());
@@ -189,6 +190,7 @@ class CertificateCleanupLifecycleIntegrationTest extends AbstractControllerInteg
                                 """.formatted(credentialId, oldAsset)))
                 .andExpect(status().isConflict());
 
+        Mockito.doReturn(Map.of("result", "ok")).when(uploader).destroy(anyString(), anyMap());
         cleanupWorker.processDeletionBatch();
         assertEquals(AssetStatus.DELETED, assetById(oldAsset).getStatus());
 

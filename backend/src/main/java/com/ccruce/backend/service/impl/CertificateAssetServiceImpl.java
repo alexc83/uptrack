@@ -7,6 +7,7 @@ import com.ccruce.backend.enums.FailureClass;
 import com.ccruce.backend.exception.ConflictException;
 import com.ccruce.backend.repository.CertificateAssetRepository;
 import com.ccruce.backend.service.CertificateAssetService;
+import com.ccruce.backend.service.CertificateAssetService.DestroyResult;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.api.exceptions.NotFound;
 import org.slf4j.Logger;
@@ -174,19 +175,52 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
         return claimed == 1 ? token : null;
     }
 
+    /**
+     * Provider destroy with explicit response validation (SDK contract: the returned map carries
+     * {@code result}); "ok" = deleted, "not found" = already gone, an "error" payload or exception =
+     * failure, anything else = ambiguous and retryable. Never treats a mere non-throwing return as
+     * proof of deletion.
+     */
     @Override
     public DestroyResult destroyAtProvider(CertificateAsset asset) {
+        Map<String, Object> response;
         try {
-            cloudinary.uploader().destroy(asset.getPublicId(),
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = (Map<String, Object>) cloudinary.uploader().destroy(asset.getPublicId(),
                     Map.of("resource_type", asset.getResourceType(), "invalidate", true));
-            return new DestroyResult(false, null);
+            response = result;
         } catch (Exception exception) {
             if (isNotFound(exception)) {
-                return new DestroyResult(true, null); // confirmed gone = successful cleanup
+                return new DestroyResult(DestroyResult.Outcome.NOT_FOUND, null);
             }
             log.warn("Cloudinary destroy failed for asset {}.", asset.getId());
-            return new DestroyResult(false, classifyFailure(exception));
+            return new DestroyResult(DestroyResult.Outcome.FAILED, classifyFailure(exception));
         }
+        if (response == null) {
+            return new DestroyResult(DestroyResult.Outcome.AMBIGUOUS, FailureClass.UNKNOWN.name());
+        }
+        Object result = response.get("result");
+        if ("ok".equals(result)) {
+            return new DestroyResult(DestroyResult.Outcome.DELETED, null);
+        }
+        if ("not found".equals(result)) {
+            return new DestroyResult(DestroyResult.Outcome.NOT_FOUND, null);
+        }
+        Object error = response.get("error");
+        if (error != null) {
+            return new DestroyResult(DestroyResult.Outcome.FAILED, classifyErrorPayload(error));
+        }
+        log.warn("Cloudinary destroy returned an unexpected response for asset {}.", asset.getId());
+        return new DestroyResult(DestroyResult.Outcome.AMBIGUOUS, FailureClass.UNKNOWN.name());
+    }
+
+    private static String classifyErrorPayload(Object error) {
+        if (error instanceof Map<?, ?> errorMap && errorMap.get("http_code") instanceof Number code) {
+            return code.intValue() >= 400 && code.intValue() < 500
+                    ? FailureClass.PROVIDER_4XX.name()
+                    : FailureClass.PROVIDER_5XX.name();
+        }
+        return FailureClass.UNKNOWN.name();
     }
 
     private static boolean isNotFound(Throwable throwable) {

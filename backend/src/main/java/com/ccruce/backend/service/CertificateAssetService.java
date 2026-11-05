@@ -53,7 +53,7 @@ public interface CertificateAssetService {
     /** Phase 2: fenced lease claim for a PENDING_DELETION row; returns the fence token or null if held. */
     UUID claimDeletion(CertificateAsset asset, String workerId);
 
-    /** Phase 2: provider destroy outside any DB transaction. notFound=true counts as successful cleanup. */
+    /** Phase 2: provider destroy outside any DB transaction, with explicit response validation. */
     DestroyResult destroyAtProvider(CertificateAsset asset);
 
     /** Phase 2: fenced completion of a deletion after a successful destroy. */
@@ -71,7 +71,17 @@ public interface CertificateAssetService {
     record ProbeResult(boolean probeSucceeded, boolean exists, Map<String, Object> resource, String failureClass) {
     }
 
-    /** notFound=true ⇒ provider confirmed the asset is gone ⇒ successful cleanup. failureClass set when failed. */
-    record DestroyResult(boolean notFound, String failureClass) {
+    /**
+     * Destroy outcome. DELETED and NOT_FOUND both count as successful cleanup; FAILED and AMBIGUOUS
+     * stay retryable with a sanitized failure class. An asset is never marked DELETED merely because
+     * the provider call returned without throwing.
+     */
+    record DestroyResult(Outcome outcome, String failureClass) {
+        public enum Outcome {
+            DELETED,
+            NOT_FOUND,
+            FAILED,
+            AMBIGUOUS
+        }
     }
 }

@@ -40,7 +40,7 @@ class CertificateCleanupWorkerTest {
         when(assetService.findEligibleDeletions(any(), eq(50))).thenReturn(List.of(asset));
         when(assetService.claimDeletion(eq(asset), anyString())).thenReturn(token);
         when(assetService.destroyAtProvider(eq(asset)))
-                .thenReturn(new CertificateAssetService.DestroyResult(false, null));
+                .thenReturn(new CertificateAssetService.DestroyResult(CertificateAssetService.DestroyResult.Outcome.DELETED, null));
 
         worker.processDeletionBatch();
 
@@ -55,7 +55,7 @@ class CertificateCleanupWorkerTest {
         when(assetService.findEligibleDeletions(any(), anyInt())).thenReturn(List.of(asset));
         when(assetService.claimDeletion(eq(asset), anyString())).thenReturn(token);
         when(assetService.destroyAtProvider(eq(asset)))
-                .thenReturn(new CertificateAssetService.DestroyResult(true, null));
+                .thenReturn(new CertificateAssetService.DestroyResult(CertificateAssetService.DestroyResult.Outcome.NOT_FOUND, null));
 
         worker.processDeletionBatch();
 
@@ -69,7 +69,7 @@ class CertificateCleanupWorkerTest {
         when(assetService.findEligibleDeletions(any(), anyInt())).thenReturn(List.of(asset));
         when(assetService.claimDeletion(eq(asset), anyString())).thenReturn(token);
         when(assetService.destroyAtProvider(eq(asset)))
-                .thenReturn(new CertificateAssetService.DestroyResult(false, "NETWORK"));
+                .thenReturn(new CertificateAssetService.DestroyResult(CertificateAssetService.DestroyResult.Outcome.FAILED, "NETWORK"));
 
         worker.processDeletionBatch();
 

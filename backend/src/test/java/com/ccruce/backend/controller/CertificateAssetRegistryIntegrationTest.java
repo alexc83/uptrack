@@ -250,6 +250,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
         verify(uploader, never()).destroy(anyString(), anyMap());
 
         // The durable worker performs the destroys and marks both DELETED.
+        org.mockito.Mockito.doReturn(Map.of("result", "ok")).when(uploader).destroy(anyString(), anyMap());
         cleanupWorker.processDeletionBatch();
         assertEquals(AssetStatus.DELETED, assetById(assetId).getStatus());
         assertEquals(AssetStatus.DELETED, assetById(assetId2).getStatus());
@@ -297,7 +298,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
         assertEquals("NETWORK", afterFailure.getLastFailureClass());
 
         // Provider recovers: worker destroys and marks DELETED.
-        org.mockito.Mockito.doReturn(null).when(uploader).destroy(anyString(), anyMap());
+        org.mockito.Mockito.doReturn(Map.of("result", "ok")).when(uploader).destroy(anyString(), anyMap());
         assetRepository.save(withRetryDue(afterFailure));
         cleanupWorker.processDeletionBatch();
         assertEquals(AssetStatus.DELETED, assetById(assetId).getStatus());

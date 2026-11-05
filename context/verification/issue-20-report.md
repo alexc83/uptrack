@@ -31,6 +31,14 @@ Coverage added: successful deletion, provider failure + backoff gating (5 min fi
 
 Pending-deletion is always committed before any provider call; rollback can never follow a destroy; ownership-validated attach; reserve-first uploads with probe reconciliation.
 
+## Review-correction pass (PR #56 independent review, 2026-11-05)
+
+**Finding 1 — destroy response validation.** Verified SDK contract: `Uploader.destroy` returns a map carrying `result` (`"ok"` / `"not found"`) and throws `IOException` on transport/API errors. `destroyAtProvider` now validates the response explicitly: `result=ok` → DELETED; `result="not found"` (or NotFound in the exception cause chain) → NOT_FOUND (counts as successful cleanup); `error` payload → FAILED with PROVIDER_4XX/5XX by http_code; missing/unexpected/null response → AMBIGUOUS (UNKNOWN). **An asset is never marked DELETED merely because the call returned without throwing**; FAILED/AMBIGUOUS stay retryable with bounded backoff. Tests: `destroyAtProviderValidatesTheProviderResponseContract` (all six outcomes) plus worker-level outcome tests.
+
+**Finding 2 — inventory completeness.** `dryRunInventory()` no longer truncates at 1,000 registry rows: both the provider listing and the registry are traversed with bounded pagination (500/page, 2000-page caps); any exception or cap overrun returns null (incomplete — never classified as complete). Identity keys are the unambiguous (cloud_name, resource_type, public_id); duplicate registry identities are detected and reported, not double-counted. Dry-run remains strictly read-only; unknown provider assets are never deleted. Tests: `CertificateReconciliationServiceTest` — 1,001-asset full traversal, registry page failure → null, provider listing failure → null, provider page-cap → null, cloud/type-qualified identity + duplicate detection, read-only verification.
+
+Re-run after corrections: backend `./mvnw -B -ntp clean test` **237/237 passed** (H2). Required CI re-runs on the new PR head.
+
 ## What Phase 2 does NOT do
 
 No historical asset migration or deletion (Phase 4); no authenticated delivery (Phase 3); no automatic deletion of unknown provider assets (dry-run only); no production Cloudinary access. Live provider behavior (destroy semantics, Admin API listing shape) remains [LV] for the Phase 3 pilot.

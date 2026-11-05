@@ -85,13 +85,11 @@ public class CertificateCleanupWorker {
             return; // claimed by another worker
         }
         var result = assetService.destroyAtProvider(asset);
-        if (result.notFound()) {
-            assetService.completeDeletion(asset.getId(), leaseToken);
-            return;
-        }
-        if (result.failureClass() == null) {
+        if (result.outcome() == CertificateAssetService.DestroyResult.Outcome.DELETED
+                || result.outcome() == CertificateAssetService.DestroyResult.Outcome.NOT_FOUND) {
             assetService.completeDeletion(asset.getId(), leaseToken);
         } else {
+            // FAILED or AMBIGUOUS: retryable, sanitized class, bounded backoff.
             assetService.registerCleanupFailure(asset, leaseToken, result.failureClass());
         }
     }
