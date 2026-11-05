@@ -31,11 +31,38 @@
 14. In-place type change: does `explicit(type=authenticated)` preserve public_id and bytes? (Phase 4 copy-and-verify assumes **not** unless proven here.)
 15. Failure modes: expired/revoked token response codes; whether URL generation is purely local (no API call) during an API outage.
 
-## 3. Acceptance for the pilot
+## 2b. Runnable pilot script (no credentials committed)
+
+`scripts/cloudinary-pilot/run-pilot.sh` — env-driven (`CLOUDINARY_CLOUD_NAME`/`API_KEY`/`API_SECRET` of the **test** cloud + `PILOT_CONFIRM_NONPRODUCTION=yes`), generates synthetic PDF/PNG fixtures itself, runs upload (both delivery types), logged-out access checks, Admin API probes, destroy-contract checks, reconciliation listings, and destroys everything it created. AuthToken URL generation (steps 7–9) is deliberately done via the SDK/backend delivery endpoint, not hand-rolled signatures. Expected results per step are printed inline and restated in §3.
+
+## 3. Acceptance for the pilot (live-provider; mocked tests cannot establish these)
+
+End-to-end acceptance workflow (repeat for a synthetic PDF and a synthetic image):
+
+1. Upload the synthetic file as an `authenticated` asset; registry identity recorded with `delivery_type='authenticated'`.
+2. Attach to a CE record; ownership verified (foreign user → 404 on the delivery endpoint).
+3. Unauthenticated request for the delivery URL → 401.
+4. Plain unsigned Cloudinary URL for the authenticated asset → 401/404 (logged out).
+5. Authenticated short-lived URL → 200 with correct `Content-Type`/`Content-Disposition`; view/download works in Chromium.
+6. Same URL after the TTL → denied (record actual TTL/clock skew).
+7. Remove the certificate → durable cleanup destroys the **authenticated** asset (destroy call carries `type=authenticated`); re-destroy returns `not found`.
+8. Previously public (`upload`) assets remain separately tracked (`delivery_type='upload'`) for Phase 4; their old public URLs still work until retired.
+
+Plus the per-step expected values: account setting on; raw+image authenticated delivery works; ACL cross-asset denial; caching keying/invalidation; Admin API pagination; SDK 2.5.0 vs 2.6.0 parity; in-place type change feasibility.
 
 - Every [LV] question answered with recorded evidence (status codes, headers, TTL measurements, screenshots where relevant).
-- Confidentiality demonstrated: logged-out access denied on `authenticated` assets; old public URL refused (or cache-bounded) after type change.
 - Results recorded in `context/verification/issue-23-report.md`; any design change required by findings is documented and reviewed before implementation.
+
+## 3b. Integration strategy decision (recorded 2026-11-05, PR #57 gate)
+
+**Blocker:** PR #57 as-is makes new managed uploads unviewable (uploads are `type=upload`, the endpoint requires `authenticated`, and responses no longer carry the public URL).
+
+**Recommended strategy — A with a default-off activation flag (staged within A):**
+1. Add `app.certificates.delivery.enabled` (default **false**). While false, Phase 2 behavior is preserved exactly: upload response carries the public URL, CE responses carry `certificateUrl` for managed assets, frontend anchors work, endpoint inactive.
+2. Pilot passes on the test cloud → implement: uploads with `"type": "authenticated"` when enabled; registry `delivery_type='authenticated'`; destroy/probe/reconciliation pass the delivery `type`; endpoint serves authenticated assets; DTO nulling active only when enabled.
+3. Enable the flag in non-prod, run the §3 acceptance workflow, then production.
+
+Strategy B (hold the whole PR until coordinated activation) is equivalent but keeps PR #57 unmergeable longer; A-with-flag lets #57 merge safely (flag off) once the flag code lands. **No public-URL fallback in the authenticated path, ever.**
 
 ## 4. Out of scope
 

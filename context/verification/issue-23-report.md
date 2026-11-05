@@ -40,6 +40,10 @@ Coverage: authorized issuance + TTL/acl binding, cross-user/unknown 404, unauthe
 
 Re-run after corrections: backend **248/248** (H2); Vitest ce-records 31/31 (599+ total suite green); typecheck/lint/build pass; Chromium e2e 3/3. Required CI re-runs on the new PR head.
 
+## Integration gate (owner review decision, 2026-11-05)
+
+PR #57 as-is is **not mergeable without impairing certificate viewing**: uploads are `type=upload`, the endpoint requires `authenticated`, and managed URLs were removed from responses — so new managed uploads would 409 on View with no fallback. Resolution recorded in `context/specs/issue-23-cloudinary-pilot-plan.md` §3b: strategy A with a default-off `app.certificates.delivery.enabled` flag (flag off = exact Phase 2 behavior preserved), pilot-gated activation of authenticated uploads, and delivery-type-aware destroy/probe/reconciliation. No code change made in this pass (read-only gate); pilot runner prepared at `scripts/cloudinary-pilot/run-pilot.sh` (env-driven, synthetic fixtures, self-cleaning, no credentials committed).
+
 ## Pilot status and unverified provider behavior
 
 **Not executed — requires separate owner approval.** The pilot plan (`context/specs/issue-23-cloudinary-pilot-plan.md`) defines the exact 14-question procedure and the credential/config requirements (dedicated non-production cloud, synthetic certificates only, secrets via the owner's secret manager, never in GitHub/files). Until the pilot runs, the following remain **unverified [LV]**: account-level authenticated-delivery enablement; raw/image authenticated delivery semantics; logged-out denial; token TTL/clock skew; acl path format (implementation uses `/<resource_type>/authenticated/<public_id>` — pilot item 6 may correct it); Content-Type/Disposition; transformations on authenticated images; CDN cache keying/invalidation; old public URL revocation timing; in-place type change; destroy result contract; Admin API limits; SDK 2.5.0 vs 2.6.0 behavior. **No security claim about live Cloudinary is made.**
