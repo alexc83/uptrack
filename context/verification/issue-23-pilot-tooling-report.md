@@ -119,4 +119,6 @@ the merged signer defect blocks authenticated-delivery activation. Failed cleanu
 test-cloud work and must never be recorded as success.
 
 **No Cloudinary API calls were made. No credentials were provisioned, no production access occurred,
-nothing was deployed, and authenticated delivery remains disabled. Stop before merge or execution.**
+and no deployment command or authenticated-delivery activation was performed. The existing Vercel
+PR integration reports an automatic preview; it was not separately initiated by the agent and is not
+production activation. Stop before merge or pilot execution.**
