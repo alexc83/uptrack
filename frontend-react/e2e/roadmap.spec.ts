@@ -1,10 +1,10 @@
 import { test, expect, capture, mockCredentialReads, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
 
 const entryTitles = [
-  'Public Product Roadmap', 'Help Center',
+  'Help Center',
   'Installable Mobile Experience (PWA)', 'Expiration Reminders',
   'Dedicated iPhone App', 'Professional Development Portfolio', 'Expanded Reporting and Insights', 'Data Export and Portability',
-  'Professional Credential Tracking', 'Continuing Education Tracking', 'Dashboard and Reports', 'Refreshed Application Experience',
+  'Public Product Roadmap', 'Professional Credential Tracking', 'Continuing Education Tracking', 'Dashboard and Reports', 'Refreshed Application Experience',
 ];
 const viewports = [375, 768, 1280] as const;
 
@@ -18,6 +18,11 @@ test('guest can open the public roadmap and all 12 frozen entries render in orde
   for (const name of entryTitles) {
     await expect(page.getByRole('heading', { level: 3, name })).toBeVisible();
   }
+  const sectionTitles = async (section: string) =>
+    page.getByRole('region', { name: section, exact: true }).getByRole('heading', { level: 3 }).allTextContents();
+  expect(await sectionTitles('Now')).toEqual(['Help Center']);
+  expect(await sectionTitles('Completed')).toEqual(entryTitles.slice(7));
+  await expect(page.getByRole('heading', { level: 3 })).toHaveCount(12);
   await expect(page.getByText('Priorities may change as UpTrack develops. Planned features are not guaranteed, and no release dates are implied.')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Back to UpTrack' })).toHaveAttribute('href', '/');
   await expect(page.getByRole('link', { name: 'Roadmap' })).toHaveCount(0);

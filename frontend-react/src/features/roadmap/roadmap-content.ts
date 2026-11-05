@@ -40,10 +40,6 @@ export const roadmapSections: RoadmapSection[] = [
     icon: Zap,
     entries: [
       {
-        title: 'Public Product Roadmap',
-        description: "Creating a public view of UpTrack's current capabilities, upcoming improvements, and longer-term plans.",
-      },
-      {
         title: 'Help Center',
         description: "Building practical guides to help users get started, manage credentials, track continuing education, and use UpTrack's features with confidence.",
       },
@@ -95,6 +91,10 @@ export const roadmapSections: RoadmapSection[] = [
     subtitle: 'Capabilities already built and verified',
     icon: BadgeCheck,
     entries: [
+      {
+        title: 'Public Product Roadmap',
+        description: "Explore what's available in UpTrack today, see which improvements are coming next, and discover ideas being considered for the future.",
+      },
       {
         title: 'Professional Credential Tracking',
         description: 'Add and manage professional licenses and certifications, with important details and expiration dates organized in one place.',
