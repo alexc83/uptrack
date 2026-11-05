@@ -70,3 +70,16 @@ app:
     sweeper-batch-size: ${UPLOAD_SWEEPER_BATCH_SIZE:20}
     reservation-grace-minutes: ${UPLOAD_RESERVATION_GRACE_MINUTES:10}
     reconciliation-delay-seconds: ${UPLOAD_RECONCILIATION_DELAY_SECONDS:60}
+  cleanup:
+    # Phase 2 (#20) durable cleanup worker: fenced-lease processing of PENDING_DELETION assets and
+    # 24 h expiry of abandoned unattached uploads. PostgreSQL + Spring scheduling only.
+    enabled: ${CLEANUP_WORKER_ENABLED:true}
+    interval-ms: ${CLEANUP_WORKER_INTERVAL_MS:60000}
+    batch-size: ${CLEANUP_BATCH_SIZE:50}
+    lease-seconds: ${CLEANUP_LEASE_SECONDS:300}
+    max-attempts: ${CLEANUP_MAX_ATTEMPTS:10}
+    abandoned-grace-hours: ${CLEANUP_ABANDONED_GRACE_HOURS:24}
+    reconcile:
+      # Read-only dry-run inventory reporting only; NEVER deletes. Off by default.
+      enabled: ${CLEANUP_RECONCILE_ENABLED:false}
+      interval-ms: ${CLEANUP_RECONCILE_INTERVAL_MS:86400000}

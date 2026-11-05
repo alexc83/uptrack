@@ -42,7 +42,7 @@ class CertificateAssetServiceImplTest {
     private final Cloudinary cloudinary = mock(Cloudinary.class);
     private final Api api = mock(Api.class);
     private final CertificateAssetServiceImpl service = new CertificateAssetServiceImpl(
-            repository, cloudinary, new CloudinaryProperties("test-cloud", "key", "secret"), 60, 300);
+            repository, cloudinary, new CloudinaryProperties("test-cloud", "key", "secret"), 60, 300, 300, 10);
 
     @BeforeEach
     void setUp() {

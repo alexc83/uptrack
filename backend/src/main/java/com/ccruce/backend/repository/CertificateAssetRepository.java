@@ -100,4 +100,56 @@ public interface CertificateAssetRepository extends JpaRepository<CertificateAss
 
     @Query("select a from CertificateAsset a where a.status = :status and a.userId = :userId")
     List<CertificateAsset> findByStatusAndUserId(@Param("status") AssetStatus status, @Param("userId") UUID userId);
+
+    // ---- Phase 2 durable cleanup (issue #20) ----
+
+    /** Deletions eligible for the worker: due retry, no active lease (expired leases are re-claimable). */
+    @Query("select a from CertificateAsset a where a.status = 'PENDING_DELETION' "
+            + "and (a.nextRetryAt is null or a.nextRetryAt <= :now) "
+            + "and (a.leaseExpiresAt is null or a.leaseExpiresAt <= :now) order by a.nextRetryAt")
+    List<CertificateAsset> findEligibleDeletions(@Param("now") OffsetDateTime now, Pageable pageable);
+
+    /** Guarded lease claim; committed before any provider call. 0 rows = another worker holds it. */
+    @Modifying
+    @Query("update CertificateAsset a set a.lockedBy = :worker, a.lockedAt = :now, a.leaseExpiresAt = :leaseUntil, "
+            + "a.leaseToken = :token, a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'PENDING_DELETION' and (a.leaseExpiresAt is null or a.leaseExpiresAt <= :now)")
+    int claimDeletion(@Param("id") UUID id, @Param("worker") String worker, @Param("token") UUID token,
+                      @Param("now") OffsetDateTime now, @Param("leaseUntil") OffsetDateTime leaseUntil);
+
+    /** Fenced completion: only the lease holder can transition; stale workers write 0 rows. */
+    @Modifying
+    @Query("update CertificateAsset a set a.status = 'DELETED', a.ceRecordId = null, "
+            + "a.lockedBy = null, a.lockedAt = null, a.leaseExpiresAt = null, a.leaseToken = null, a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'PENDING_DELETION' and a.leaseToken = :token and a.leaseExpiresAt > :now")
+    int markDeletedFenced(@Param("id") UUID id, @Param("token") UUID token, @Param("now") OffsetDateTime now);
+
+    /** Fenced failure: bounded backoff, sanitized class, lease released. */
+    @Modifying
+    @Query("update CertificateAsset a set a.cleanupAttempts = a.cleanupAttempts + 1, a.lastFailureClass = :failureClass, "
+            + "a.nextRetryAt = :nextRetryAt, a.lockedBy = null, a.lockedAt = null, a.leaseExpiresAt = null, "
+            + "a.leaseToken = null, a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'PENDING_DELETION' and a.leaseToken = :token and a.leaseExpiresAt > :now")
+    int registerCleanupFailureFenced(@Param("id") UUID id, @Param("token") UUID token, @Param("failureClass") String failureClass,
+                                    @Param("nextRetryAt") OffsetDateTime nextRetryAt, @Param("now") OffsetDateTime now);
+
+    /** Fenced terminal state after retry exhaustion: asset kept, owner investigation required. */
+    @Modifying
+    @Query("update CertificateAsset a set a.status = 'CLEANUP_FAILED', a.lastFailureClass = :failureClass, "
+            + "a.lockedBy = null, a.lockedAt = null, a.leaseExpiresAt = null, a.leaseToken = null, a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'PENDING_DELETION' and a.leaseToken = :token and a.leaseExpiresAt > :now")
+    int markCleanupFailedFenced(@Param("id") UUID id, @Param("token") UUID token, @Param("failureClass") String failureClass,
+                                @Param("now") OffsetDateTime now);
+
+    /** Unattached uploads older than the grace period (24 h default). Guarded so an attachment race loses. */
+    @Query("select a from CertificateAsset a where a.status = 'PENDING' and a.ceRecordId is null and a.uploadedAt < :cutoff")
+    List<CertificateAsset> findAbandonedPending(@Param("cutoff") OffsetDateTime cutoff, Pageable pageable);
+
+    @Modifying
+    @Query("update CertificateAsset a set a.status = 'PENDING_DELETION', a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'PENDING' and a.ceRecordId is null and a.uploadedAt < :cutoff")
+    int expireAbandoned(@Param("id") UUID id, @Param("cutoff") OffsetDateTime cutoff, @Param("now") OffsetDateTime now);
+
+    @Query("select a from CertificateAsset a where a.status = :status order by a.uploadedAt")
+    List<CertificateAsset> findAllByStatus(@Param("status") AssetStatus status, Pageable pageable);
 }

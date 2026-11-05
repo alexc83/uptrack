@@ -10,6 +10,7 @@ import com.ccruce.backend.service.CertificateAssetService;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.api.exceptions.NotFound;
 import org.slf4j.Logger;
+import org.springframework.data.domain.PageRequest;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -38,18 +40,24 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
     private final Cloudinary cloudinary;
     private final CloudinaryProperties cloudinaryProperties;
     private final long reconciliationDelaySeconds;
-    private final long leaseSeconds;
+    private final long leaseSeconds;          // reservation sweeper lease (Phase 1)
+    private final long cleanupLeaseSeconds;   // cleanup worker lease (Phase 2)
+    private final int maxAttempts;
 
     public CertificateAssetServiceImpl(CertificateAssetRepository repository,
             Cloudinary cloudinary,
             CloudinaryProperties cloudinaryProperties,
             @Value("${app.upload.reconciliation-delay-seconds:60}") long reconciliationDelaySeconds,
-            @Value("${app.upload.reservation-lease-seconds:300}") long leaseSeconds) {
+            @Value("${app.upload.reservation-lease-seconds:300}") long leaseSeconds,
+            @Value("${app.cleanup.lease-seconds:300}") long cleanupLeaseSeconds,
+            @Value("${app.cleanup.max-attempts:10}") int maxAttempts) {
         this.repository = repository;
         this.cloudinary = cloudinary;
         this.cloudinaryProperties = cloudinaryProperties;
         this.reconciliationDelaySeconds = reconciliationDelaySeconds;
         this.leaseSeconds = leaseSeconds;
+        this.cleanupLeaseSeconds = cleanupLeaseSeconds;
+        this.maxAttempts = maxAttempts;
     }
 
     @Override
@@ -150,6 +158,82 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
         // REQUIRES_NEW: called from an afterCommit hook, where the request transaction's
         // thread-locals may still be bound; a fresh transaction keeps the @Modifying update valid.
         repository.markDeleted(assetId, OffsetDateTime.now());
+    }
+
+    // ---- Phase 2 durable cleanup (issue #20) ----
+
+    /** Retry schedule in seconds: 5 min → 15 min → 1 h → 4 h → 24 h cap. */
+    public static final long[] RETRY_SCHEDULE_SECONDS = {300, 900, 3600, 14400, 86400};
+
+    @Override
+    @Transactional
+    public UUID claimDeletion(CertificateAsset asset, String workerId) {
+        UUID token = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now();
+        int claimed = repository.claimDeletion(asset.getId(), workerId, token, now, now.plusSeconds(cleanupLeaseSeconds));
+        return claimed == 1 ? token : null;
+    }
+
+    @Override
+    public DestroyResult destroyAtProvider(CertificateAsset asset) {
+        try {
+            cloudinary.uploader().destroy(asset.getPublicId(),
+                    Map.of("resource_type", asset.getResourceType(), "invalidate", true));
+            return new DestroyResult(false, null);
+        } catch (Exception exception) {
+            if (isNotFound(exception)) {
+                return new DestroyResult(true, null); // confirmed gone = successful cleanup
+            }
+            log.warn("Cloudinary destroy failed for asset {}.", asset.getId());
+            return new DestroyResult(false, classifyFailure(exception));
+        }
+    }
+
+    private static boolean isNotFound(Throwable throwable) {
+        for (Throwable current = throwable; current != null; current = current.getCause()) {
+            if (current instanceof NotFound) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    @Transactional
+    public void completeDeletion(UUID assetId, UUID leaseToken) {
+        repository.markDeletedFenced(assetId, leaseToken, OffsetDateTime.now());
+    }
+
+    @Override
+    @Transactional
+    public void registerCleanupFailure(CertificateAsset asset, UUID leaseToken, String failureClass) {
+        int attempts = asset.getCleanupAttempts() + 1;
+        OffsetDateTime now = OffsetDateTime.now();
+        if (attempts >= maxAttempts) {
+            repository.markCleanupFailedFenced(asset.getId(), leaseToken, failureClass, now);
+            log.error("Certificate asset {} exhausted {} cleanup attempts; marked CLEANUP_FAILED for owner investigation.",
+                    asset.getId(), maxAttempts);
+            return;
+        }
+        long delaySeconds = RETRY_SCHEDULE_SECONDS[Math.min(attempts - 1, RETRY_SCHEDULE_SECONDS.length - 1)];
+        repository.registerCleanupFailureFenced(asset.getId(), leaseToken, failureClass,
+                now.plusSeconds(delaySeconds), now);
+    }
+
+    @Override
+    @Transactional
+    public int expireAbandonedUploads(OffsetDateTime graceCutoff) {
+        int expired = 0;
+        for (CertificateAsset asset : repository.findAbandonedPending(graceCutoff, PageRequest.of(0, 100))) {
+            expired += repository.expireAbandoned(asset.getId(), graceCutoff, OffsetDateTime.now());
+        }
+        return expired;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CertificateAsset> findEligibleDeletions(OffsetDateTime now, int batchSize) {
+        return repository.findEligibleDeletions(now, PageRequest.of(0, batchSize));
     }
 
     @Override
