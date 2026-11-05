@@ -1,3 +1,5 @@
+> **Update 2026-11-05 (simplification):** the scheduled dry-run inventory (`CertificateReconciliationService`, `app.cleanup.reconcile.*`) was removed as unnecessary — nothing essential depended on it. Bullets below mentioning it are historical.
+
 > **Canonical issue:** [GitHub issue #20](https://github.com/alexc83/uptrack/issues/20) (canonical D01-W04 tracker) · **Spec:** [context/specs/issue-20-certificate-lifecycle.md](../specs/issue-20-certificate-lifecycle.md) (updated for Phase 1 evolution on this branch) · **Phase:** 2 only — Phases 3/4, production Cloudinary access, migration, deployment NOT authorized.
 
 # Issue #20 Phase 2 verification report — durable certificate lifecycle
@@ -10,12 +12,12 @@ Date: 2026-11-05 · Branch: `fix/20-durable-certificate-cleanup` (from `main` @ 
 - **Transition from Phase 1:** the interim `afterCommit` destroy in `CERecordServiceImpl` was removed; managed delete/replace/remove now only mark `PENDING_DELETION` in the CE-record transaction, so they never depend on Cloudinary availability and exactly one mechanism (the worker) owns provider deletion. Registry + CE-record changes commit atomically; Cloudinary never joins a DB transaction.
 - **Abandoned uploads:** unattached `PENDING` assets older than 24 h (`app.cleanup.abandoned-grace-hours`) → `PENDING_DELETION`, guarded so an attachment race loses (delayed attach after expiry → 409). Confirmed deletion requests have no grace.
 - **Credential cascade (D01-W04 fix):** `deleteCredential` marks all managed assets of the credential's CE records `PENDING_DELETION` in the same transaction before the JPA cascade; rows survive the deleted CE records. Legacy publicId-only records are **not** registered or deleted (LEGACY_UNVERIFIED safeguard — Phase 4 only).
-- **Reconciliation (dry-run only):** `CertificateReconciliationService.dryRunInventory()` classifies provider-listed vs registry-known assets (managed-listed / missing-in-cloudinary / unknown-provider-assets) and never deletes; aborts on incomplete inventory; scheduled report only behind `app.cleanup.reconcile.enabled=false` (default).
+- **Reconciliation (dry-run only; since removed in the simplification pass):** `CertificateReconciliationService.dryRunInventory()` classifies provider-listed vs registry-known assets (managed-listed / missing-in-cloudinary / unknown-provider-assets) and never deletes; aborts on incomplete inventory; scheduled report only behind `app.cleanup.reconcile.enabled=false` (default).
 - Legacy non-managed CE paths unchanged (synchronous destroy, 502 on failure), pinned by the existing `CertificateCleanupFailureIntegrationTest`.
 
 ## Changed files
 
-Main: `repository/CertificateAssetRepository.java`, `service/CertificateAssetService.java`, `service/impl/CertificateAssetServiceImpl.java`, `service/impl/CertificateCleanupWorker.java` (new), `service/impl/CertificateReconciliationService.java` (new), `service/impl/CERecordServiceImpl.java` (afterCommit hook removed), `service/impl/CredentialServiceImpl.java` (cascade marking), `application.yml`. Tests: `controller/CertificateCleanupLifecycleIntegrationTest.java` (new, 7 tests), `service/CertificateCleanupWorkerTest.java` (new, 5 tests), `controller/CertificateAssetRegistryIntegrationTest.java` (updated to worker-owned deletion), `service/CertificateAssetServiceImplTest.java` (constructor). Spec: `context/specs/issue-20-certificate-lifecycle.md` updated for Phase 1 evolution. `application-test.yml`: workers off in shared contexts.
+Main: `repository/CertificateAssetRepository.java`, `service/CertificateAssetService.java`, `service/impl/CertificateAssetServiceImpl.java`, `service/impl/CertificateCleanupWorker.java` (new), `service/impl/CERecordServiceImpl.java` (afterCommit hook removed), `service/impl/CredentialServiceImpl.java` (cascade marking), `application.yml`. Tests: `controller/CertificateCleanupLifecycleIntegrationTest.java` (new, 7 tests), `service/CertificateCleanupWorkerTest.java` (new, 5 tests), `controller/CertificateAssetRegistryIntegrationTest.java` (updated to worker-owned deletion), `service/CertificateAssetServiceImplTest.java` (constructor). Spec: `context/specs/issue-20-certificate-lifecycle.md` updated for Phase 1 evolution. `application-test.yml`: workers off in shared contexts.
 
 ## Checks run (this branch)
 
@@ -25,7 +27,7 @@ Main: `repository/CertificateAssetRepository.java`, `service/CertificateAssetSer
 | `npm run typecheck` / `npm run lint` | pass / pass (no frontend changes) |
 | Required CI on the PR (`backend`, `backend-postgres`, `frontend`, `e2e-chromium`) | reported on the PR (PG17 in CI) |
 
-Coverage added: successful deletion, provider failure + backoff gating (5 min first retry), timeout classification, not-found = success, exhaustion → `CLEANUP_FAILED` (terminal, not re-selected), lease claim contention (skipped), 24 h expiry + attach-after-expiry 409 + fresh-asset attach OK, credential cascade (managed marked, legacy untouched, no provider call in request), replacement/removal/CE-delete marking without request-path provider calls, reconciliation dry-run classification + abort-on-incomplete + never-deletes, worker-disabled gating. No existing test weakened; legacy characterization tests still pass unchanged.
+Coverage added: successful deletion, provider failure + backoff gating (5 min first retry), timeout classification, not-found = success, exhaustion → `CLEANUP_FAILED` (terminal, not re-selected), lease claim contention (skipped), 24 h expiry + attach-after-expiry 409 + fresh-asset attach OK, credential cascade (managed marked, legacy untouched, no provider call in request), replacement/removal/CE-delete marking without request-path provider calls, worker-disabled gating. No existing test weakened; legacy characterization tests still pass unchanged.
 
 ## Phase 1 guarantees carried forward
 
@@ -35,16 +37,16 @@ Pending-deletion is always committed before any provider call; rollback can neve
 
 **Finding 1 — destroy response validation.** Verified SDK contract: `Uploader.destroy` returns a map carrying `result` (`"ok"` / `"not found"`) and throws `IOException` on transport/API errors. `destroyAtProvider` now validates the response explicitly: `result=ok` → DELETED; `result="not found"` (or NotFound in the exception cause chain) → NOT_FOUND (counts as successful cleanup); `error` payload → FAILED with PROVIDER_4XX/5XX by http_code; missing/unexpected/null response → AMBIGUOUS (UNKNOWN). **An asset is never marked DELETED merely because the call returned without throwing**; FAILED/AMBIGUOUS stay retryable with bounded backoff. Tests: `destroyAtProviderValidatesTheProviderResponseContract` (all six outcomes) plus worker-level outcome tests.
 
-**Finding 2 — inventory completeness.** `dryRunInventory()` no longer truncates at 1,000 registry rows: both the provider listing and the registry are traversed with bounded pagination (500/page, 2000-page caps); any exception or cap overrun returns null (incomplete — never classified as complete). Identity keys are the unambiguous (cloud_name, resource_type, public_id); duplicate registry identities are detected and reported, not double-counted. Dry-run remains strictly read-only; unknown provider assets are never deleted. Tests: `CertificateReconciliationServiceTest` — 1,001-asset full traversal, registry page failure → null, provider listing failure → null, provider page-cap → null, cloud/type-qualified identity + duplicate detection, read-only verification.
+**Finding 2 — inventory completeness (historical; the dry-run service was later removed).** `dryRunInventory()` no longer truncates at 1,000 registry rows: both the provider listing and the registry are traversed with bounded pagination (500/page, 2000-page caps); any exception or cap overrun returns null (incomplete — never classified as complete). Identity keys are the unambiguous (cloud_name, resource_type, public_id); duplicate registry identities are detected and reported, not double-counted. Dry-run remains strictly read-only; unknown provider assets are never deleted. Tests at the time: `CertificateReconciliationServiceTest` (since removed with the service).
 
 Re-run after corrections: backend `./mvnw -B -ntp clean test` **237/237 passed** (H2). Required CI re-runs on the new PR head.
 
 ## What Phase 2 does NOT do
 
-No historical asset migration or deletion (Phase 4); no authenticated delivery (Phase 3); no automatic deletion of unknown provider assets (dry-run only); no production Cloudinary access. Live provider behavior (destroy semantics, Admin API listing shape) remains [LV] for the Phase 3 pilot.
+No historical asset migration (the Phase 4 framework is abandoned — any existing certificate is handled manually); no authenticated delivery activation (Phase 3); no automatic deletion of unknown provider assets (the dry-run inventory was removed); no production Cloudinary access. Live provider behavior remains [LV] via issue #23.
 
 ## Remaining risks
 
-- Between Phase 2 deploy and Phase 4, legacy `LEGACY_UNVERIFIED` assets orphaned by credential deletion remain at the provider by design (safeguard) until reconciliation.
+- Legacy `LEGACY_UNVERIFIED` assets orphaned by credential deletion remain at the provider by design (safeguard); any such historical asset is handled manually by the owner.
 - Worker throughput bounded by batch size 50 and Cloudinary API rate limits ([LV]).
 - `CLEANUP_FAILED` rows need an owner-runbook (manual retry/destroy decision).

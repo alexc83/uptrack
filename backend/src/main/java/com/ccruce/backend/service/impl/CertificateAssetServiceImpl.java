@@ -144,12 +144,6 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<CertificateAsset> findAsset(UUID assetId) {
-        return repository.findById(assetId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public String exposedCertificateUrl(CERecord record) {
         if (record.getCertificateAssetId() == null) {
             return record.getCertificateUrl();
@@ -174,14 +168,6 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
     @Transactional
     public void markPendingDeletion(UUID assetId, UUID ceRecordId) {
         repository.markPendingDeletionForCeRecord(assetId, ceRecordId, OffsetDateTime.now());
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markDeleted(UUID assetId) {
-        // REQUIRES_NEW: called from an afterCommit hook, where the request transaction's
-        // thread-locals may still be bound; a fresh transaction keeps the @Modifying update valid.
-        repository.markDeleted(assetId, OffsetDateTime.now());
     }
 
     // ---- Phase 2 durable cleanup (issue #20) ----

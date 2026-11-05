@@ -39,14 +39,11 @@ public interface CertificateAssetService {
     /** Ownership-checked lookup: foreign or unknown ids are empty (caller answers 404). */
     Optional<CertificateAsset> findOwnedAsset(UUID assetId, UUID userId);
 
-    /** Unscoped lookup for response mapping (delivery-type decisions are server-side). */
-    Optional<CertificateAsset> findAsset(UUID assetId);
-
     /**
      * The certificate URL to expose in an ordinary API response. Asset-based, not flag-based:
      * an 'authenticated' asset's stored URL is NEVER exposed (even if the flag is later turned
-     * off); 'upload'-type managed assets and legacy/external records keep their URL (temporary
-     * compatibility policy until Phase 4 — those assets are public at the provider regardless).
+     * off); 'upload'-type managed assets and legacy/external records keep their URL (those
+     * assets are public at the provider regardless).
      */
     String exposedCertificateUrl(CERecord record);
 
@@ -55,9 +52,6 @@ public interface CertificateAssetService {
 
     /** Mark the managed asset of a CE record PENDING_DELETION before any provider call (Phase 2 worker owns retries). */
     void markPendingDeletion(UUID assetId, UUID ceRecordId);
-
-    /** Phase 1 interim: after the synchronous best-effort destroy succeeded, record DELETED. */
-    void markDeleted(UUID assetId);
 
     /** Admin API existence probe for unresolved reservations. */
     ProbeResult probeAtProvider(CertificateAsset asset);

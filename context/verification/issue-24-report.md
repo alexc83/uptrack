@@ -59,14 +59,14 @@ Re-run after that pass: backend **217/217 passed** (H2); frontend typecheck/lint
 
 ## Not run / pending owner
 
-- `backend-postgres` locally (CI covers PostgreSQL 17); full four-browser Playwright and visual goldens (owner-run); live Cloudinary pilot (Phase 3, separate non-production credentials); production backfill (owner-approved step only).
+- `backend-postgres` locally (CI covers PostgreSQL 17); full four-browser Playwright and visual goldens (owner-run); live provider verification (Phase 3, #23 — no pilot tooling is retained); production backfill (owner-approved step only).
 
 ## Final behavior summary (current head `cb91b7a`)
 
 - **Normal successful deletion:** managed replace/remove/CE-delete record `PENDING_DELETION` in the CE-record transaction; after commit, the provider destroy runs with `invalidate=true` and the row becomes `DELETED`. The pending-deletion mark is always durably committed **before** any provider deletion call.
 - **Provider failure/timeout/ambiguous post-commit:** the CE operation succeeds (204/200); the row stays durably `PENDING_DELETION` and is retried by the Phase 2 worker (idempotent destroy; not-found = success). Phase 1 does not itself retry provider deletions — that, plus abandoned-upload expiry and orphan reconciliation, is Phase 2's responsibility (#20).
 - **Legacy (non-managed) certificates:** unchanged pre-existing synchronous in-transaction cleanup with 502 on provider failure.
-- **Unverified production / live-Cloudinary behavior:** all automated checks mock Cloudinary; real provider delivery/deletion semantics (incl. authenticated delivery) remain pending the separately authorized non-production pilot (Phase 3, #23). Production backfill of historical classifications remains an owner-approved step only.
+- **Unverified production / live-Cloudinary behavior:** all automated checks mock Cloudinary; real provider delivery/deletion semantics (incl. authenticated delivery) remain pending live provider verification (Phase 3, #23). Production backfill of historical classifications remains an owner-approved step only.
 
 ## Risks / notes
 

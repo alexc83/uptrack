@@ -1,7 +1,6 @@
 package com.ccruce.backend.repository;
 
 import com.ccruce.backend.entity.CertificateAsset;
-import com.ccruce.backend.enums.AssetStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -10,14 +9,9 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface CertificateAssetRepository extends JpaRepository<CertificateAsset, UUID> {
-
-    Optional<CertificateAsset> findByCeRecordId(UUID ceRecordId);
-
-    List<CertificateAsset> findByUserId(UUID userId);
 
     /**
      * Reservations eligible for a reconciliation probe: old enough (grace cutoff), retry time due
@@ -60,12 +54,6 @@ public interface CertificateAssetRepository extends JpaRepository<CertificateAss
     int registerProbeFailure(@Param("id") UUID id, @Param("token") UUID token, @Param("failureClass") String failureClass,
                              @Param("nextRetryAt") OffsetDateTime nextRetryAt, @Param("now") OffsetDateTime now);
 
-    /** Phase 1 interim deletion: synchronous best-effort destroy already done; record DELETED. */
-    @Modifying
-    @Query("update CertificateAsset a set a.status = 'DELETED', a.ceRecordId = null, a.updatedAt = :now "
-            + "where a.id = :id and a.status = 'PENDING_DELETION'")
-    int markDeleted(@Param("id") UUID id, @Param("now") OffsetDateTime now);
-
     /** Guarded attach: succeeds only for a PENDING asset owned by the user. 0 rows = not attachable. */
     @Modifying
     @Query("update CertificateAsset a set a.status = 'ATTACHED', a.ceRecordId = :ceRecordId, a.attachedAt = :now "
@@ -97,9 +85,6 @@ public interface CertificateAssetRepository extends JpaRepository<CertificateAss
     @Query("update CertificateAsset a set a.status = 'PENDING_DELETION', a.ceRecordId = null, a.updatedAt = :now "
             + "where a.id = :id and a.status = 'ATTACHED' and a.ceRecordId = :ceRecordId")
     int markPendingDeletionForCeRecord(@Param("id") UUID id, @Param("ceRecordId") UUID ceRecordId, @Param("now") OffsetDateTime now);
-
-    @Query("select a from CertificateAsset a where a.status = :status and a.userId = :userId")
-    List<CertificateAsset> findByStatusAndUserId(@Param("status") AssetStatus status, @Param("userId") UUID userId);
 
     // ---- Phase 2 durable cleanup (issue #20) ----
 
@@ -149,7 +134,4 @@ public interface CertificateAssetRepository extends JpaRepository<CertificateAss
     @Query("update CertificateAsset a set a.status = 'PENDING_DELETION', a.updatedAt = :now "
             + "where a.id = :id and a.status = 'PENDING' and a.ceRecordId is null and a.uploadedAt < :cutoff")
     int expireAbandoned(@Param("id") UUID id, @Param("cutoff") OffsetDateTime cutoff, @Param("now") OffsetDateTime now);
-
-    @Query("select a from CertificateAsset a where a.status = :status order by a.uploadedAt")
-    List<CertificateAsset> findAllByStatus(@Param("status") AssetStatus status, Pageable pageable);
 }

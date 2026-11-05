@@ -30,16 +30,12 @@ CREATE TABLE IF NOT EXISTS certificate_assets (
     locked_at                 TIMESTAMP WITH TIME ZONE NULL,
     lease_expires_at          TIMESTAMP WITH TIME ZONE NULL,
     lease_token               UUID NULL,
-    migrated_from_asset_id    UUID NULL,
-    superseded_by_asset_id    UUID NULL,
-    migrated_from_public_id   VARCHAR(255) NULL,
-    migrated_from_resource_type VARCHAR(16) NULL,
     delivery_url              VARCHAR(500) NULL,
     original_filename         VARCHAR(255) NULL,
     CONSTRAINT uk_certificate_assets_cloud_identity UNIQUE (cloud_name, resource_type, public_id),
     CONSTRAINT ck_certificate_assets_resource_type CHECK (resource_type IN ('raw', 'image')),
     CONSTRAINT ck_certificate_assets_status CHECK (status IN (
-        'RESERVED', 'PENDING', 'ATTACHED', 'SUPERSEDED', 'PENDING_DELETION',
+        'RESERVED', 'PENDING', 'ATTACHED', 'PENDING_DELETION',
         'DELETED', 'UPLOAD_FAILED', 'CLEANUP_FAILED'))
 );
 
@@ -47,7 +43,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_certificate_assets_ce_record ON certificate
 CREATE INDEX IF NOT EXISTS ix_certificate_assets_status_retry ON certificate_assets (status, next_retry_at, lease_expires_at);
 CREATE INDEX IF NOT EXISTS ix_certificate_assets_user ON certificate_assets (user_id);
 
--- Additive columns on ce_records (existing certificate_* columns are kept for compatibility
--- until Phase 3; the registry becomes authoritative for managed assets).
+-- Additive columns on ce_records (existing certificate_* columns are kept for compatibility;
+-- the registry is authoritative for managed assets).
 ALTER TABLE ce_records ADD COLUMN IF NOT EXISTS certificate_asset_id UUID NULL;
 ALTER TABLE ce_records ADD COLUMN IF NOT EXISTS certificate_classification VARCHAR(32) NULL;

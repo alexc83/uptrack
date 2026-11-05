@@ -143,8 +143,8 @@ public class CredentialServiceImpl implements CredentialService {
      * Phase 2 (issue #20, D01-W04): before the JPA cascade removes the credential's CE records, mark
      * their MANAGED certificate assets PENDING_DELETION in the same transaction, so the durable cleanup
      * worker removes them independently of the deleted rows. Legacy publicId-only metadata stays
-     * LEGACY_UNVERIFIED and is never auto-registered or auto-deleted here — historical assets are
-     * reconciled only in Phase 4 with owner approval.
+     * LEGACY_UNVERIFIED and is never auto-registered or auto-deleted here — any historical asset
+     * is handled manually by the owner.
      */
     @Override
     @Transactional
