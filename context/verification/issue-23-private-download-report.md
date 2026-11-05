@@ -18,7 +18,7 @@ Owner-authorized implementation/automated verification/PR on 2026-11-05.
   cloud. Signing failures retain no SDK exception cause or public fallback.
 - Download-URL response explicitly marked `no-store, private`.
 - New raw PDF public IDs include `.pdf` at reservation time. That exact public ID
-  is used for upload, privateDownload, Admin lookup, reconciliation and deletion.
+  is used for upload, privateDownload, Admin lookup, reservation probing and deletion.
   Provider upload/probe/adoption responses must match the durable identity triplet.
   Unknown/mismatched outcomes remain reserved for reconciliation; unrelated
   provider IDs are never silently adopted or deleted.
@@ -26,8 +26,9 @@ Owner-authorized implementation/automated verification/PR on 2026-11-05.
   Historical IDs remain unchanged, including extensionless raw records. Images
   use their validated original JPG/JPEG/PNG/WebP/GIF format; no transformations
   or forced PNG. Provider URLs are stored unchanged without suffix fabrication.
-- Reserve-first recovery, leases, retries, reconciliation and durable cleanup
-  remain in place. No schema or historical asset migration.
+- Reserve-first recovery, leases, retries and durable cleanup remain in place;
+  the scheduled full-inventory dry-run reconciliation was removed as unnecessary.
+  No schema or historical asset migration.
 - React's View flow and DTO stay unchanged. Parameterized UI tests cover raw/image
   API download URLs. Legacy/external and public managed links remain compatible.
 
@@ -68,12 +69,12 @@ sandbox escalation; no test bypass or disabled assertion was used.
 flag change, provider asset access or live validation occurred. Therefore current
 production/new uploads retain the pre-existing public behavior until separately
 authorized activation. Historical public managed URLs remain explicitly supported
-pending Phase 4 in #20. Existing public access is not solved by merging default-off
+pending manual handling under #20. Existing public access is not solved by merging default-off
 code. **Issue #23 must remain open.**
 
-The owner abandoned all further pilot/provisioning/support work. Existing pilot
-files are marked historical, not expanded or invoked. No new pilot framework,
-paid feature, support contact, Doppler write or test cloud was used for this PR.
+The owner abandoned all further pilot/provisioning work; the pilot tooling and
+plan documents were removed from the tree. No pilot framework, paid feature or
+test cloud was used.
 
 The implementation follows the documented raw extension-bearing identity and
 original-byte request model. The SDK's omitted raw format, provider resolution of
@@ -86,13 +87,13 @@ PDF delivery restrictions. No automatic public/CDN fallback is allowed if the
 provider refuses access. These practical limits remain visible in #23 rather
 than being described as proven confidentiality.
 
-## Acceptance still outstanding (canonical #23; Phase 4 remains #20)
+## Acceptance still outstanding (canonical #23; historical assets are handled manually under #20)
 
 - Review/accept the implementation and authorize merge separately.
 - Separately authorize deployment/activation and assess the live provider
   behaviors/settings above; do not infer them from SDK or mocked tests.
-- Inventory/migrate/retire historical public managed assets under #20's
-  copy-and-verify, durable mapping/cleanup rules; preserve external-link policy.
+- Any historical public managed asset is handled manually by the owner under #20
+  (the automated migration framework was abandoned); preserve external-link policy.
 - Resolve permanent public exposure before closing #23 as a verified security fix.
 
 ## Provider references

@@ -5,7 +5,6 @@ import com.ccruce.backend.entity.CertificateAsset;
 import com.ccruce.backend.enums.AssetStatus;
 import com.ccruce.backend.repository.CertificateAssetRepository;
 import com.ccruce.backend.service.impl.CertificateCleanupWorker;
-import com.ccruce.backend.service.impl.CertificateReconciliationService;
 import com.cloudinary.Api;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Uploader;
@@ -24,7 +23,6 @@ import org.springframework.test.context.ActiveProfiles;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,7 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Phase 2 (issue #20) durable lifecycle, Cloudinary fully mocked: worker deletion with fenced
  * leases, backoff/exhaustion, not-found success, 24 h abandoned expiry with attach race,
- * credential cascade, legacy unverified protection, and dry-run-only reconciliation.
+ * credential cascade, and legacy unverified protection.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -66,9 +64,6 @@ class CertificateCleanupLifecycleIntegrationTest extends AbstractControllerInteg
 
     @Autowired
     private CertificateCleanupWorker cleanupWorker;
-
-    @Autowired
-    private CertificateReconciliationService reconciliationService;
 
     @BeforeEach
     void setUpCloudinaryMock() {
@@ -278,40 +273,5 @@ class CertificateCleanupLifecycleIntegrationTest extends AbstractControllerInteg
 
         // Retry not yet due: the worker must not select it.
         assertTrue(assetRepository.findEligibleDeletions(OffsetDateTime.now(), org.springframework.data.domain.PageRequest.of(0, 50)).isEmpty());
-    }
-
-    @Test
-    void reconciliationDryRunClassifiesAndNeverDeletes() throws Exception {
-        stubSuccessfulUpload();
-        AuthSession session = registerUser("Rita Recon", "rita.recon@example.com");
-        String assetId = uploadCertificate(session);
-        CertificateAsset known = assetById(assetId);
-
-        // Provider lists the known asset plus one unknown orphan-looking asset.
-        com.cloudinary.api.ApiResponse response = Mockito.mock(com.cloudinary.api.ApiResponse.class);
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> resources = List.of(
-                Map.of("public_id", known.getPublicId()),
-                Map.of("public_id", "uptrack/users/%s/certificates/orphan-1".formatted(session.userId())));
-        Mockito.doReturn(resources).when(response).get("resources");
-        Mockito.doReturn(null).when(response).get("next_cursor");
-        Mockito.doReturn(response).when(api).resources(anyMap());
-
-        CertificateReconciliationService.InventoryReport report = reconciliationService.dryRunInventory();
-
-        assertNotNull(report);
-        assertTrue(report.unknownProviderAssets().stream().anyMatch(k -> k.contains("orphan-1")),
-                "unknown provider asset must be classified as such");
-        assertTrue(report.missingInCloudinary().stream().noneMatch(k -> k.contains(known.getPublicId())),
-                "the listed known asset must not be reported missing");
-        verify(uploader, never()).destroy(anyString(), anyMap());
-        // Unknown assets stay untouched and out of automatic deletion.
-        assertEquals(AssetStatus.PENDING, assetById(assetId).getStatus());
-    }
-
-    @Test
-    void reconciliationAbortsOnIncompleteInventory() throws Exception {
-        when(api.resources(anyMap())).thenThrow(new RuntimeException("listing failed"));
-        assertNull(reconciliationService.dryRunInventory(), "incomplete inventory must abort, never act on it");
     }
 }

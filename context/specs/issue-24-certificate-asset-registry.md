@@ -5,7 +5,7 @@
 
 **Status: READY.** The owner approved the v3 architecture as the basis of this READY specification on 2026-11-05, subject to the two mandatory Phase 1 safeguards in §3. **READY is not implementation authorization; Phase 1 implementation remains unauthorized.** Documentation and GitHub tracking are authorized.
 
-Evidence tags: **[C]** confirmed in current `main` code/tests · **[H]** hypothesis · **[LV]** requires controlled non-production Cloudinary pilot.
+Evidence tags: **[C]** confirmed in current `main` code/tests · **[H]** hypothesis · **[LV]** requires live provider verification (no pilot tooling is retained).
 
 ## 1. Current-code findings
 
@@ -22,7 +22,7 @@ A server-controlled PostgreSQL **asset registry** is the single source of truth 
 ## 3. Mandatory Phase 1 safeguards (owner-imposed, 2026-11-05)
 
 1. **Full React compatibility.** Phase 1 ships backend and React changes together: the upload response keeps `url` (transitional) alongside the new `assetId`, the CE form submits `certificateAssetId` while continuing to accept/populate the legacy fields, and **certificate viewing via the existing URL is preserved until Phase 3 authenticated delivery is operational**. The certificate URL must not be prematurely removed from existing frontend contracts or API DTOs.
-2. **Historical metadata is unverified until reconciled.** `certificate_classification` distinguishes `MANAGED_VERIFIED`, `LEGACY_UNVERIFIED`, `EXTERNAL_LINK` (and NULL during transition). The Phase 1 backfill must **not** classify historical rows with legacy public IDs as verified managed assets: they are inserted as `LEGACY_UNVERIFIED` and only become `MANAGED_VERIFIED` after explicit reconciliation of URL, Cloudinary identity and ownership (Phase 4, issue #20/#23). New uploads in Phase 1 are `MANAGED_VERIFIED` by construction (server-reserved identity).
+2. **Historical metadata is unverified until reconciled.** `certificate_classification` distinguishes `MANAGED_VERIFIED`, `LEGACY_UNVERIFIED`, `EXTERNAL_LINK` (and NULL during transition). The Phase 1 backfill must **not** classify historical rows with legacy public IDs as verified managed assets: they are inserted as `LEGACY_UNVERIFIED` and only become `MANAGED_VERIFIED` after explicit owner review of URL, Cloudinary identity and ownership — any existing certificate is handled manually, no automated migration. New uploads in Phase 1 are `MANAGED_VERIFIED` by construction (server-reserved identity).
 
 ## 4. Data model (Phase 1, additive-only)
 
@@ -35,17 +35,15 @@ New table `certificate_assets`:
 | `ce_record_id` | `uuid` NULL UNIQUE FK → `ce_records` ON DELETE SET NULL | at most one CE record per asset |
 | `public_id` | `varchar(255)` NOT NULL | server-generated reserved name `uptrack/users/<uid>/certificates/<uuid>` |
 | `resource_type` | `varchar(16)` NOT NULL, check ∈ {`raw`,`image`} | |
-| `delivery_type` | `varchar(32)` NOT NULL DEFAULT `'upload'` | → `authenticated` only via verified Phase 4 migration |
+| `delivery_type` | `varchar(32)` NOT NULL DEFAULT `'upload'` | → `authenticated` only for new uploads while the Phase 3 flag is on; no historical migration |
 | `cloud_name` | `varchar(128)` NOT NULL | configured account identity recorded at reservation |
-| `status` | `varchar(32)` NOT NULL | `RESERVED / PENDING / ATTACHED / SUPERSEDED / PENDING_DELETION / DELETED / UPLOAD_FAILED / CLEANUP_FAILED` |
+| `status` | `varchar(32)` NOT NULL | `RESERVED / PENDING / ATTACHED / PENDING_DELETION / DELETED / UPLOAD_FAILED / CLEANUP_FAILED` |
 | `uploaded_at / attached_at / updated_at` | `timestamptz` | lifecycle timestamps |
 | `cleanup_attempts` | `int` NOT NULL DEFAULT 0 | provider-failure counter (lease expirations do not count) |
 | `next_retry_at` | `timestamptz` NULL | backoff schedule |
 | `last_failure_class` | `varchar(64)` NULL | sanitized enum only: `PROVIDER_TIMEOUT / PROVIDER_5XX / PROVIDER_4XX / NETWORK / UNKNOWN`; provider not-found on destroy counts as success |
 | `locked_by / locked_at / lease_expires_at` | worker lease | durable lease; survives the claiming transaction |
 | `lease_token` | `uuid` NULL | **fence**: every cleanup transition must match it (see issue #20 spec §4) |
-| `migrated_from_asset_id / superseded_by_asset_id` | `uuid` NULL FK self | dual-identity migration links (Phase 4) |
-| `migrated_from_public_id / migrated_from_resource_type` | `varchar` NULL | explicit old→new identity mapping |
 
 Constraints: `UNIQUE (cloud_name, resource_type, public_id)` (idempotency key); indexes on `(status, next_retry_at, lease_expires_at)`, `(user_id)`, `(ce_record_id)`.
 
@@ -75,7 +73,7 @@ Constraints: `UNIQUE (cloud_name, resource_type, public_id)` (idempotency key); 
 
 ## 8. Verification matrix (Phase 1)
 
-Unit: registry transitions, reservation states, probe reconciliation logic, binding validation. Integration (`@SpringBootTest`, H2 + `backend-postgres`, mocked Cloudinary/Admin API): reserve→upload→crash/timeout/ambiguous recovery; attach/ownership/cross-user/duplicate/race; transaction-rollback consistency. Security regression: foreign assetId/publicId rejected, traversal/encoding in IDs, unauthenticated 401, rate limit. Frontend: Vitest for hook/DTO changes; typecheck/lint/build; focused Playwright (chromium in CI). Live Cloudinary: **not** in Phase 1 (Phase 3 pilot, issue #23).
+Unit: registry transitions, reservation states, probe reconciliation logic, binding validation. Integration (`@SpringBootTest`, H2 + `backend-postgres`, mocked Cloudinary/Admin API): reserve→upload→crash/timeout/ambiguous recovery; attach/ownership/cross-user/duplicate/race; transaction-rollback consistency. Security regression: foreign assetId/publicId rejected, traversal/encoding in IDs, unauthenticated 401, rate limit. Frontend: Vitest for hook/DTO changes; typecheck/lint/build; focused Playwright (chromium in CI). Live Cloudinary: **not** covered by automated tests (issue #23).
 
 ## 9. Remaining owner decisions
 

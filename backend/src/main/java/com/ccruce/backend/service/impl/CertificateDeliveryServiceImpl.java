@@ -28,8 +28,8 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.Map;
 
-/** Ownership-checked, time-limited API downloads. Signing is local; no provider call or public fallback.
- * Uses the ordinary API secret, not premium CDN AuthTokens. Provider enforcement is not proved offline.
+/** Ownership-checked, time-limited API downloads. Signing is local with the ordinary API secret;
+ * no provider call and no public fallback. Provider enforcement is not proved offline.
  */
 @Service
 public class CertificateDeliveryServiceImpl implements CertificateDeliveryService {
@@ -77,9 +77,9 @@ public class CertificateDeliveryServiceImpl implements CertificateDeliveryServic
             throw new ConflictException("Certificate is not available.");
         }
         // Delivery-type compatibility (Finding 1): authenticated URLs only work for assets stored
-        // with delivery type 'authenticated'. Current uploads are 'upload' (public) until the Phase 4
-        // migration; issuing an authenticated URL for them would fail at the provider. Refuse with 409 —
-        // never fall back to the public URL.
+        // with delivery type 'authenticated'. Current uploads are 'upload' (public); issuing an
+        // authenticated URL for them would fail at the provider. Refuse with 409 — never fall back
+        // to the public URL.
         if (!"authenticated".equals(asset.getDeliveryType())) {
             throw new ConflictException("Certificate is not available for authenticated delivery yet.");
         }

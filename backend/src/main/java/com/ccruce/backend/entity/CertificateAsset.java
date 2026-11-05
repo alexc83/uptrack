@@ -91,20 +91,7 @@ public class CertificateAsset {
     @Column(name = "lease_token")
     private UUID leaseToken;
 
-    // Dual-identity migration links (Phase 4): old and new assets keep independent durable identities.
-    @Column(name = "migrated_from_asset_id")
-    private UUID migratedFromAssetId;
-
-    @Column(name = "superseded_by_asset_id")
-    private UUID supersededByAssetId;
-
-    @Column(name = "migrated_from_public_id", length = 255)
-    private String migratedFromPublicId;
-
-    @Column(name = "migrated_from_resource_type", length = 16)
-    private String migratedFromResourceType;
-
-    /** Permanent delivery URL captured at upload so existing viewing keeps working until Phase 3. */
+    /** Permanent delivery URL captured at upload so existing viewing keeps working. */
     @Column(name = "delivery_url", length = 500)
     private String deliveryUrl;
 
@@ -272,38 +259,6 @@ public class CertificateAsset {
 
     public void setLeaseToken(UUID leaseToken) {
         this.leaseToken = leaseToken;
-    }
-
-    public UUID getMigratedFromAssetId() {
-        return migratedFromAssetId;
-    }
-
-    public void setMigratedFromAssetId(UUID migratedFromAssetId) {
-        this.migratedFromAssetId = migratedFromAssetId;
-    }
-
-    public UUID getSupersededByAssetId() {
-        return supersededByAssetId;
-    }
-
-    public void setSupersededByAssetId(UUID supersededByAssetId) {
-        this.supersededByAssetId = supersededByAssetId;
-    }
-
-    public String getMigratedFromPublicId() {
-        return migratedFromPublicId;
-    }
-
-    public void setMigratedFromPublicId(String migratedFromPublicId) {
-        this.migratedFromPublicId = migratedFromPublicId;
-    }
-
-    public String getMigratedFromResourceType() {
-        return migratedFromResourceType;
-    }
-
-    public void setMigratedFromResourceType(String migratedFromResourceType) {
-        this.migratedFromResourceType = migratedFromResourceType;
     }
 
     public String getDeliveryUrl() {
