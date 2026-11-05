@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -248,7 +249,7 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
     }
 
     @Test
-    void managedDeleteProviderFailureKeepsRecordAndAssetConsistent() throws Exception {
+    void managedDeleteProviderFailureLeavesDurablePendingDeletionAndNoDanglingReference() throws Exception {
         stubSuccessfulUpload();
         AuthSession session = registerUser("Fiona Failure", "fiona.failure@example.com");
         String credentialId = createCredential(session, "RN License");
@@ -265,18 +266,64 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                 .andReturn().getResponse().getContentAsString();
         String ceRecordId = objectMapper.readTree(created).get("id").asText();
 
-        // Provider destroy fails -> 502, transaction rolls back: record kept, asset still ATTACHED.
+        // Transaction-safety review: the destroy runs only AFTER commit. Provider outage during the
+        // post-commit destroy -> delete still succeeds (204), the CE row is gone, and the registry
+        // durably records PENDING_DELETION so Phase 2 retries the (idempotent) destroy.
         org.mockito.Mockito.doThrow(new IOException("outage")).when(uploader).destroy(anyString(), anyMap());
         mockMvc.perform(delete("/api/ce-records/{id}", ceRecordId)
                         .header("Authorization", bearerToken(session)))
-                .andExpect(status().isBadGateway());
+                .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/ce-records/{id}", ceRecordId)
                         .header("Authorization", bearerToken(session)))
-                .andExpect(status().isOk());
-        assertEquals(AssetStatus.ATTACHED, assetById(assetId).getStatus());
-        assertEquals(ceRecordId, assetById(assetId).getCeRecordId().toString());
-        verify(uploader).destroy(eq(publicId), anyMap());
+                .andExpect(status().isNotFound());
+        CertificateAsset asset = assetById(assetId);
+        assertEquals(AssetStatus.PENDING_DELETION, asset.getStatus());
+        assertNull(asset.getCeRecordId());
+        verify(uploader).destroy(eq(publicId), eq(Map.of("resource_type", "raw", "invalidate", true)));
+    }
+
+    @Test
+    void rollbackBeforeCommitNeverCallsTheProvider() throws Exception {
+        stubSuccessfulUpload();
+        AuthSession session = registerUser("Rita Rollback", "rita.rollback@example.com");
+        String credentialId = createCredential(session, "RN License");
+        String assetA = uploadCertificate(session);
+        String assetB = uploadCertificate(session);
+
+        String first = createCERecordWithAsset(session, credentialId, assetA);
+        String second = createCERecordWithAsset(session, credentialId, assetB);
+        String firstId = objectMapper.readTree(first).get("id").asText();
+
+        // Replace record 1 with asset B, which is already ATTACHED to record 2 -> 409 -> full rollback.
+        // The provider destroy of asset A must NEVER have been called: the pending-deletion mark only
+        // becomes durable at commit, and the destroy is scheduled afterCommit.
+        mockMvc.perform(put("/api/ce-records/{id}", firstId)
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"T1","provider":"P","hours":1.0,"dateCompleted":"2026-03-01","credentialId":"%s","certificateAssetId":"%s"}
+                                """.formatted(credentialId, assetB)))
+                .andExpect(status().isConflict());
+
+        verify(uploader, never()).destroy(anyString(), anyMap());
+        assertEquals(AssetStatus.ATTACHED, assetById(assetA).getStatus());
+        assertEquals(firstId, assetById(assetA).getCeRecordId().toString());
+        mockMvc.perform(get("/api/ce-records/{id}", firstId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.certificateAssetId").value(assetA));
+    }
+
+    private String createCERecordWithAsset(AuthSession session, String credentialId, String assetId) throws Exception {
+        return mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"T","provider":"P","hours":1.0,"dateCompleted":"2026-03-01","credentialId":"%s","certificateAssetId":"%s"}
+                                """.formatted(credentialId, assetId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
     }
 
     @Test

@@ -17,10 +17,14 @@ import com.ccruce.backend.security.AuthenticatedUser;
 import com.ccruce.backend.service.CERecordService;
 import com.ccruce.backend.service.CertificateAssetService;
 import com.ccruce.backend.service.CertificateUploadService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Set;
@@ -28,6 +32,8 @@ import java.util.UUID;
 
 @Service
 public class CERecordServiceImpl implements CERecordService {
+
+    private static final Logger log = LoggerFactory.getLogger(CERecordServiceImpl.class);
 
     private static final Set<String> ALLOWED_CERTIFICATE_RESOURCE_TYPES = Set.of("raw", "image");
 
@@ -99,7 +105,7 @@ public class CERecordServiceImpl implements CERecordService {
         // ce_record_id slot is free for the new attach in the same transaction.
         if (requestDto.certificateAssetId() != null
                 && previousAssetId != null && !previousAssetId.equals(requestDto.certificateAssetId())) {
-            destroyManagedAsset(previousAssetId, ceRecord, user);
+            detachManagedAsset(previousAssetId, ceRecord, user);
         }
 
         applyCertificateMetadata(ceRecord, requestDto, user);
@@ -108,7 +114,7 @@ public class CERecordServiceImpl implements CERecordService {
 
         if (requestDto.certificateAssetId() == null && previousAssetId != null) {
             // Managed asset removed without a replacement.
-            destroyManagedAsset(previousAssetId, ceRecord, user);
+            detachManagedAsset(previousAssetId, ceRecord, user);
         } else if (previousAssetId == null) {
             // Legacy path only when the record was never managed: unchanged synchronous cleanup.
             deletePriorCertificateIfReplacedOrRemoved(
@@ -127,7 +133,7 @@ public class CERecordServiceImpl implements CERecordService {
         CERecord ceRecord = getExistingCERecord(id);
         ensureCERecordBelongsToUser(ceRecord, getAuthenticatedUser());
         if (ceRecord.getCertificateAssetId() != null) {
-            destroyManagedAsset(ceRecord.getCertificateAssetId(), ceRecord, getAuthenticatedUser());
+            detachManagedAsset(ceRecord.getCertificateAssetId(), ceRecord, getAuthenticatedUser());
         } else {
             deleteStoredCertificateIfPresent(ceRecord);
         }
@@ -135,20 +141,42 @@ public class CERecordServiceImpl implements CERecordService {
     }
 
     /**
-     * Phase 1 interim deletion for managed assets (review Finding 1): the pending deletion is recorded
-     * in PostgreSQL BEFORE the provider call (the durable architecture), then the same synchronous
-     * destroy the legacy path performs is attempted. On success the registry row becomes DELETED in the
-     * same transaction; on provider failure the 502 rolls the whole transaction back, leaving the asset
-     * ATTACHED and the CE record intact — identical user-visible semantics to legacy certificates, so no
-     * asset is retained indefinitely while Phase 2 is pending. Any crash-window stragglers stay
-     * PENDING_DELETION and remain individually recoverable by the Phase 2 worker.
+     * Phase 1 deletion for managed assets (transaction-safety review): the pending deletion is recorded
+     * in the SAME database transaction as the CE-record change, and the Cloudinary destroy runs only in
+     * an afterCommit synchronization — i.e. strictly AFTER the pending-deletion mark is durably committed.
+     * Cloudinary never participates in the PostgreSQL transaction, so a rollback can never leave the
+     * registry claiming an asset exists at the provider when it does not (the reverse-consistency defect).
+     * On post-commit destroy success the row becomes DELETED; on provider failure/timeout the row stays
+     * PENDING_DELETION (durable, visible, individually recoverable by the Phase 2 worker, whose destroy is
+     * idempotent and treats not-found as success). If the destroy succeeded but the DELETED mark failed,
+     * Phase 2 also self-heals (not-found = success).
      */
-    private void destroyManagedAsset(UUID assetId, CERecord ceRecord, User user) {
+    private void detachManagedAsset(UUID assetId, CERecord ceRecord, User user) {
         CertificateAsset asset = certificateAssetService.findOwnedAsset(assetId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Certificate asset not found for id: " + assetId));
         certificateAssetService.markPendingDeletion(assetId, ceRecord.getId());
-        certificateUploadService.deleteCertificate(asset.getPublicId(), asset.getResourceType());
-        certificateAssetService.markDeleted(assetId);
+        schedulePostCommitDestroy(asset);
+    }
+
+    private void schedulePostCommitDestroy(CertificateAsset asset) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        certificateUploadService.deleteCertificate(asset.getPublicId(), asset.getResourceType());
+                        certificateAssetService.markDeleted(asset.getId()); // REQUIRES_NEW, see service
+                    } catch (RuntimeException exception) {
+                        log.warn("Post-commit certificate destroy failed; asset {} stays PENDING_DELETION for durable retry.",
+                                asset.getId(), exception);
+                    }
+                }
+            });
+        } else {
+            // No active transaction in current call paths; destroy inline as a fallback.
+            certificateUploadService.deleteCertificate(asset.getPublicId(), asset.getResourceType());
+            certificateAssetService.markDeleted(asset.getId());
+        }
     }
 
     /**

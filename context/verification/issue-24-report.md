@@ -41,6 +41,22 @@ New coverage: reservation-before-provider ordering (InOrder), success/definitive
 
 Re-run after the pass: backend `./mvnw -B -ntp clean test` **217/217 passed** (H2); frontend typecheck/lint pass, ce-records Vitest 28/28, focused Chromium `e2e/ce-records.spec.ts` 3/3. Required CI on PR #55 re-runs on the new head.
 
+## Transaction-safety review pass (PR #55, 2026-11-05)
+
+**Finding (verified correct):** in the previous revision, `destroyManagedAsset()` ran `markPendingDeletion` → Cloudinary `destroy` → `markDeleted` all inside the CE-record `@Transactional` method. Because `markPendingDeletion` used default propagation, the `PENDING_DELETION` transition was **not committed** before the provider call; a rollback after a successful destroy (failed attach on replace, failed row delete, commit failure) would leave the registry claiming `ATTACHED` while the provider asset was already gone — the reverse-consistency defect.
+
+**Resolution (Option B, minimal):** `detachManagedAsset()` now records `PENDING_DELETION` in the CE-record transaction and registers a `TransactionSynchronization.afterCommit` hook; the Cloudinary destroy runs **only after the transaction has durably committed**, and `markDeleted` uses `REQUIRES_NEW` (a fresh transaction is required because the request tx thread-locals are still bound during afterCommit — verified by test). Consequences:
+
+- The pending-deletion mark **is** committed before Cloudinary is called. A rollback can never follow a provider destroy, so the dangling-reference scenario is eliminated by construction (regression test: replace with an already-attached asset → 409 → `destroy` never called, asset stays `ATTACHED`).
+- Success path: destroy after commit, then `DELETED` — no indefinite retention in the normal path.
+- Provider failure/timeout/ambiguous during the post-commit destroy: the CE operation still succeeds (204/200), the row stays durably `PENDING_DELETION`, and the Phase 2 worker retries the idempotent destroy (not-found = success). If the destroy succeeded but the `DELETED` mark failed, Phase 2 self-heals the same way.
+
+**What Phase 1 guarantees:** atomic registry + CE-record state transitions; pending-deletion durably committed before any provider deletion call; no reverse inconsistency (registry never claims an existing provider asset that was destroyed); ownership-validated attach; recoverable reservations.
+**What Phase 1 does NOT guarantee:** provider deletion during an outage/crash in the post-commit window is deferred to Phase 2 (row remains `PENDING_DELETION`, visible and individually retryable) — Phase 1 does not provide durable *provider-side* deletion retries; that is Phase 2's responsibility. Legacy (non-managed) paths keep their pre-existing synchronous 502-on-outage semantics.
+**Deployability:** Phase 1 is mergeable and independently deployable; merging to `main` does not authorize deployment. Operational note: between Phase 1 deployment and Phase 2, assets deleted during a provider outage remain at the provider until Phase 2 ships — bounded, durable, and visible in the registry.
+
+**Tests:** `rollbackBeforeCommitNeverCallsTheProvider` (rollback ⇒ no provider call, asset stays ATTACHED, record unchanged), `managedDeleteProviderFailureLeavesDurablePendingDeletionAndNoDanglingReference` (outage ⇒ 204, record gone, row `PENDING_DELETION`), plus the existing replace/delete success assertions (destroy with `invalidate=true` after commit, row `DELETED`). Simulated failures only — no live-provider behavior is claimed. Full suite after the pass: backend **218/218 passed** (H2); frontend typecheck/lint pass, ce-records Vitest 28/28, focused Chromium e2e 3/3. Required CI re-runs on the new PR head.
+
 ## Not run / pending owner
 
 - `backend-postgres` locally (CI covers PostgreSQL 17); full four-browser Playwright and visual goldens (owner-run); live Cloudinary pilot (Phase 3, separate non-production credentials); production backfill (owner-approved step only).

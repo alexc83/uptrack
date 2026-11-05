@@ -145,8 +145,10 @@ public class CertificateAssetServiceImpl implements CertificateAssetService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markDeleted(UUID assetId) {
+        // REQUIRES_NEW: called from an afterCommit hook, where the request transaction's
+        // thread-locals may still be bound; a fresh transaction keeps the @Modifying update valid.
         repository.markDeleted(assetId, OffsetDateTime.now());
     }
 
