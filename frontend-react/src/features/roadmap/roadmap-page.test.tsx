@@ -32,6 +32,27 @@ describe('RoadmapPage', () => {
     }
   });
 
+  it('lists each entry once with Public Product Roadmap under Completed and Help Center as the only Now entry', async () => {
+    renderWithProviders(null, { routes, path: '/roadmap' });
+    expect(await screen.findByRole('heading', { level: 1, name: roadmapIntro.title })).toBeVisible();
+    const titlesOf = (key: string) => roadmapSections.find((section) => section.key === key)?.entries.map((entry) => entry.title);
+    expect(titlesOf('now')).toEqual(['Help Center']);
+    expect(titlesOf('completed')).toEqual([
+      'Public Product Roadmap',
+      'Professional Credential Tracking',
+      'Continuing Education Tracking',
+      'Dashboard and Reports',
+      'Refreshed Application Experience',
+    ]);
+    expect(roadmapSections.map((section) => section.entries.length)).toEqual([1, 2, 4, 5]);
+    const allTitles = roadmapSections.flatMap((section) => section.entries.map((entry) => entry.title));
+    expect(allTitles).toHaveLength(12);
+    expect(new Set(allTitles).size).toBe(12);
+    for (const title of allTitles) {
+      expect(screen.getAllByRole('heading', { level: 3, name: title })).toHaveLength(1);
+    }
+  });
+
   it('provides accessible return links to the public landing page', async () => {
     renderWithProviders(null, { routes, path: '/roadmap' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Product Roadmap' })).toBeVisible();
