@@ -1,160 +1,114 @@
 import com.cloudinary.AuthToken;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Url;
-
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Local AuthToken URL generator for the Issue #23 non-production Cloudinary pilot.
- *
- * <p>Reference signing implementation for the pilot (SDK 2.5.0). Two code-level findings from
- * inspecting cloudinary-core 2.5.0 ({@code Url.generate} bytecode) are baked in here and must be
- * mirrored in {@code CertificateDeliveryServiceImpl} before the pilot can pass:
- * <b>(1)</b> {@code Url.signed(true)} is required — without it the AuthToken is silently dropped
- * from the URL; <b>(2)</b> the {@code AuthToken} must be constructed with the API secret as its
- * signing key ({@code new AuthToken(apiSecret)}) — without a key, {@code AuthToken.generate}
- * cannot HMAC and the token is empty/invalid. URL generation is purely local signing — this tool
- * makes <b>no network calls</b>.
- *
- * <p>Secrets are read only from environment variables ({@code CLOUDINARY_CLOUD_NAME},
- * {@code CLOUDINARY_API_KEY}, {@code CLOUDINARY_API_SECRET}) — never from argv — and are never
- * printed. The generated URL (which necessarily contains the signed token parameter, {@code _a} in SDK 2.5.0) is
- * written to stdout for the caller to use; callers must not log it.
- *
- * <p>Usage:
- * <pre>
- *   java AuthTokenUrlTool --resource-type raw --public-id pilot/authenticated/synth --format pdf --duration 60
- *   java AuthTokenUrlTool --self-test
- * </pre>
+/** Local SDK signing only. Stdout URL is sensitive: caller must capture it, never log it.
+ * Uses UpTrack's SDK/type/resource/secure/TTL construction. Explicit corrections to the merged
+ * signer: keyed AuthToken, signed(true), ACL equal to actual delivery path (cloud + extension).
+ * The token-auth key is provisioned by Cloudinary, NOT the API secret. No provider I/O here.
  */
 public final class AuthTokenUrlTool {
-
-    private AuthTokenUrlTool() {
-    }
+    private AuthTokenUrlTool() { }
 
     public static void main(String[] args) {
         try {
-            if (args.length == 1 && "--self-test".equals(args[0])) {
+            if (args.length == 1 && args[0].equals("--self-test")) {
                 selfTest();
+                System.out.println("SELFTEST PASS (offline SDK signing; no provider authorization established)");
                 return;
             }
-            String resourceType = null;
-            String publicId = null;
-            String format = null;
-            int duration = 60;
-            for (int i = 0; i < args.length; i++) {
-                switch (args[i]) {
-                    case "--resource-type" -> resourceType = args[++i];
-                    case "--public-id" -> publicId = args[++i]; // NOTE: without format extension; use --format
-                    case "--format" -> format = args[++i];
-                    case "--duration" -> duration = Integer.parseInt(args[++i]);
-                    default -> fail("unknown argument: " + args[i]);
-                }
+            Map<String, String> options = new HashMap<>();
+            for (int i = 0; i < args.length; i += 2) {
+                require(i + 1 < args.length &&
+                        java.util.Set.of("--resource-type", "--public-id", "--duration").contains(args[i]) &&
+                        !options.containsKey(args[i]), "invalid arguments");
+                options.put(args[i], args[i + 1]);
             }
-            if (resourceType == null || publicId == null) {
-                fail("--resource-type and --public-id are required (see README)");
-            }
-            if (duration < 1 || duration > 3600) {
-                fail("--duration must be within 1..3600");
-            }
-            System.out.println(generate(
-                    env("CLOUDINARY_CLOUD_NAME"), env("CLOUDINARY_API_KEY"), env("CLOUDINARY_API_SECRET"),
-                    resourceType, publicId, format, duration));
-        } catch (Exception e) {
-            System.err.println("authtoken-tool error: " + e.getMessage());
+            int duration = Integer.parseInt(options.getOrDefault("--duration", "60"));
+            System.out.println(generate(env("CLOUDINARY_CLOUD_NAME"), env("CLOUDINARY_API_KEY"),
+                    env("CLOUDINARY_API_SECRET"), env("CLOUDINARY_AUTH_TOKEN_KEY"),
+                    options.get("--resource-type"), options.get("--public-id"), duration));
+        } catch (Exception exception) {
+            // SDK exceptions can contain signing inputs; never print them or a stack trace.
+            System.err.println("AuthToken helper failed (invalid inputs or SDK signing configuration)");
             System.exit(1);
         }
     }
 
-    /** Same construction as the backend delivery service. Never logs secrets or tokens. */
-    static String generate(String cloudName, String apiKey, String apiSecret,
-                           String resourceType, String publicId, String format, int duration) {
-        Map<String, String> config = new HashMap<>();
-        config.put("cloud_name", cloudName);
-        config.put("api_key", apiKey);
-        config.put("api_secret", apiSecret);
-        Cloudinary cloudinary = new Cloudinary(config);
-        AuthToken token = new AuthToken(apiSecret) // signing key — required, see class javadoc
-                .duration(duration)
-                .acl("/" + resourceType + "/authenticated/" + publicId);
-        Url url = cloudinary.url()
-                .secure(true)
-                .signed(true) // required — otherwise the AuthToken is silently omitted
-                .type("authenticated")
-                .resourceType(resourceType)
-                .authToken(token);
-        if ("raw".equals(resourceType) && format != null && !format.isBlank()) {
-            url.format(format);
-        }
-        return url.generate(publicId);
+    static Cloudinary cloudinary(String cloud, String key, String secret) {
+        return new Cloudinary(Map.of("cloud_name", cloud, "api_key", key, "api_secret", secret));
     }
 
-    /**
-     * Offline structural checks with dummy credentials. Proves URL/token generation is local
-     * (no network), deterministic per inputs, ACL/path shape, and duration sensitivity.
-     * This does NOT prove live provider authorization — that requires the authorized pilot.
-     */
+    static String generate(String cloud, String key, String secret, String tokenKey,
+                           String resource, String publicId, int ttl) {
+        require(cloud != null && cloud.matches("[a-zA-Z0-9_-]{1,100}"), "invalid cloud");
+        require("raw".equals(resource) || "image".equals(resource), "invalid resource");
+        require(publicId != null && publicId.matches("pilot/[a-zA-Z0-9_./-]+") &&
+                !publicId.contains("..") && !publicId.contains("//"), "invalid public id");
+        require(ttl >= 2 && ttl <= 3600, "invalid TTL");
+        require(tokenKey != null && tokenKey.matches("(?:[0-9a-fA-F]{2}){16,64}"), "invalid token key");
+        Cloudinary sdk = cloudinary(cloud, key, secret);
+        Url unsigned = sdk.url().secure(true).type("authenticated").resourceType(resource);
+        // Raw public_id already includes .pdf (provider identity). Image identity excludes .png.
+        if ("image".equals(resource)) unsigned.format("png");
+        String path = URI.create(unsigned.generate(publicId)).getRawPath();
+        AuthToken token = new AuthToken(tokenKey).duration(ttl).acl(path);
+        Url signed = sdk.url().secure(true).signed(true).type("authenticated")
+                .resourceType(resource).authToken(token);
+        if ("image".equals(resource)) signed.format("png");
+        return signed.generate(publicId);
+    }
+
+    private static String token(String url) {
+        String query = URI.create(url).getRawQuery();
+        require(query != null && query.startsWith("__cld_token__="), "missing token");
+        return URLDecoder.decode(query.substring("__cld_token__=".length()), StandardCharsets.UTF_8);
+    }
+
     private static void selfTest() {
-        String cloud = "pilot-selftest-cloud";
-        String key = "000000000000000";
-        String secret = "0123456789abcdef0123456789abcdef"; // dummy hex key; never a real secret
-        String pdfUrl = generate(cloud, key, secret, "raw", "pilot/authenticated/a", "pdf", 60);
-        String pngUrl = generate(cloud, key, secret, "image", "pilot/authenticated/b.png", null, 60);
-        String pdfUrlOtherPid = generate(cloud, key, secret, "raw", "pilot/authenticated/c", "pdf", 60);
-        String pdfUrlLongTtl = generate(cloud, key, secret, "raw", "pilot/authenticated/a", "pdf", 3600);
-
-        require(pdfUrl.startsWith("https://res.cloudinary.com/" + cloud + "/raw/authenticated/"),
-                "raw URL shape: " + pdfUrl);
-        String pdfPath = pdfUrl.substring(0, pdfUrl.indexOf('?'));
-        require(pdfPath.endsWith("/pilot/authenticated/a.pdf"), "raw URL path ends with public id + format extension");
-        require(pngUrl.substring(0, pngUrl.indexOf('?')).contains("/image/authenticated/") && pngUrl.contains("/pilot/authenticated/b.png"), "image URL shape");
-        require(pdfUrl.contains("__cld_token__="), "AuthToken parameter present");
-        require(pdfUrl.contains("acl="), "ACL embedded in token");
-        require(!pdfUrl.contains(secret) && !pngUrl.contains(secret), "secret must not appear in URL");
-        String tokenA = queryParam(pdfUrl, "__cld_token__");
-        String tokenC = queryParam(pdfUrlOtherPid, "__cld_token__");
-        String tokenLong = queryParam(pdfUrlLongTtl, "__cld_token__");
-        require(tokenA != null && tokenC != null && !tokenA.equals(tokenC),
-                "token binds to the public id (ACL subject)");
-        require(tokenA != null && tokenA.contains("hmac="), "token is HMAC-signed (key was used)");
-        require(tokenLong != null && !tokenA.equals(tokenLong), "token binds to the duration/expiration");
-        // Same inputs → same token (local deterministic signing, no provider call).
-        require(pdfUrl.equals(generate(cloud, key, secret, "raw", "pilot/authenticated/a", "pdf", 60)),
-                "generation is deterministic and local");
-        System.out.println("SELFTEST OK (local signing only; no network; no secrets printed)");
+        String cloud = "local-fixture-cloud", key = "local-fixture-key", secret = "local-fixture-api-secret";
+        // Public synthetic test vector, never a provisioned credential.
+        String tokenKey = "0123456789abcdef0123456789abcdef";
+        for (String resource : new String[]{"raw", "image"}) {
+            String id = "pilot/offline/" + resource + (resource.equals("raw") ? ".pdf" : "");
+            long before = System.currentTimeMillis() / 1000;
+            String url = generate(cloud, key, secret, tokenKey, resource, id, 60);
+            String t = token(url);
+            String path = URI.create(url).getRawPath();
+            require(path.equals("/" + cloud + "/" + resource + "/authenticated/v1/" + id +
+                    (resource.equals("image") ? ".png" : "")), "SDK path mismatch");
+            require(t.contains("acl=" + path + "~hmac="), "ACL must exactly match delivery path");
+            long expiry = Long.parseLong(t.substring(4, t.indexOf('~')));
+            require(expiry >= before + 60 && expiry <= System.currentTimeMillis() / 1000 + 60, "TTL mismatch");
+            // Recompute a fixed-expiry HMAC with the SDK, avoiding clock-boundary flaky assertions.
+            String fixed = new AuthToken(tokenKey).expiration(expiry).acl(path).generate();
+            require(URLDecoder.decode(fixed, StandardCharsets.UTF_8).equals("__cld_token__=" + t), "SDK HMAC mismatch");
+            String otherId = resource.equals("raw") ? "pilot/offline/raw-other.pdf" : id + "-other";
+            String other = generate(cloud, key, secret, tokenKey, resource, otherId, 60);
+            require(!token(other).equals(t), "cross-asset token must differ");
+            String longer = token(generate(cloud, key, secret, tokenKey, resource, id, 120));
+            require(Long.parseLong(longer.split("~")[0].substring(4)) >= expiry + 60, "TTL sensitivity");
+            require(!url.contains(secret) && !url.contains(tokenKey), "key disclosure");
+        }
+        // Pin the exact merged UpTrack signer defect without changing application code.
+        String backendShape = cloudinary(cloud, key, secret).url().secure(true).type("authenticated")
+                .resourceType("raw").authToken(new AuthToken().duration(60)
+                        .acl("/raw/authenticated/pilot/offline/raw")).format("pdf").generate("pilot/offline/raw");
+        require(!backendShape.contains("__cld_token__="), "recheck merged signer finding");
     }
 
-    private static String queryParam(String url, String name) {
-        int q = url.indexOf('?');
-        if (q < 0) {
-            return null;
-        }
-        for (String pair : url.substring(q + 1).split("&")) {
-            int eq = pair.indexOf('=');
-            if (eq > 0 && pair.substring(0, eq).equals(name)) {
-                return pair.substring(eq + 1);
-            }
-        }
-        return null;
-    }
-
-    private static String env(String name) {
-        String value = System.getenv(name);
-        if (value == null || value.isBlank()) {
-            fail(name + " is required (test-cloud credential via environment, never argv)");
-        }
+    private static String env(String key) {
+        String value = System.getenv(key);
+        require(value != null && !value.isBlank(), "missing environment");
         return value;
     }
 
-    private static void require(boolean condition, String what) {
-        if (!condition) {
-            throw new IllegalStateException("self-test failed: " + what);
-        }
-    }
-
-    private static void fail(String message) {
-        System.err.println("authtoken-tool error: " + message);
-        System.exit(1);
+    private static void require(boolean condition, String message) {
+        if (!condition) throw new IllegalArgumentException(message);
     }
 }
