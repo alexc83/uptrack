@@ -3,7 +3,7 @@
 
 # READY Specification — Issue #23: Authenticated certificate delivery (Phase 3)
 
-**Status: READY.** Owner approved the v3 architecture as the basis of this READY specification on 2026-11-05. **READY is not implementation authorization; implementation remains unauthorized.**
+**Status: READY.** Owner approved the v3 architecture as the basis of this READY specification on 2026-11-05. **READY is not implementation authorization.** Phase 3 was separately authorized and merged default-off; the focused signer correction is separately authorized on `fix/23-cloudinary-authtoken-signing`. Merge, live pilot, provisioning, deployment and activation remain unauthorized for that correction.
 
 Evidence tags: **[C]** confirmed in current `main` code/tests · **[H]** hypothesis · **[LV]** requires controlled non-production Cloudinary pilot.
 
@@ -44,10 +44,36 @@ Before Phase 3 code is finalized, a controlled pilot on a **dedicated non-produc
 
 ## 4. Delivery design
 
-- New endpoint `GET /api/ce-records/{id}/certificate-url` (Bearer JWT): authentication → CE record ownership → registry row `ATTACHED` with `ce_record_id = id` → 404 for non-owners (indistinguishable from missing) → `{url, expiresAt}` built via `cloudinary.url().secure(true).type("authenticated").resourceType(rt)` + `AuthToken(duration=ttl, acl pinned to the asset path)`. Rate-limited; issuance audit-logged.
+- New endpoint `GET /api/ce-records/{id}/certificate-url` (Bearer JWT): authentication → CE record ownership → registry row `ATTACHED` with `ce_record_id = id` → 404 for non-owners (indistinguishable from missing) → `{url, expiresAt}` built via `cloudinary.url().secure(true).type("authenticated").resourceType(rt)` + a keyed `AuthToken(expiration=expiresAt, acl=actual SDK-generated URI raw path)` and `signed(true)`. Rate-limited; issuance audit-logged.
 - Raw PDFs and images both covered per pilot answers; browser preview and download supported; CDN caching is per-token (short-lived); `invalidate=true` on destroy busts cached copies.
 - **Limitations (explicit):** a signed/AuthToken URL is private only while the asset's delivery type is `authenticated` — legacy `upload`-type assets remain publicly reachable at their old URLs until Phase 4 retires them; the 60 s lifetime forbids stored links (UI refetches on every open, including print/report); issued URLs cannot be revoked (lifetime bounds exposure); provider outage → 5xx, never a fallback to the public URL; `EXTERNAL_LINK` records keep their public-by-nature external URLs via `safeHttpUrl`.
 - DTO changes at Phase 3: managed assets with `delivery_type='authenticated'` no longer expose the permanent Cloudinary URL in `CERecordResponseDto`/`CEReportRecordDto` (Phase 1 safeguard 1: only at Phase 3; asset-based, per §2a).
+
+## 4a. Dedicated token key and offline signer correction
+
+`cloudinary.auth-token.key` binds `${CLOUDINARY_AUTH_TOKEN_KEY:}` into a dedicated redacted
+configuration type. This is the provider's **separate** token-authentication key, never an API-secret
+fallback. With delivery OFF, an absent key preserves startup and ordinary certificate workflows.
+With delivery ON, a missing/blank/nonhex/odd-length key or a key outside **16–64 bytes encoded as hex**
+prevents startup with a sanitized message. Validation follows binding so rejection diagnostics cannot
+quote the supplied value; `toString` is redacted and JSON serialization omits the key. No global SDK
+auth token is installed on the upload/Admin client. Do not enable configuration/environment dumps or
+expose diagnostic endpoints containing property values; this repository does not install Actuator.
+
+The signer derives ACL from `URI.getRawPath()` of the intended SDK delivery URL, then generates the
+same URL with `new AuthToken(tokenKey).expiration(expiresAt.getEpochSecond()).acl(path)` and
+`signed(true)`. It checks that the final path is unchanged. `expiresAt` is captured once in epoch
+seconds and shared with the response. Raw format is added only when not already present on the
+public ID (case-insensitive); images retain original delivery with no forced PNG/transform. SDK
+exceptions are discarded in favor of the existing generic failure, never a permanent-URL fallback.
+No stored public IDs, upload identities or cleanup contracts are modified.
+
+Real-SDK offline tests cover the emitted parameter, HMAC (also independently recomputed in tests),
+full ACL/encoding/version path, raw extension cases, original images, expiry, key/identity changes
+and redaction. These establish local signing correctness **only**. Pilot parity must still resolve
+raw extensionless registry identities against actual provider assets, compare equivalent app/helper
+resource/format inputs, and verify token delivery/denial/expiry/ACL/caching at the provider before any
+activation. See [signing verification](../verification/issue-23-signing-report.md).
 
 ## 5. React compatibility (Phase 3)
 
@@ -62,8 +88,8 @@ With the flag ON, "View certificate" becomes an on-demand action: `certificatesA
 
 ## 7. Verification matrix (Phase 3)
 
-Unit: AuthToken URL construction (mocked `Cloudinary`), TTL/expiresAt, ownership checks. Integration (H2 + PG17, mocked): delivery endpoint authz matrix, no-managed-asset → 404, `EXTERNAL_LINK` passthrough. Security regression: cross-user attempts, no URL leakage in responses, rate limits. Frontend: Vitest delivery-flow specs (success/404/401/refetch-on-expiry), typecheck/lint/build, focused Playwright. Live [LV]: pilot only. Required CI: `backend`, `backend-postgres`, `frontend`, `e2e-chromium`.
+Unit: real-SDK AuthToken URL/HMAC/ACL/expiry tests with synthetic keys and no provider calls, plus existing mocked authorization/failure tests and startup/redaction tests. Integration (H2 + PG17, mocked): delivery endpoint authz matrix, no-managed-asset → 404, `EXTERNAL_LINK` passthrough. Security regression: cross-user attempts, no URL leakage in responses, rate limits. Frontend: Vitest delivery-flow specs (success/404/401/refetch-on-expiry), typecheck/lint/build, focused Playwright. Live [LV]: pilot only. Required CI: `backend`, `backend-postgres`, `frontend`, `e2e-chromium`.
 
 ## 8. Remaining owner decisions
 
-TTL default 60 s (confirm/adjust); pilot credentials provisioning; rollback/retirement sequencing with issue #20; explicit implementation authorization (currently **not granted**).
+TTL default 60 s (confirm/adjust); pilot credentials provisioning; rollback/retirement sequencing with issue #20; focused signer correction implementation is authorized; merge, pilot/provisioning, deployment, activation and Phase 4 each remain outside this authorization.

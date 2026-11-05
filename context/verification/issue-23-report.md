@@ -73,7 +73,7 @@ superseded by the broader checks in the dedicated report.
 
 ## Pilot status and unverified provider behavior
 
-**Not executed — requires separate owner approval.** The pilot plan (`context/specs/issue-23-cloudinary-pilot-plan.md`) defines the exact 14-question procedure and the credential/config requirements (dedicated non-production cloud, synthetic certificates only, secrets via the owner's secret manager, never in GitHub/files). Until the pilot runs, the following remain **unverified [LV]**: account-level authenticated-delivery enablement; raw/image authenticated delivery semantics; logged-out denial; token TTL/clock skew; acl path format (implementation uses `/<resource_type>/authenticated/<public_id>` — pilot item 6 may correct it); Content-Type/Disposition; transformations on authenticated images; CDN cache keying/invalidation; old public URL revocation timing; in-place type change; destroy result contract; Admin API limits; SDK 2.5.0 vs 2.6.0 behavior. **No security claim about live Cloudinary is made.**
+**Not executed — requires separate owner approval.** The pilot plan (`context/specs/issue-23-cloudinary-pilot-plan.md`) defines the exact 14-question procedure and the credential/config requirements (dedicated non-production cloud, synthetic certificates only, secrets via the owner's secret manager, never in GitHub/files). Until the pilot runs, the following remain **unverified [LV]**: account-level authenticated-delivery enablement; raw/image authenticated delivery semantics; logged-out denial; token TTL/clock skew; ACL provider enforcement (the correction branch derives ACL from the full generated URI path; live parity remains pending); Content-Type/Disposition; transformations on authenticated images; CDN cache keying/invalidation; old public URL revocation timing; in-place type change; destroy result contract; Admin API limits; SDK 2.5.0 vs 2.6.0 behavior. **No security claim about live Cloudinary is made.**
 
 ## Remaining risks
 
@@ -81,3 +81,15 @@ superseded by the broader checks in the dedicated report.
 - 60 s URLs are irrevocable once issued (lifetime bounds exposure); UI refetches per click, so previews/downloads always get a fresh URL.
 - Pilot findings may require design changes (acl format, raw URL shape) — to be reviewed before implementation.
 - Production enablement of authenticated delivery is explicitly out of scope until pilot acceptance.
+
+
+## Focused signer correction (authorized 2026-11-05; PR merge not authorized)
+
+The current correction on `fix/23-cloudinary-authtoken-signing` addresses the unkeyed/missing-signing/
+incomplete-ACL defect with dedicated `CLOUDINARY_AUTH_TOKEN_KEY` configuration, conditional startup
+validation, SDK signing, actual URI-path ACL and identical token/DTO expiry. Real-SDK tests use public
+synthetic vectors and no provider I/O. Existing authorization/state/type/default-off/fallback checks
+are preserved. See [the focused signing report](issue-23-signing-report.md) for commands/results,
+root cause, safe setup and remaining live uncertainties. Earlier sections describe historical
+Phase 3 verification and must not be read as live-provider acceptance. The helper's baseline-defect
+self-test remains historical; its corrected URL builder is the reference. No activation or pilot occurred.

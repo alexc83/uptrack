@@ -14,7 +14,7 @@
 
 ## 2. Pilot procedure (each step = one [LV] question from the spec §3)
 
-0. **Signing configuration check [C]:** the backend `CloudinaryConfig` passes `cloud_name`, `api_key`, `api_secret` — the API secret authenticates provider API calls, but is **not** the token-authentication key. The pilot requires the separate hex `CLOUDINARY_AUTH_TOKEN_KEY` supplied/configured for Cloudinary token authentication. The merged application signer needs a separately authorized correction before activation; see §2b.
+0. **Signing configuration check [C]:** the backend `CloudinaryConfig` passes `cloud_name`, `api_key`, `api_secret` — the API secret authenticates provider API calls, but is **not** the token-authentication key. The pilot requires the separate hex `CLOUDINARY_AUTH_TOKEN_KEY` supplied/configured for Cloudinary token authentication. The signer correction on `fix/23-cloudinary-authtoken-signing` uses that same dedicated key; its merge/acceptance and live parity are still required before activation; see §2b.
 1. Upload synthetic PDF (`raw`) and PNG (`image`) with **`type=upload`** (current production behavior). The tooling uses the documented Upload REST API with Basic Auth, and the Java SDK for local delivery signing. Record identities/resource types and safe status/header evidence; do not publish token URLs.
 2. Logged-out fetch of the public URL → record status (baseline: expect 200 on `upload` type). **This also proves existing public URLs remain accessible independently of the authenticated endpoint.**
 3. Generate an AuthToken URL (`type=authenticated`, `duration=60`, acl pinned) for the **`upload`-type** asset → logged-out fetch: **expect denial** — confirms the delivery-type mismatch and why Phase 3 refuses (409) `upload`-type assets until migration.
@@ -57,13 +57,15 @@ merging it and executing the pilot require **separate** owner authorizations.
 - `--validate-state FILE` is offline structural validation, not proof of provenance.
   `PILOT_PREFLIGHT_ONLY=yes` checks configuration, fixtures and real SDK local signing without any
   provider I/O. `test-tooling.sh` covers orchestration and failures using mocks, never live credentials.
-- **Application acceptance blocker [C]:** the merged signer has an unkeyed AuthToken and lacks
-  `signed(true)`; an exact-construction offline SDK test confirms no token parameter is emitted.
-  Its ACL also omits the cloud/version/actual-format path. The helper uses those same SDK primitives
-  with the necessary corrections, including the separate token-authentication key and exact URI-path
-  ACL. Earlier tooling documentation incorrectly called the API secret the AuthToken key; that claim
-  is superseded. No backend code is changed here. Helper success cannot establish application parity
-  or live provider authorization; application correction requires separate scope authorization.
+- **Application compatibility gate:** the baseline merged signer was unkeyed, omitted `signed(true)`
+  and used an incomplete ACL; the helper's exact-construction diagnostic pins that historical defect.
+  The authorized correction on `fix/23-cloudinary-authtoken-signing` now uses the dedicated key,
+  `signed(true)`, actual SDK URI-path ACL and one token/DTO expiry. Its real-SDK evidence is in
+  [the signing report](../verification/issue-23-signing-report.md). Earlier API-secret-as-token-key
+  instructions remain superseded. The helper's image fixture explicitly selects PNG; the application
+  preserves original images, so compare equivalent resource/format options rather than assuming
+  identical strings. Raw ID/extension correspondence still needs live parity. Offline success does
+  not establish live authorization; correction merge/acceptance and the pilot remain separate gates.
 
 Browser preview, CDN behavior, exact skew boundary, transformations, historical URL/type-change
 behavior and SDK upgrade parity remain manual. No provider pilot, provisioning, deployment,

@@ -48,6 +48,9 @@ cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
+  auth-token:
+    # Separate provider token-auth key; unused while delivery is OFF. Never use the API secret.
+    key: ${CLOUDINARY_AUTH_TOKEN_KEY:}
 
 app:
   cors:
