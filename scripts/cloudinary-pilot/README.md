@@ -1,7 +1,7 @@
 # Issue #23 — non-production Cloudinary pilot tooling
 
-[Plan](../../../context/specs/issue-23-cloudinary-pilot-plan.md) ·
-[Preparation evidence](../../../context/verification/issue-23-pilot-tooling-report.md) ·
+[Plan](../../context/specs/issue-23-cloudinary-pilot-plan.md) ·
+[Preparation evidence](../../context/verification/issue-23-pilot-tooling-report.md) ·
 [PR #58](https://github.com/alexc83/uptrack/pull/58).
 **Preparation only: merging this PR and executing the pilot each require separate owner authorization.**
 No Cloudinary API calls have been made. No credentials were provisioned; no feature flag was enabled.
