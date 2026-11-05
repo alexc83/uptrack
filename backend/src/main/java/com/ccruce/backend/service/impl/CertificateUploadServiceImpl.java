@@ -76,7 +76,9 @@ public class CertificateUploadServiceImpl implements CertificateUploadService {
         // A database failure here means no provider call was ever made: clean failure, nothing to clean.
         CertificateAsset reservation;
         try {
-            reservation = assetService.reserve(userId, resourceType);
+            // The client filename is persisted at reservation time so a recovered upload
+            // (provider success + app crash) still has complete authoritative metadata.
+            reservation = assetService.reserve(userId, resourceType, originalFilename);
         } catch (RuntimeException exception) {
             log.warn("Certificate asset reservation failed before provider call.");
             throw new UploadFailedException("Certificate upload failed.");

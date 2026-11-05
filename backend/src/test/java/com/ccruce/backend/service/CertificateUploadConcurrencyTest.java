@@ -36,7 +36,7 @@ class CertificateUploadConcurrencyTest {
         CertificateAssetService assetService = mock(CertificateAssetService.class);
         when(cloudinary.uploader()).thenReturn(uploader);
         when(validator.validate(any())).thenReturn(new byte[]{1, 2, 3});
-        when(assetService.reserve(any(), anyString())).thenAnswer(invocation -> {
+        when(assetService.reserve(any(), anyString(), any())).thenAnswer(invocation -> {
             com.ccruce.backend.entity.CertificateAsset asset = new com.ccruce.backend.entity.CertificateAsset();
             asset.setId(UUID.randomUUID());
             asset.setUserId(invocation.getArgument(0));

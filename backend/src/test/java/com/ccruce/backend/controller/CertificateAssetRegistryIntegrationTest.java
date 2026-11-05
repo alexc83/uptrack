@@ -18,23 +18,27 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -216,7 +220,9 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                                 """.formatted(ownerCredential, assetId)))
                 .andExpect(status().isConflict());
 
-        // Replace: attach a new asset to the first record; the old one becomes PENDING_DELETION.
+        // Replace (Finding 1): the old managed asset is destroyed synchronously like a legacy
+        // certificate — PENDING_DELETION is recorded before the provider call, then DELETED.
+        String oldPublicId = assetById(assetId).getPublicId();
         String assetId2 = uploadCertificate(owner);
         mockMvc.perform(put("/api/ce-records/{id}", firstId)
                         .header("Authorization", bearerToken(owner))
@@ -228,16 +234,49 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                 .andExpect(jsonPath("$.certificateAssetId").value(assetId2));
 
         CertificateAsset oldAsset = assetById(assetId);
-        assertEquals(AssetStatus.PENDING_DELETION, oldAsset.getStatus());
+        assertEquals(AssetStatus.DELETED, oldAsset.getStatus());
         assertNull(oldAsset.getCeRecordId());
         assertEquals(AssetStatus.ATTACHED, assetById(assetId2).getStatus());
+        verify(uploader).destroy(eq(oldPublicId), eq(Map.of("resource_type", "raw", "invalidate", true)));
 
-        // Delete the record: managed asset is marked PENDING_DELETION without a provider destroy call.
+        // Delete the record: the managed asset is destroyed and marked DELETED in the same transaction.
         mockMvc.perform(delete("/api/ce-records/{id}", firstId)
                         .header("Authorization", bearerToken(owner)))
                 .andExpect(status().isNoContent());
-        assertEquals(AssetStatus.PENDING_DELETION, assetById(assetId2).getStatus());
-        verify(uploader, never()).destroy(anyString(), anyMap());
+        assertEquals(AssetStatus.DELETED, assetById(assetId2).getStatus());
+        verify(uploader, org.mockito.Mockito.times(2)).destroy(anyString(), anyMap());
+    }
+
+    @Test
+    void managedDeleteProviderFailureKeepsRecordAndAssetConsistent() throws Exception {
+        stubSuccessfulUpload();
+        AuthSession session = registerUser("Fiona Failure", "fiona.failure@example.com");
+        String credentialId = createCredential(session, "RN License");
+        String assetId = uploadCertificate(session);
+        String publicId = assetById(assetId).getPublicId();
+
+        String created = mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"T","provider":"P","hours":1.0,"dateCompleted":"2026-03-01","credentialId":"%s","certificateAssetId":"%s"}
+                                """.formatted(credentialId, assetId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String ceRecordId = objectMapper.readTree(created).get("id").asText();
+
+        // Provider destroy fails -> 502, transaction rolls back: record kept, asset still ATTACHED.
+        org.mockito.Mockito.doThrow(new IOException("outage")).when(uploader).destroy(anyString(), anyMap());
+        mockMvc.perform(delete("/api/ce-records/{id}", ceRecordId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isBadGateway());
+
+        mockMvc.perform(get("/api/ce-records/{id}", ceRecordId)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isOk());
+        assertEquals(AssetStatus.ATTACHED, assetById(assetId).getStatus());
+        assertEquals(ceRecordId, assetById(assetId).getCeRecordId().toString());
+        verify(uploader).destroy(eq(publicId), anyMap());
     }
 
     @Test
@@ -269,12 +308,17 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                 .andExpect(jsonPath("$.certificateClassification").value("EXTERNAL_LINK"));
     }
 
+    private void makeProbeEligible(CertificateAsset asset) {
+        asset.setNextRetryAt(OffsetDateTime.now().minusMinutes(1));
+        assetRepository.save(asset);
+    }
+
     @Test
     void uncertainUploadOutcomeIsReconciledByTheExistenceProbe() throws Exception {
         AuthSession session = registerUser("Uma Uncertain", "uma.uncertain@example.com");
         createCredential(session, "RN License");
 
-        // Uncertain provider outcome: client gets 502, reservation stays RESERVED.
+        // Uncertain provider outcome: client gets 502, reservation stays RESERVED with a scheduled retry.
         when(uploader.upload(any(), anyMap())).thenThrow(new IOException("read timeout"));
         MockMultipartFile file = new MockMultipartFile(
                 "file", "cert.pdf", "application/pdf", CertificateFixtures.pdf());
@@ -285,13 +329,25 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
                 .filter(a -> a.getUserId().equals(UUID.fromString(session.userId())))
                 .findFirst().orElseThrow();
         assertEquals(AssetStatus.RESERVED, stale.getStatus());
+        assertEquals("cert.pdf", stale.getOriginalFilename(), "Finding 3: filename persisted at reservation");
+        assertNotNull(stale.getNextRetryAt(), "uncertain outcome must schedule a retry");
 
-        // Probe says the asset exists (upload actually succeeded before the crash): adopt to PENDING.
+        // Finding 2: before the retry is due, the sweeper must not select the reservation.
+        assertTrue(assetRepository.findEligibleReservations(
+                OffsetDateTime.now(), OffsetDateTime.now(), PageRequest.of(0, 20)).isEmpty());
+
+        // Retry becomes due; probe says the asset exists (upload succeeded before the crash): adopt.
+        makeProbeEligible(stale);
         com.cloudinary.api.ApiResponse response = Mockito.mock(com.cloudinary.api.ApiResponse.class);
-        when(response.get("secure_url")).thenReturn("https://res.example.test/raw/upload/" + stale.getPublicId() + ".pdf");
+        when(response.get("secure_url")).thenReturn("https://res.example.test/raw/upload/" + stale.getPublicId());
+        when(response.get("format")).thenReturn("pdf");
         org.mockito.Mockito.doReturn(response).when(api).resource(anyString(), anyMap());
-        sweeper.reconcileOne(stale);
-        assertEquals(AssetStatus.PENDING, assetById(stale.getId().toString()).getStatus());
+        sweeper.reconcileBatch();
+        CertificateAsset recovered = assetById(stale.getId().toString());
+        assertEquals(AssetStatus.PENDING, recovered.getStatus());
+        assertEquals("https://res.example.test/raw/upload/" + stale.getPublicId() + ".pdf", recovered.getDeliveryUrl(),
+                "recovered raw asset gets the format suffix for viewing");
+        assertEquals("cert.pdf", recovered.getOriginalFilename());
 
         // Second uncertain upload; probe says the asset does NOT exist: UPLOAD_FAILED.
         org.mockito.Mockito.doThrow(new IOException("reset")).when(uploader).upload(any(), anyMap());
@@ -301,8 +357,65 @@ class CertificateAssetRegistryIntegrationTest extends AbstractControllerIntegrat
         CertificateAsset stale2 = assetRepository.findAll().stream()
                 .filter(a -> a.getStatus() == AssetStatus.RESERVED)
                 .findFirst().orElseThrow();
+        makeProbeEligible(stale2);
         org.mockito.Mockito.doThrow(new NotFound("nope")).when(api).resource(anyString(), anyMap());
-        sweeper.reconcileOne(stale2);
+        sweeper.reconcileBatch();
         assertEquals(AssetStatus.UPLOAD_FAILED, assetById(stale2.getId().toString()).getStatus());
+    }
+
+    @Test
+    void probeFailureBacksOffAndRecoveryThenAttachesWithFullMetadataForViewing() throws Exception {
+        AuthSession session = registerUser("Rita Recovery", "rita.recovery@example.com");
+        String credentialId = createCredential(session, "RN License");
+
+        // Cloudinary success followed by application interruption: upload throws, row stays RESERVED.
+        when(uploader.upload(any(), anyMap())).thenThrow(new IOException("connection reset"));
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "recovered-cert.pdf", "application/pdf", CertificateFixtures.pdf());
+        mockMvc.perform(multipart("/api/uploads/certificates").file(file)
+                        .header("Authorization", bearerToken(session)))
+                .andExpect(status().isBadGateway());
+        CertificateAsset stale = assetRepository.findAll().stream()
+                .filter(a -> a.getUserId().equals(UUID.fromString(session.userId())))
+                .findFirst().orElseThrow();
+        assertEquals(AssetStatus.RESERVED, stale.getStatus());
+
+        // Provider Admin API unavailable: probe fails, bounded retry scheduled, no tight loop.
+        makeProbeEligible(stale);
+        org.mockito.Mockito.doThrow(new RuntimeException("admin api down")).when(api).resource(anyString(), anyMap());
+        sweeper.reconcileBatch();
+        CertificateAsset afterFailure = assetById(stale.getId().toString());
+        assertEquals(AssetStatus.RESERVED, afterFailure.getStatus());
+        assertEquals(1, afterFailure.getCleanupAttempts());
+        assertNotNull(afterFailure.getNextRetryAt());
+        assertTrue(afterFailure.getNextRetryAt().isAfter(OffsetDateTime.now().plusSeconds(30)),
+                "probe failure must back off");
+        assertTrue(assetRepository.findEligibleReservations(
+                OffsetDateTime.now(), OffsetDateTime.now(), PageRequest.of(0, 20)).isEmpty(),
+                "backed-off reservation must not be re-probed immediately");
+
+        // Provider recovers and the probe confirms the asset: adopt with full metadata.
+        makeProbeEligible(afterFailure);
+        com.cloudinary.api.ApiResponse response = Mockito.mock(com.cloudinary.api.ApiResponse.class);
+        when(response.get("secure_url")).thenReturn("https://res.example.test/raw/upload/" + stale.getPublicId());
+        when(response.get("format")).thenReturn("pdf");
+        org.mockito.Mockito.doReturn(response).when(api).resource(anyString(), anyMap());
+        sweeper.reconcileBatch();
+        String assetId = stale.getId().toString();
+        CertificateAsset recovered = assetById(assetId);
+        assertEquals(AssetStatus.PENDING, recovered.getStatus());
+
+        // Recovered asset attaches and supports viewing: CE response carries URL + filename.
+        mockMvc.perform(post("/api/ce-records")
+                        .header("Authorization", bearerToken(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Recovered","provider":"P","hours":1.0,"dateCompleted":"2026-03-01","credentialId":"%s","certificateAssetId":"%s"}
+                                """.formatted(credentialId, assetId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.certificateClassification").value("MANAGED_VERIFIED"))
+                .andExpect(jsonPath("$.certificateUrl").value(recovered.getDeliveryUrl()))
+                .andExpect(jsonPath("$.certificateOriginalFilename").value("recovered-cert.pdf"));
+        assertEquals(AssetStatus.ATTACHED, assetById(assetId).getStatus());
     }
 }

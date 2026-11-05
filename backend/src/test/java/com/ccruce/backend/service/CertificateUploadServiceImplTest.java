@@ -51,7 +51,7 @@ class CertificateUploadServiceImplTest {
     void setUp() throws IOException {
         when(cloudinary.uploader()).thenReturn(uploader);
         when(validator.validate(any())).thenReturn(new byte[]{1, 2, 3});
-        when(assetService.reserve(any(), anyString())).thenAnswer(invocation -> {
+        when(assetService.reserve(any(), anyString(), any())).thenAnswer(invocation -> {
             CertificateAsset asset = new CertificateAsset();
             asset.setId(UUID.randomUUID());
             asset.setUserId(invocation.getArgument(0));
@@ -95,7 +95,7 @@ class CertificateUploadServiceImplTest {
         CertificateUploadResponseDto response = service.uploadCertificate(png());
 
         InOrder order = inOrder(assetService, uploader);
-        order.verify(assetService).reserve(any(), eq("image"));
+        order.verify(assetService).reserve(any(), eq("image"), eq("a.png"));
         order.verify(uploader).upload(any(), anyMap());
         order.verify(assetService).markUploaded(eq(response.assetId()), any(), eq("https://res.example.test/x.png"), eq("a.png"));
         assertNotNull(response.assetId());
@@ -142,7 +142,7 @@ class CertificateUploadServiceImplTest {
 
     @Test
     void databaseFailureAtReservationNeverCallsTheProvider() throws IOException {
-        when(assetService.reserve(any(), anyString())).thenThrow(new RuntimeException("db down"));
+        when(assetService.reserve(any(), anyString(), any())).thenThrow(new RuntimeException("db down"));
 
         assertThrows(UploadFailedException.class, () -> service.uploadCertificate(png()));
 

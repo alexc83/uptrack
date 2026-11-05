@@ -19,8 +19,52 @@ public interface CertificateAssetRepository extends JpaRepository<CertificateAss
 
     List<CertificateAsset> findByUserId(UUID userId);
 
-    @Query("select a from CertificateAsset a where a.status = 'RESERVED' and a.uploadedAt < :cutoff order by a.uploadedAt")
-    List<CertificateAsset> findReservationsOlderThan(@Param("cutoff") OffsetDateTime cutoff, Pageable pageable);
+    /**
+     * Reservations eligible for a reconciliation probe: old enough (grace cutoff), retry time due
+     * (never probe a newly reserved or backed-off asset prematurely), and not currently leased by
+     * another worker (expired leases are re-claimable, which is also the restart-recovery path).
+     */
+    @Query("select a from CertificateAsset a where a.status = 'RESERVED' and a.uploadedAt < :cutoff "
+            + "and (a.nextRetryAt is null or a.nextRetryAt <= :now) "
+            + "and (a.leaseExpiresAt is null or a.leaseExpiresAt <= :now) order by a.uploadedAt")
+    List<CertificateAsset> findEligibleReservations(@Param("cutoff") OffsetDateTime cutoff, @Param("now") OffsetDateTime now, Pageable pageable);
+
+    /** Guarded claim: succeeds only when the reservation is still RESERVED and unleased/lease-expired. */
+    @Modifying
+    @Query("update CertificateAsset a set a.lockedBy = :worker, a.lockedAt = :now, a.leaseExpiresAt = :leaseUntil, "
+            + "a.leaseToken = :token, a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'RESERVED' and (a.leaseExpiresAt is null or a.leaseExpiresAt <= :now)")
+    int claimReservation(@Param("id") UUID id, @Param("worker") String worker, @Param("token") UUID token,
+                         @Param("now") OffsetDateTime now, @Param("leaseUntil") OffsetDateTime leaseUntil);
+
+    /** Fenced adopt: only the lease holder can transition; a stale worker writes 0 rows. */
+    @Modifying
+    @Query("update CertificateAsset a set a.status = 'PENDING', a.deliveryUrl = :deliveryUrl, a.nextRetryAt = null, "
+            + "a.lockedBy = null, a.lockedAt = null, a.leaseExpiresAt = null, a.leaseToken = null, a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'RESERVED' and a.leaseToken = :token and a.leaseExpiresAt > :now")
+    int adoptReservation(@Param("id") UUID id, @Param("token") UUID token, @Param("deliveryUrl") String deliveryUrl, @Param("now") OffsetDateTime now);
+
+    /** Fenced definitive failure after the probe confirmed absence. */
+    @Modifying
+    @Query("update CertificateAsset a set a.status = 'UPLOAD_FAILED', "
+            + "a.lockedBy = null, a.lockedAt = null, a.leaseExpiresAt = null, a.leaseToken = null, a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'RESERVED' and a.leaseToken = :token and a.leaseExpiresAt > :now")
+    int markDefinitivelyFailedFenced(@Param("id") UUID id, @Param("token") UUID token, @Param("now") OffsetDateTime now);
+
+    /** Fenced probe failure: bounded backoff, sanitized failure class, lease released for the next run. */
+    @Modifying
+    @Query("update CertificateAsset a set a.cleanupAttempts = a.cleanupAttempts + 1, a.lastFailureClass = :failureClass, "
+            + "a.nextRetryAt = :nextRetryAt, a.lockedBy = null, a.lockedAt = null, a.leaseExpiresAt = null, "
+            + "a.leaseToken = null, a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'RESERVED' and a.leaseToken = :token and a.leaseExpiresAt > :now")
+    int registerProbeFailure(@Param("id") UUID id, @Param("token") UUID token, @Param("failureClass") String failureClass,
+                             @Param("nextRetryAt") OffsetDateTime nextRetryAt, @Param("now") OffsetDateTime now);
+
+    /** Phase 1 interim deletion: synchronous best-effort destroy already done; record DELETED. */
+    @Modifying
+    @Query("update CertificateAsset a set a.status = 'DELETED', a.ceRecordId = null, a.updatedAt = :now "
+            + "where a.id = :id and a.status = 'PENDING_DELETION'")
+    int markDeleted(@Param("id") UUID id, @Param("now") OffsetDateTime now);
 
     /** Guarded attach: succeeds only for a PENDING asset owned by the user. 0 rows = not attachable. */
     @Modifying
@@ -29,13 +73,7 @@ public interface CertificateAssetRepository extends JpaRepository<CertificateAss
     int attachIfPending(@Param("id") UUID id, @Param("userId") UUID userId,
                         @Param("ceRecordId") UUID ceRecordId, @Param("now") OffsetDateTime now);
 
-    /** Adopt a reservation after the provider existence probe confirmed the asset exists. */
-    @Modifying
-    @Query("update CertificateAsset a set a.status = 'PENDING', a.deliveryUrl = :deliveryUrl, a.updatedAt = :now "
-            + "where a.id = :id and a.status = 'RESERVED'")
-    int adoptReservation(@Param("id") UUID id, @Param("deliveryUrl") String deliveryUrl, @Param("now") OffsetDateTime now);
-
-    /** Definitive provider rejection (4xx): no asset can exist. */
+    /** Definitive provider rejection (4xx) at upload time: no asset can exist. */
     @Modifying
     @Query("update CertificateAsset a set a.status = 'UPLOAD_FAILED', a.updatedAt = :now "
             + "where a.id = :id and a.status = 'RESERVED'")

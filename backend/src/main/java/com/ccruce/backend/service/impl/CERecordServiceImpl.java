@@ -95,12 +95,11 @@ public class CERecordServiceImpl implements CERecordService {
         String previousCertificatePublicId = normalizeCertificateValue(ceRecord.getCertificatePublicId());
         String previousCertificateResourceType = normalizeCertificateValue(ceRecord.getCertificateResourceType());
 
-        // Managed replacement: detach the previous asset FIRST so the unique ce_record_id slot is
-        // free for the new attach in the same transaction. Durable cleanup (Phase 2) deletes it;
-        // the provider is never called inside this transaction.
+        // Managed replacement: detach and destroy the previous asset FIRST so the unique
+        // ce_record_id slot is free for the new attach in the same transaction.
         if (requestDto.certificateAssetId() != null
                 && previousAssetId != null && !previousAssetId.equals(requestDto.certificateAssetId())) {
-            certificateAssetService.markPendingDeletion(previousAssetId, ceRecord.getId());
+            destroyManagedAsset(previousAssetId, ceRecord, user);
         }
 
         applyCertificateMetadata(ceRecord, requestDto, user);
@@ -109,7 +108,7 @@ public class CERecordServiceImpl implements CERecordService {
 
         if (requestDto.certificateAssetId() == null && previousAssetId != null) {
             // Managed asset removed without a replacement.
-            certificateAssetService.markPendingDeletion(previousAssetId, ceRecord.getId());
+            destroyManagedAsset(previousAssetId, ceRecord, user);
         } else if (previousAssetId == null) {
             // Legacy path only when the record was never managed: unchanged synchronous cleanup.
             deletePriorCertificateIfReplacedOrRemoved(
@@ -128,13 +127,28 @@ public class CERecordServiceImpl implements CERecordService {
         CERecord ceRecord = getExistingCERecord(id);
         ensureCERecordBelongsToUser(ceRecord, getAuthenticatedUser());
         if (ceRecord.getCertificateAssetId() != null) {
-            // Managed asset: mark PENDING_DELETION in this transaction; the Phase 2 durable worker
-            // performs the provider deletion with fenced leases and retries.
-            certificateAssetService.markPendingDeletion(ceRecord.getCertificateAssetId(), ceRecord.getId());
+            destroyManagedAsset(ceRecord.getCertificateAssetId(), ceRecord, getAuthenticatedUser());
         } else {
             deleteStoredCertificateIfPresent(ceRecord);
         }
         ceRecordRepository.delete(ceRecord);
+    }
+
+    /**
+     * Phase 1 interim deletion for managed assets (review Finding 1): the pending deletion is recorded
+     * in PostgreSQL BEFORE the provider call (the durable architecture), then the same synchronous
+     * destroy the legacy path performs is attempted. On success the registry row becomes DELETED in the
+     * same transaction; on provider failure the 502 rolls the whole transaction back, leaving the asset
+     * ATTACHED and the CE record intact — identical user-visible semantics to legacy certificates, so no
+     * asset is retained indefinitely while Phase 2 is pending. Any crash-window stragglers stay
+     * PENDING_DELETION and remain individually recoverable by the Phase 2 worker.
+     */
+    private void destroyManagedAsset(UUID assetId, CERecord ceRecord, User user) {
+        CertificateAsset asset = certificateAssetService.findOwnedAsset(assetId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Certificate asset not found for id: " + assetId));
+        certificateAssetService.markPendingDeletion(assetId, ceRecord.getId());
+        certificateUploadService.deleteCertificate(asset.getPublicId(), asset.getResourceType());
+        certificateAssetService.markDeleted(assetId);
     }
 
     /**
