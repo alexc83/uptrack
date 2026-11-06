@@ -48,6 +48,27 @@ it('offers the public /roadmap route as a secondary link below the primary navig
   expect(['Dashboard', 'Credentials', 'CE Records'].map(name => screen.getByRole('link', { name }))).toHaveLength(3);
   expect(screen.getByRole('list')).not.toContainElement(roadmap);
 });
+it('offers Help Center beside Roadmap in the secondary navigation, outside the primary list', async () => {
+  renderWithProviders(null, { routes, path: '/dashboard' });
+  const help = await screen.findByRole('link', { name: 'Help Center' });
+  expect(help).toHaveAttribute('href', '/help');
+  expect(screen.getByRole('link', { name: 'Roadmap' })).toHaveAttribute('href', '/roadmap');
+  expect(screen.getByRole('list')).not.toContainElement(help);
+  expect(help).not.toHaveAttribute('aria-current');
+});
+it('keeps Help Center reachable with an accessible name when the sidebar is collapsed', async () => {
+  localStorage.setItem('uptrack-sidebar-collapsed', 'true');
+  renderWithProviders(null, { routes, path: '/dashboard' });
+  const help = await screen.findByRole('link', { name: 'Help Center' });
+  expect(help).toHaveAttribute('href', '/help');
+  expect(help).not.toHaveTextContent('Help Center');
+});
+it('offers Help Center inside the mobile navigation drawer', async () => {
+  installMatchMedia(375);
+  const { user } = renderWithProviders(null, { routes, path: '/dashboard' });
+  await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+  expect(await screen.findByRole('link', { name: 'Help Center' })).toHaveAttribute('href', '/help');
+});
 it('offers the public /roadmap route inside the mobile navigation drawer', async () => {
   installMatchMedia(375);
   const { user } = renderWithProviders(null, { routes, path: '/dashboard' });

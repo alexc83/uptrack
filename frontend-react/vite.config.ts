@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5173,
+      // The Help Center renders the approved Markdown in ../context/p02-help-center.
+      fs: { allow: ['..'] },
       proxy: {
         '/api': {
           target: proxyTarget,

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { routes } from '../../app/router';
 import { renderWithProviders } from '../../test/render-with-providers';
@@ -60,6 +60,14 @@ describe('RoadmapPage', () => {
     expect(screen.getByRole('link', { name: 'Back to UpTrack' })).toHaveAttribute('href', '/');
     expect(screen.queryByRole('link', { name: 'Roadmap' })).not.toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Roadmap' })).toBeVisible();
+  });
+
+  it('links to the Help Center from the footer without a self-referential Roadmap link', async () => {
+    renderWithProviders(null, { routes, path: '/roadmap' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Product Roadmap' })).toBeVisible();
+    const footer = screen.getByRole('navigation', { name: 'Public pages' });
+    expect(within(footer).getByRole('link', { name: 'Help Center' })).toHaveAttribute('href', '/help');
+    expect(within(footer).queryByRole('link', { name: 'Roadmap' })).not.toBeInTheDocument();
   });
 
   it('renders /roadmap for an authenticated session without redirecting', async () => {
