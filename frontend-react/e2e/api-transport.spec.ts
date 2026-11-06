@@ -115,7 +115,7 @@ test('HTTP errors preserve status, flat messages and non-JSON details in the bro
     }
     return outcomes;
   }, clientModule);
-  expect(result).toEqual([400, 401, 403, 404, 409, 429, 500, 502].map(status => ({ kind: 'http', status, message: status === 502 ? 'Something went wrong. Please try again.' : 'name: must not be blank; hours: must be greater than 0', rawHtml: status === 502 })));
+  expect(result).toEqual([400, 401, 403, 404, 409, 429, 500, 502].map(status => ({ kind: 'http', status, message: status === 502 ? "UpTrack is temporarily unavailable. We're having trouble connecting to the server. This may happen during a system update. Please try again shortly." : 'name: must not be blank; hours: must be greater than 0', rawHtml: status === 502 })));
 });
 
 test('native pre-abort and in-flight abort preserve cancellation instead of network errors', async ({ page }) => {
