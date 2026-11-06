@@ -12,6 +12,8 @@ describe('Help Center routes', () => {
     const nav = screen.getByRole('navigation', { name: 'Help Center categories' });
     for (const article of helpArticles) expect(within(nav).getByRole('link', { name: article.title })).toHaveAttribute('href', helpArticlePath(article));
     expect(document.title).toBe('UpTrack Help Center — UpTrack');
+    expect(screen.queryByRole('navigation', { name: 'Public pages' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Roadmap' })).not.toBeInTheDocument();
   });
 
   it('renders an article with breadcrumbs, on-this-page, related links, title and description', async () => {
@@ -66,11 +68,11 @@ describe('Help Center routes', () => {
     expect(list.length).toBeGreaterThan(2);
     await user.keyboard('{ArrowDown}');
     expect(box).toHaveAttribute('aria-activedescendant', list[1]?.id);
-    const target = list[1]?.textContent ?? '';
+    const target = list[1]?.querySelectorAll('span')[1]?.textContent ?? '';
+    expect(target).not.toBe('');
     await user.keyboard('{Enter}');
     await waitFor(() => expect(router.state.location.pathname).not.toBe('/help'));
-    const heading = await screen.findByRole('heading', { level: 1 });
-    expect(target).toContain(heading.textContent ?? 'x');
+    expect(await screen.findByRole('heading', { level: 1, name: target })).toBeVisible();
     expect(screen.getByRole('combobox')).toHaveValue('');
   });
 

@@ -95,6 +95,6 @@ export function HelpLayout() {
         <Outlet />
       </div>
     </div>
-    <LandingFooter showHelpLink={false} />
+    <LandingFooter showRoadmapLink={false} showHelpLink={false} />
   </div>;
 }
