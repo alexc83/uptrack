@@ -1,6 +1,7 @@
 import { Button } from 'flowbite-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ApiError } from '../../core/api/api-error';
 import { DrawerShell } from '../../shared/ui/drawer-shell';
 import { StateBlock } from '../../shared/ui/state-block';
 import { StatusBadge } from '../../shared/ui/status-badge';
@@ -21,10 +22,17 @@ export function CredentialDetailDrawer({ id, onClose }: { id: string; onClose: (
   useEffect(() => { fallbackFocus.current = document.getElementById('main-content') ?? document.querySelector('h1'); }, []);
   const close = () => { if (!locked.current && !mutation.isBusy() && !deleting) onClose(); };
   const credential = query.data;
+  const isNotFound = query.error instanceof ApiError ? query.error.status === 404 : (query.error as { status?: number } | null)?.status === 404;
   const view = credential ? credentialView(credential) : null;
   const records = credential ? [...credential.ceRecords].sort((a, b) => b.dateCompleted.localeCompare(a.dateCompleted)) : [];
   return <DrawerShell open title={editing ? 'Edit credential' : 'Credential details'} onClose={close} fallbackFocusRef={fallbackFocus}>
-    {!credential && (query.isError ? <StateBlock kind="error" title="Credential unavailable" message={query.error.message} action={{ label: 'Retry', onClick: () => void query.refetch() }} /> : <StateBlock kind="loading" message="Loading credential details…" />)}
+    {!credential && (query.isError ? (
+      isNotFound ? (
+        <StateBlock kind="error" title="Credential unavailable" message="This credential could not be found or is unavailable." action={{ label: 'Close', onClick: close }} />
+      ) : (
+        <StateBlock kind="error" title="Credential unavailable" message={query.error.message} action={{ label: 'Retry', onClick: () => void query.refetch() }} />
+      )
+    ) : <StateBlock kind="loading" message="Loading credential details…" />)}
     {credential && view && (editing ? <CredentialForm editing initialValue={credential} pending={mutation.pending} error={mutation.error} onCancel={() => { mutation.clearError(); setEditing(false); }} onSubmit={async request => { locked.current = true; try { if (await mutation.run({ kind: 'edit', id, request })) setEditing(false); } finally { locked.current = false; } }} /> : <div className="space-y-5 break-words">
       {query.isRefetchError && <StateBlock kind="error" title="Credential may be out of date" message="We could not refresh this credential. Showing the last data loaded." action={{ label: 'Retry', onClick: () => void query.refetch() }} />}
       <header><h3 className="text-2xl font-bold">{credential.name}</h3><p className="my-2 text-ut-muted">{credential.issuingOrganization}</p><div className="flex flex-wrap items-center gap-3"><span>{view.typeLabel}</span><StatusBadge status={credential.status} label={view.statusLabel} /></div></header>

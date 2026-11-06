@@ -141,7 +141,7 @@ test('initial loading/error/retry, background failure and empty-account states',
 });
 
 test('deep links consume only credentialId, retain hash/query, repeat and handle missing credentials', async ({ page }) => {
-  const api = await credentialApiFixture(page);
+  await credentialApiFixture(page);
   await page.goto(`/app/credentials?keep=yes&credentialId=${credential.id}#top`);
   const drawer = page.getByRole('dialog', { name: 'Credential details' });
   await expect(drawer.getByText('Fixture record', { exact: true })).toBeVisible();
@@ -149,8 +149,24 @@ test('deep links consume only credentialId, retain hash/query, repeat and handle
   await drawer.getByRole('button', { name: 'Close drawer' }).click();
   await page.goto('/credentials?keep=yes&credentialId=missing#top');
   await expect(drawer.getByText('Credential unavailable')).toBeVisible();
+  await expect(drawer.getByText('This credential could not be found or is unavailable.')).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Retry' })).toHaveCount(0);
   await expect(page).toHaveURL(/\/credentials\?keep=yes#top$/);
-  api.credentials.push({ ...credential, id: 'missing' });
+  await drawer.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(drawer).toHaveCount(0);
+});
+
+test('transient credential detail error displays Retry action and recovers', async ({ page }) => {
+  const api = await credentialApiFixture(page);
+  api.detailStatus = 500;
+  await page.goto('/credentials');
+  await page.getByRole('button', { name: credential.name, exact: true }).click();
+  const drawer = page.getByRole('dialog', { name: 'Credential details' });
+  await expect(drawer.getByText('Credential unavailable')).toBeVisible();
+  await expect(drawer.getByText('Fixture operation failed')).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Retry' })).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0);
+  api.detailStatus = 200;
   await drawer.getByRole('button', { name: 'Retry' }).click();
   await expect(drawer.getByText('Fixture record', { exact: true })).toBeVisible();
 });

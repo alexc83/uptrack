@@ -90,10 +90,37 @@ describe('credential list and queries', () => {
     vi.mocked(credentialsApi.get).mockRejectedValue(new ApiError('http', 404, 'Credential not found'));
     await act(async () => { await router.navigate('/credentials?other=kept&credentialId=missing#top'); });
     expect(await screen.findByText('Credential unavailable')).toBeVisible();
+    expect(screen.getByText('This credential could not be found or is unavailable.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
     expect(router.state.location.search).toBe('?other=kept');
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog', { name: 'Credential details' })).not.toBeInTheDocument();
+  });
+  it('renders neutral non-disclosing message and Close action for foreign credential 404', async () => {
+    vi.mocked(credentialsApi.list).mockResolvedValue([]);
+    vi.mocked(credentialsApi.get).mockRejectedValue(new ApiError('http', 404, 'Credential not found for id: foreign-uuid'));
+    const { user } = open('/credentials?credentialId=foreign-uuid');
+    const drawer = await screen.findByRole('dialog', { name: 'Credential details' });
+    expect(await within(drawer).findByText('Credential unavailable')).toBeVisible();
+    expect(within(drawer).getByText('This credential could not be found or is unavailable.')).toBeVisible();
+    expect(within(drawer).queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+    await user.click(within(drawer).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog', { name: 'Credential details' })).not.toBeInTheDocument();
+  });
+  it('displays retry action and recovers for transient errors on credential detail', async () => {
+    vi.mocked(credentialsApi.list).mockResolvedValue([credential]);
+    vi.mocked(credentialsApi.get).mockRejectedValueOnce(new ApiError('http', 500, 'Server error'));
+    const { user } = open();
+    await screen.findByRole('region', { name: 'Credential list' });
+    await user.click(screen.getByRole('button', { name: credential.name }));
+    const drawer = await screen.findByRole('dialog', { name: 'Credential details' });
+    expect(await within(drawer).findByText('Credential unavailable')).toBeVisible();
+    expect(within(drawer).getByText('Server error')).toBeVisible();
+    expect(within(drawer).getByRole('button', { name: 'Retry' })).toBeVisible();
+    expect(within(drawer).queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
     vi.mocked(credentialsApi.get).mockResolvedValue(credential);
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByText('Fixture record')).toBeVisible();
+    await user.click(within(drawer).getByRole('button', { name: 'Retry' }));
+    expect(await within(drawer).findByText('Fixture record')).toBeVisible();
   });
 });
 
