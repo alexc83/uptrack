@@ -12,7 +12,7 @@ import { createFakeAuthApi, testToken } from '../../test/auth-test-utils';
 import { deferred, errorBody, user } from '../../test/fixtures/api-fixtures';
 import type { UserResponse } from '../../lib/dto/auth';
 
-const placeholder = 'Migration preview — feature not implemented.';
+const placeholder = 'Preview workspace for shared UI components and design patterns.';
 const search = (router: { state: { location: { search: string } } }) => new URLSearchParams(router.state.location.search);
 
 describe('RequireAuth', () => {

@@ -10,7 +10,7 @@ interface AccountMenuProps {
 }
 export function AccountMenu({ collapsed, identity, onLogout, onNavigate }: AccountMenuProps) {
   const location = useLocation();
-  const name = identity?.name ?? 'Migration preview';
+  const name = identity?.name ?? 'Preview account';
   const initials = identity ? name.split(' ').filter(Boolean).map(part => part[0]).join('').slice(0, 3).toUpperCase() : 'UT';
   return <div className="shrink-0 border-t border-ut-border p-4">
     <Dropdown placement="top-start" arrowIcon={false} renderTrigger={() => <button type="button" aria-label="Open account menu" className="flex min-h-11 w-full items-center gap-3 rounded-xl p-1 text-left hover:bg-ut-hover">
@@ -19,7 +19,7 @@ export function AccountMenu({ collapsed, identity, onLogout, onNavigate }: Accou
     </button>}>
       <DropdownHeader><span className="text-sm">{identity ? name : 'Preview account — not signed in'}</span></DropdownHeader>
       <DropdownItem as={Link} to="/settings" state={{ from: location.pathname + location.search }} icon={Settings} onClick={onNavigate}>Settings</DropdownItem>
-      <DropdownItem icon={LogOut} disabled={!onLogout} onClick={onLogout}>{onLogout ? 'Log out' : 'Log out — available in M06'}</DropdownItem>
+      <DropdownItem icon={LogOut} disabled={!onLogout} onClick={onLogout}>Log out</DropdownItem>
     </Dropdown>
   </div>;
 }

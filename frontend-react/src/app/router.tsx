@@ -31,7 +31,7 @@ export const routes: RouteObject[] = [{
   })),
   {
     element: <RequireAuth />,
-    hydrateFallbackElement: <p role="status">Loading migration preview</p>,
+    hydrateFallbackElement: <p role="status">Loading UpTrack</p>,
     children: [
       {
         element: <AppShell />,

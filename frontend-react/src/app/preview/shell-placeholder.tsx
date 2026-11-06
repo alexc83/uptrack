@@ -9,7 +9,7 @@ const pages: Record<string, { title: string; milestone: string }> = {
 };
 export function ShellPlaceholder() {
   const { pathname } = useLocation();
-  const page = pages[pathname] ?? { title: 'Migration preview', milestone: 'a later milestone' };
+  const page = pages[pathname] ?? { title: 'Component preview', milestone: 'preview' };
   useEffect(() => { document.title = `${page.title} — UpTrack`; }, [page.title]);
-  return <PageContainer><PageHeader eyebrow="Migration preview" title={page.title} description="Migration preview — feature not implemented." /><p className="rounded-xl border border-ut-border bg-ut-surface p-4 text-sm text-ut-muted">This page is reserved for {page.milestone}. Authentication will be added in M06. No account or business data is loaded.</p>{pathname === '/preview' && SharedUiPreview && <Suspense fallback={<p role="status">Loading presentation preview</p>}><SharedUiPreview /></Suspense>}</PageContainer>;
+  return <PageContainer><PageHeader eyebrow="Component preview" title={page.title} description="Preview workspace for shared UI components and design patterns." /><p className="rounded-xl border border-ut-border bg-ut-surface p-4 text-sm text-ut-muted">This development workspace demonstrates shared UI components and interaction patterns. No account or business data is loaded.</p>{pathname === '/preview' && SharedUiPreview && <Suspense fallback={<p role="status">Loading presentation preview</p>}><SharedUiPreview /></Suspense>}</PageContainer>;
 }

@@ -16,7 +16,7 @@ it('renders the M12 Settings page at /settings', async () => {
 });
 it('renders the labelled shell placeholder without consuming query strings: /preview', async () => {
   const { router } = renderWithProviders(null, { routes, path: '/preview', session: 'authenticated' });
-  expect(await screen.findByText('Migration preview — feature not implemented.')).toBeVisible();
+  expect(await screen.findByText('Preview workspace for shared UI components and design patterns.')).toBeVisible();
   expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
   expect(router.state.location.search).toBe('');
 });
