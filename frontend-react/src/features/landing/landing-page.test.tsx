@@ -30,6 +30,9 @@ describe('LandingPage', () => {
     expect(screen.getByText('Designed for healthcare professionals, powered by React and Spring Boot')).toBeVisible();
     expect(screen.getByText('© 2026 UpTrack')).toBeVisible();
     expect(screen.getByRole('link', { name: 'Roadmap' })).toHaveAttribute('href', '/roadmap');
+    expect(screen.getByRole('link', { name: 'Help Center' })).toHaveAttribute('href', '/help');
+    expect(within(screen.getByRole('navigation', { name: 'Public pages' })).getAllByRole('link')).toHaveLength(2);
+    expect(screen.getByRole('navigation', { name: 'Authentication' }).querySelector('a')).toBeNull();
     expect(document.title).toBe('UpTrack — Credential & CE Tracking');
   });
 

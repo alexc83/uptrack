@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { RoadmapHeader } from './roadmap-header';
 import { LandingFooter } from '../landing/landing-footer';
-import { roadmapAbout, roadmapIntro, roadmapSections, type RoadmapEntry, type RoadmapSection, type RoadmapSectionKey } from './roadmap-content';
+import { roadmapAbout, roadmapIntro, visibleRoadmapSections, type RoadmapEntry, type RoadmapSection, type RoadmapSectionKey } from './roadmap-content';
 
 const sectionAccents: Record<RoadmapSectionKey, { chip: string; rule: string }> = {
   now: { chip: 'bg-[var(--ut-roadmap-now-bg)] text-[var(--ut-roadmap-now)]', rule: 'border-t-[var(--ut-roadmap-now)]' },
@@ -126,7 +126,7 @@ export function RoadmapPage() {
           </div>
         </section>
 
-        {roadmapSections.map((section) => (
+        {visibleRoadmapSections().map((section) => (
           <RoadmapSectionView key={section.key} section={section} />
         ))}
 

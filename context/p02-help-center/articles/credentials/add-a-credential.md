@@ -5,7 +5,7 @@ You can add licenses and certifications to track their expiration dates and rela
 ## Add a credential
 
 1. Open **Credentials** and select **Add Credential**.
-2. Enter the **Credential Name**.
+2. Enter the **Credential name**.
 3. Select a credential type: **License** or **Certification**.
 4. Enter the **Expiration Date**.
 5. Enter the **Issuing Organization**.

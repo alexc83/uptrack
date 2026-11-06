@@ -2,6 +2,10 @@
 
 <!-- Link the canonical issue. Use Closes #N only when merge fulfills all acceptance criteria; otherwise use Related to #N. -->
 
+## GitHub tracking
+
+<!-- Issue and PR are on the Project with Priority; Status per context/development-workflow.md#tracking-rules-all-agents (In Progress while a draft, Review when ready). -->
+
 ## Specification
 
 <!-- Link when applicable; small approved issues may serve as the specification. -->

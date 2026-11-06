@@ -13,6 +13,15 @@ export const routes: RouteObject[] = [
     path: '/roadmap',
     lazy: () => import('../features/roadmap/roadmap-page').then(module => ({ Component: module.RoadmapPage })),
   },
+  {
+    path: '/help',
+    lazy: () => import('../features/help/help-layout').then(module => ({ Component: module.HelpLayout })),
+    children: [
+      { index: true, lazy: () => import('../features/help/help-pages').then(module => ({ Component: module.HelpHomePage })) },
+      { path: ':category', lazy: () => import('../features/help/help-pages').then(module => ({ Component: module.HelpCategoryPage })) },
+      { path: ':category/:slug', lazy: () => import('../features/help/help-pages').then(module => ({ Component: module.HelpArticlePage })) },
+    ],
+  },
   ...['app', 'app/dashboard', 'app/credentials', 'app/ce-records'].map(path => ({
     path: `/${path}`,
     element: <RedirectPreservingSearch to={path === 'app' ? '/dashboard' : `/${path.slice(4)}`} />,

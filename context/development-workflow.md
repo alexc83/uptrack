@@ -14,13 +14,13 @@ Reuse `bug`, `enhancement`, `documentation`, `dependencies`; add `security`, `ma
 
 ## Work sequence
 
-1. Search existing issues and PRs, then select or create one canonical issue.
+1. Search existing issues, Project items and open PRs (see [Tracking rules](#tracking-rules-all-agents)), then reuse or create one canonical issue.
 2. Record outcome, scope/exclusions, acceptance and source evidence. Small issues may serve as specs; significant changes require a linked READY spec.
 3. Obtain owner authorization; status and labels do not authorize work.
 4. Check the working tree and main; create an issue-linked branch, for example `fix/123-certificate-cleanup`.
 5. Set In Progress, implement and test under [the testing policy](testing-workflow.md).
 6. With owner authorization, open a PR linking the issue and spec. Summarize changes, exact checks, risks, limitations and remaining decisions.
-7. Set Review and verify required CI: `backend`, `backend-postgres`, `frontend`, `e2e-chromium`. Firefox/WebKit remain informational. Do not bypass protections.
+7. When the PR is ready for acceptance (a draft or unfinished PR stays In Progress), set Review and verify required CI: `backend`, `backend-postgres`, `frontend`, `e2e-chromium`. Firefox/WebKit remain informational. Do not bypass protections.
 8. Obtain acceptance and merge authorization. Commit, push, PR creation and branch deletion also require authorization under [AGENTS.md](../AGENTS.md).
 9. Merge by merge commit only; verify the issue and Project state. Use closing keywords only when all acceptance criteria will be satisfied. Partial work uses `Related to #N`; keep the issue open.
 10. Record unresolved work in linked follow-up issues and leave a handoff with issue/PR, branch, approval/spec status, checks, blockers and next action. If GitHub is unavailable, provide ready-to-post text and state that it was not posted.
@@ -32,12 +32,37 @@ At each stage, an agent performing authorized work updates GitHub in the same se
 | Stage | Required tracking update |
 |---|---|
 | Work begins | Link the issue in the branch/PR and set Project Status to In Progress. |
-| PR created | The PR body links the issue (`Closes #N` or `Related to #N`); confirm the PR is in the Project; set the issue to Review; comment on the issue with PR link and verification summary. |
+| PR opened | The PR body links the issue (`Closes #N` or `Related to #N`); add the PR to the Project with Priority. Draft or still being developed: issue and PR stay In Progress. Ready for acceptance: set both to Review and comment on the issue with the PR link and verification summary. Re-read the board to confirm. |
 | CI verification | Report required-check results (`backend`, `backend-postgres`, `frontend`, `e2e-chromium`) in the PR, including failures and pending checks. |
 | Authorized merge | Verify the PR is merged, the issue is closed (when `Closes #N`), and the issue and PR Project items are Done. Report any that did not transition. |
 | Blocked GitHub operation | State the exact blocked operation, the error or missing permission, and the ready-to-post text. Never skip a tracking update silently. |
 
 Use existing native automations (auto-add, Item added → Backlog, Item closed → Done, PR merged → Done). Do not add Actions, bots, tokens or third-party services without separate approval. Native close/merge transitions are still unverified, so check them after each authorized merge and record the result in the PR.
+
+## Tracking rules (all agents)
+
+This is the canonical statement of UpTrack's tracking process; `AGENTS.md`, client adapters and templates refer here. It applies to every feature, bug fix, security issue, documentation change, infrastructure task and technical improvement. Keep it lightweight: reliable tracking, not bureaucracy. Use only the existing Status and Priority values.
+
+**Before work**
+1. Identify the work, then search issues, Project items and open PRs for one that already covers it. Reuse it if its scope fits; update its description rather than opening another.
+2. Create a new issue only for a genuinely separate deliverable (independent acceptance criteria, owner or release schedule). State in the issue why it is separate.
+3. Confirm the issue is on the UpTrack Project with Priority (P2 unless there is a reason) and Status. Set In Progress when implementation begins; reference the issue in the branch and PR.
+4. No planned work starts without a tracking issue. The only exception is emergency work (active outage or security exposure); record it in an issue retrospectively as soon as practical.
+
+**One deliverable, one issue, one implementation PR.** Planning, documentation, implementation, testing and deployment are not separate issues by default; use checklists inside the issue. Incidental bugs found while working are fixed within the issue when reasonably in scope; create a new issue only when it is a separate deliverable. A PR is a review artifact and needs no extra issue.
+
+**During work.** Keep the issue body and acceptance criteria accurate. Record material scope changes, decisions, blockers, deferrals and splits in GitHub; do not post status-only comments. Keep In Progress while work is active.
+
+**At merge.** After the applicable authorization and passing required CI, merge, verify the PR is merged, confirm the issue closed (or close it once acceptance is met), set issue and PR to Done and re-read the board. Done is never set because code exists, a PR is open, or work awaits release when release is part of acceptance.
+
+**Roadmap and public docs.** Change the public roadmap or user-facing documentation status only when the feature is complete and, if release is part of acceptance, released.
+
+**End-of-task tracking report (required in every agent's completion message)**
+- Tracking issue and PR (numbers and links); Priority; current Project Status of each, verified by re-reading the board.
+- CI/test results (PASS/FAIL/NOT RUN/PENDING OWNER).
+- What the work now awaits: development, review, merge or deployment.
+- Any new issue created, and why.
+- Any synchronization failure or permission limitation, with ready-to-post text. Never claim tracking is synchronized without verifying it.
 
 ## Initiatives and evidence
 
