@@ -1,6 +1,6 @@
-import { expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApiClient } from './api-fetch';
-import { ApiError, fallbackMessage, networkMessage } from './api-error';
+import { ApiError, fallbackMessage, isServiceUnavailable, networkMessage, timeoutMessage } from './api-error';
 import { deferred, errorBody } from '../../test/fixtures/api-fixtures';
 
 it('sends JSON with owned headers and passes the original signal', async () => {
@@ -51,7 +51,43 @@ it.each([400, 401, 403, 404, 409, 429, 500, 502])('preserves HTTP status %s, err
   await expect(createApiClient({ fetch: vi.fn<typeof fetch>().mockResolvedValue(Response.json(details, { status })) })('/example')).rejects.toMatchObject({ kind: 'http', status, message: details.message, details });
 });
 it.each(['plain proxy error', '<html>Error</html>', '{invalid', '', 'null', '{"message":false}', '{"message":"   "}'])('preserves status for nonstandard error body %j', async text => {
-  await expect(createApiClient({ fetch: vi.fn<typeof fetch>().mockResolvedValue(new Response(text, { status: 502 })) })('/example')).rejects.toMatchObject({ kind: 'http', status: 502, message: fallbackMessage });
+  await expect(createApiClient({ fetch: vi.fn<typeof fetch>().mockResolvedValue(new Response(text, { status: 500 })) })('/example')).rejects.toMatchObject({ kind: 'http', status: 500, message: fallbackMessage });
+});
+it.each([502, 503, 504])('reports a proxy/platform %s (non-JSON body) as the service-unavailable message', async status => {
+  const error = await createApiClient({ fetch: vi.fn<typeof fetch>().mockResolvedValue(new Response('<html>Bad gateway</html>', { status })) })('/example').catch((e: unknown) => e);
+  expect(error).toMatchObject({ kind: 'http', status, message: networkMessage });
+  expect(isServiceUnavailable(error)).toBe(true);
+});
+it('keeps an UpTrack JSON 503 message and does not treat it as an outage', async () => {
+  const error = await createApiClient({ fetch: vi.fn<typeof fetch>().mockResolvedValue(Response.json({ message: 'Too many uploads. Try again.' }, { status: 503 })) })('/example').catch((e: unknown) => e);
+  expect(error).toMatchObject({ status: 503, message: 'Too many uploads. Try again.' });
+  expect(isServiceUnavailable(error)).toBe(false);
+});
+describe('timeoutMs', () => {
+  afterEach(() => vi.useRealTimers());
+  it('fails with a timeout error when the response does not arrive and clears the timer afterwards', async () => {
+    vi.useFakeTimers();
+    const fetcher = vi.fn<typeof fetch>((_url, init) => new Promise((_resolve, reject) => { init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))); }));
+    const pending = createApiClient({ fetch: fetcher })('/example', { timeoutMs: 1000 }).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(1000);
+    const error = await pending;
+    expect(error).toMatchObject({ kind: 'timeout', message: timeoutMessage });
+    expect(isServiceUnavailable(error)).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('does not time out a request that completes in time and leaves no timer behind', async () => {
+    vi.useFakeTimers();
+    const result = await createApiClient({ fetch: vi.fn<typeof fetch>().mockResolvedValue(Response.json({ ok: 1 })) })<{ ok: number }>('/example', { timeoutMs: 1000 });
+    expect(result).toEqual({ ok: 1 });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('lets a caller abort win over the timer and surfaces an AbortError, not a timeout', async () => {
+    const controller = new AbortController();
+    const fetcher = vi.fn<typeof fetch>((_url, init) => new Promise((_resolve, reject) => { init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))); }));
+    const pending = createApiClient({ fetch: fetcher })('/example', { timeoutMs: 60_000, signal: controller.signal }).catch((e: unknown) => e);
+    controller.abort();
+    expect(await pending).toMatchObject({ name: 'AbortError' });
+  });
 });
 it('classifies network failures without retaining request material', async () => {
   const fetcher = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('raw error with private request material'));

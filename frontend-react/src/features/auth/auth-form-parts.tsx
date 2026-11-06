@@ -33,6 +33,7 @@ export function AuthTextField({ label, type = 'text', autoComplete, registration
   );
 }
 
-export function AuthSubmit({ pending, children, pendingLabel }: { pending: boolean; children: ReactNode; pendingLabel: string }) {
-  return <Button type="submit" color="blue" className="min-h-11 w-full" disabled={pending} aria-busy={pending}>{pending ? pendingLabel : children}</Button>;
+/** `retry` relabels the button after a connection failure; it still only submits when the user presses it. */
+export function AuthSubmit({ pending, children, pendingLabel, retry = false }: { pending: boolean; children: ReactNode; pendingLabel: string; retry?: boolean }) {
+  return <Button type="submit" color="blue" className="min-h-11 w-full" disabled={pending} aria-busy={pending}>{pending ? pendingLabel : retry ? 'Try again' : children}</Button>;
 }

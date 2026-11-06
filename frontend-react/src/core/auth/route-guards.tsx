@@ -1,18 +1,29 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { StateBlock } from '../../shared/ui/state-block';
+import { networkMessage, slowRequestMessage } from '../api/api-error';
+import { useBackendRecovery } from '../availability/use-backend-recovery';
+import { useSlowNotice } from '../availability/use-slow-notice';
 import { useSession } from './session-context';
 import { buildAuthRedirect, DEFAULT_AUTHENTICATED_PATH } from './return-to';
 import type { ReactNode } from 'react';
 
 function SessionPending() {
-  return <main className="mx-auto max-w-3xl p-6" aria-label="Checking your session"><StateBlock kind="loading" message="Checking your session…" /></main>;
+  const slow = useSlowNotice(true);
+  return <main className="mx-auto max-w-3xl p-6" aria-label="Checking your session">
+    <StateBlock kind="loading" message="Checking your session…" />
+    <p role="status" aria-live="polite" className="mt-3 text-sm text-ut-muted empty:hidden">{slow ? slowRequestMessage : null}</p>
+  </main>;
 }
 
 function SessionUnavailable() {
   const { retry, logout } = useSession();
+  // Observation only: once the backend reports ready, re-verify the stored token (never credentials). The sign-in is kept throughout.
+  const recovered = useBackendRecovery(true);
+  useEffect(() => { if (recovered) void retry(); }, [recovered, retry]);
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-6">
-      <StateBlock kind="error" title="We couldn't verify your session" message="The server could not be reached or did not answer. Your sign-in is kept; try again, or sign out." action={{ label: 'Try again', onClick: () => void retry() }} />
+      <StateBlock kind="error" title="We couldn't verify your session" message={`${networkMessage} Your sign-in is kept.`} action={{ label: 'Try again', onClick: () => void retry() }} />
       <button type="button" className="min-h-11 rounded-lg px-3 text-ut-primary underline" onClick={logout}>Sign out</button>
     </main>
   );

@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { registerApiAuth } from '../api/api-auth';
-import { ApiError, fallbackMessage, isAbortError } from '../api/api-error';
+import { ApiError, fallbackMessage, isAbortError, isServiceUnavailable } from '../api/api-error';
 import { authApi as defaultAuthApi } from '../api/auth-api';
 import { queryKeys } from '../query/query-keys';
 import type { AuthLoginRequest, AuthRegisterRequest, AuthResponse, UserResponse } from '../../lib/dto/auth';
@@ -46,7 +46,8 @@ export interface SessionSnapshot {
   readonly epoch: number;
 }
 
-export type AuthOutcome = { ok: true } | { ok: false; superseded: true } | { ok: false; superseded?: false; message: string };
+/** `unavailable` marks a failure where the service could not answer (no connection, timeout, gateway error): the credentials were not judged. */
+export type AuthOutcome = { ok: true } | { ok: false; superseded: true } | { ok: false; superseded?: false; message: string; unavailable?: boolean };
 
 export interface SessionGuard {
   /** True while the session that existed when the guard was captured is still the active, authenticated one. */
@@ -230,6 +231,7 @@ export class SessionStore {
       return { ok: true };
     } catch (error) {
       if (attempt !== this.#attempt || isAbortError(error)) return { ok: false, superseded: true };
+      if (isServiceUnavailable(error)) return { ok: false, message: (error as ApiError).message, unavailable: true };
       return { ok: false, message: error instanceof ApiError ? error.message : fallbackMessage };
     } finally {
       if (this.#attemptController === controller) this.#attemptController = null;

@@ -170,7 +170,7 @@ describe('login and register', () => {
     const storage = memoryTokenStorage();
     const { store, authApi } = setup({ storage });
     authApi.login.mockRejectedValue(error);
-    await expect(store.login({ email: 'a@example.test', password: 'x' })).resolves.toEqual({ ok: false, message });
+    await expect(store.login({ email: 'a@example.test', password: 'x' })).resolves.toMatchObject({ ok: false, message });
     expect(store.getSnapshot()).toMatchObject({ status: 'unauthenticated', user: null });
     expect(storage.writes).toEqual([]);
     expect(store.getToken()).toBeNull();
