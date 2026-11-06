@@ -41,9 +41,12 @@ it('uses mobile through 768 and restores saved desktop collapse above it', async
   act(() => resize(767));
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
 });
-it('offers the public /roadmap route from desktop primary navigation', async () => {
+it('offers the public /roadmap route as a secondary link below the primary navigation', async () => {
   renderWithProviders(null, { routes, path: '/dashboard' });
-  expect(await screen.findByRole('link', { name: 'Roadmap' })).toHaveAttribute('href', '/roadmap');
+  const roadmap = await screen.findByRole('link', { name: 'Roadmap' });
+  expect(roadmap).toHaveAttribute('href', '/roadmap');
+  expect(['Dashboard', 'Credentials', 'CE Records'].map(name => screen.getByRole('link', { name }))).toHaveLength(3);
+  expect(screen.getByRole('list')).not.toContainElement(roadmap);
 });
 it('offers the public /roadmap route inside the mobile navigation drawer', async () => {
   installMatchMedia(375);
