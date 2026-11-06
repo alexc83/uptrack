@@ -3,8 +3,11 @@ import { AppShell } from '../shared/layout/app-shell';
 import { GuestOnly, RequireAuth } from '../core/auth/route-guards';
 import { RedirectPreservingSearch } from './redirect-preserving-search';
 import { LandingPage } from '../features/landing/landing-page';
+import { RouteError } from './route-error';
 
-export const routes: RouteObject[] = [
+export const routes: RouteObject[] = [{
+  errorElement: <RouteError />,
+  children: [
   {
     path: '/',
     element: <GuestOnly><LandingPage /></GuestOnly>,
@@ -52,6 +55,7 @@ export const routes: RouteObject[] = [
     path: '*',
     element: <Navigate to="/" replace />,
   },
-];
+  ],
+}];
 
 export const router = createBrowserRouter(routes);
