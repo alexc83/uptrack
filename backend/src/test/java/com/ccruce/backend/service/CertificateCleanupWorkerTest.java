@@ -12,6 +12,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -96,5 +97,18 @@ class CertificateCleanupWorkerTest {
         disabled.runScheduled();
         verify(assetService, never()).findEligibleDeletions(any(), anyInt());
         verify(assetService, never()).expireAbandonedUploads(any());
+    }
+
+    @Test
+    void workerIdWrittenToLockedByFitsVarchar64() {
+        CertificateAsset asset = pendingDeletion();
+        when(assetService.findEligibleDeletions(any(), anyInt())).thenReturn(List.of(asset));
+        when(assetService.claimDeletion(eq(asset), anyString())).thenReturn(null);
+
+        worker.processDeletionBatch();
+
+        // Regression for the Render error "value too long for type character varying(64)":
+        // the id passed as locked_by must always fit the column.
+        verify(assetService).claimDeletion(eq(asset), argThat(id -> id != null && id.length() <= 64));
     }
 }
