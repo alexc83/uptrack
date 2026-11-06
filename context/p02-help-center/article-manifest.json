@@ -1,0 +1,365 @@
+{
+  "schema_version": 1,
+  "project": "UpTrack",
+  "initiative": "P02 Public Help Center",
+  "release_status": "EDITORIALLY_APPROVED_PENDING_RUNTIME_QA",
+  "readme": "README.md",
+  "categories": [
+    {
+      "slug": "getting-started",
+      "title": "Getting Started",
+      "order": 1,
+      "article_ids": [
+        "GS-01",
+        "GS-02",
+        "GS-03"
+      ]
+    },
+    {
+      "slug": "credentials",
+      "title": "Credentials",
+      "order": 2,
+      "article_ids": [
+        "CR-01",
+        "CR-02",
+        "CR-03",
+        "CR-04"
+      ]
+    },
+    {
+      "slug": "continuing-education",
+      "title": "Continuing Education",
+      "order": 3,
+      "article_ids": [
+        "CE-01",
+        "CE-03",
+        "CE-04"
+      ]
+    },
+    {
+      "slug": "certificates",
+      "title": "Certificates",
+      "order": 4,
+      "article_ids": [
+        "CD-01",
+        "CD-02",
+        "CD-03"
+      ]
+    },
+    {
+      "slug": "dashboard",
+      "title": "Dashboard",
+      "order": 5,
+      "article_ids": [
+        "DB-01"
+      ]
+    },
+    {
+      "slug": "account-settings",
+      "title": "Account Settings",
+      "order": 6,
+      "article_ids": [
+        "AS-01",
+        "AS-02",
+        "AS-03"
+      ]
+    },
+    {
+      "slug": "troubleshooting",
+      "title": "Troubleshooting",
+      "order": 7,
+      "article_ids": [
+        "TR-01",
+        "TR-02",
+        "TR-03"
+      ]
+    }
+  ],
+  "articles": [
+    {
+      "id": "GS-01",
+      "category": "getting-started",
+      "slug": "welcome-to-uptrack",
+      "title": "Welcome to UpTrack",
+      "path": "articles/getting-started/welcome-to-uptrack.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "GS-02",
+        "GS-03",
+        "DB-01"
+      ]
+    },
+    {
+      "id": "GS-02",
+      "category": "getting-started",
+      "slug": "create-account-and-log-in",
+      "title": "Create an Account and Log In",
+      "path": "articles/getting-started/create-account-and-log-in.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "TR-01",
+        "AS-02",
+        "AS-03"
+      ]
+    },
+    {
+      "id": "GS-03",
+      "category": "getting-started",
+      "slug": "add-your-first-credential",
+      "title": "Add Your First Credential",
+      "path": "articles/getting-started/add-your-first-credential.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "CR-01",
+        "CR-03",
+        "CE-01"
+      ]
+    },
+    {
+      "id": "CR-01",
+      "category": "credentials",
+      "slug": "add-a-credential",
+      "title": "Add a Credential",
+      "path": "articles/credentials/add-a-credential.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "CR-02",
+        "CR-03",
+        "CE-01"
+      ]
+    },
+    {
+      "id": "CR-02",
+      "category": "credentials",
+      "slug": "view-search-edit-credential",
+      "title": "View, Search and Edit a Credential",
+      "path": "articles/credentials/view-search-edit-credential.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "CR-01",
+        "CR-03",
+        "CE-04"
+      ]
+    },
+    {
+      "id": "CR-03",
+      "category": "credentials",
+      "slug": "understand-credential-status",
+      "title": "Understand Credential Status and What Needs Attention",
+      "path": "articles/credentials/understand-credential-status.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "DB-01",
+        "CR-02",
+        "CE-04"
+      ]
+    },
+    {
+      "id": "CR-04",
+      "category": "credentials",
+      "slug": "delete-a-credential",
+      "title": "Delete a Credential",
+      "path": "articles/credentials/delete-a-credential.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "CR-02",
+        "CD-03",
+        "CE-04"
+      ]
+    },
+    {
+      "id": "CE-01",
+      "category": "continuing-education",
+      "slug": "record-ce-activity",
+      "title": "Record a CE Activity and Link It to a Credential",
+      "path": "articles/continuing-education/record-ce-activity.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "CD-01",
+        "CE-03",
+        "CE-04"
+      ]
+    },
+    {
+      "id": "CE-03",
+      "category": "continuing-education",
+      "slug": "view-edit-delete-ce-records",
+      "title": "View, Edit or Delete CE Records",
+      "path": "articles/continuing-education/view-edit-delete-ce-records.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "CE-01",
+        "CD-03",
+        "CE-04"
+      ]
+    },
+    {
+      "id": "CE-04",
+      "category": "continuing-education",
+      "slug": "print-ce-report",
+      "title": "Print a CE Report",
+      "path": "articles/continuing-education/print-ce-report.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "CE-01",
+        "CE-03",
+        "CR-03"
+      ]
+    },
+    {
+      "id": "DB-01",
+      "category": "dashboard",
+      "slug": "understand-dashboard",
+      "title": "Understand Your Dashboard",
+      "path": "articles/dashboard/understand-dashboard.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "CR-03",
+        "CR-02",
+        "CE-04"
+      ]
+    },
+    {
+      "id": "AS-01",
+      "category": "account-settings",
+      "slug": "update-account-information",
+      "title": "Update Your Account Information",
+      "path": "articles/account-settings/update-account-information.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "AS-02",
+        "TR-01"
+      ]
+    },
+    {
+      "id": "AS-02",
+      "category": "account-settings",
+      "slug": "change-your-password",
+      "title": "Change Your Password",
+      "path": "articles/account-settings/change-your-password.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "TR-01",
+        "AS-03",
+        "AS-01"
+      ]
+    },
+    {
+      "id": "AS-03",
+      "category": "account-settings",
+      "slug": "log-out-and-session-expiry",
+      "title": "Log Out and Session Expiry",
+      "path": "articles/account-settings/log-out-and-session-expiry.md",
+      "editorial_source": "reconstructed",
+      "review_status": "owner_accepted_reconstruction",
+      "related_article_ids": [
+        "GS-02",
+        "TR-01",
+        "AS-02"
+      ]
+    },
+    {
+      "id": "CD-01",
+      "category": "certificates",
+      "slug": "attach-certificate",
+      "title": "Attach a Certificate to a CE Record",
+      "path": "articles/certificates/attach-certificate.md",
+      "editorial_source": "recovered",
+      "review_status": "verbatim_chat_draft_with_approved_changes",
+      "related_article_ids": [
+        "CE-01",
+        "CD-02",
+        "CD-03",
+        "TR-02"
+      ]
+    },
+    {
+      "id": "CD-02",
+      "category": "certificates",
+      "slug": "view-certificate",
+      "title": "View an Uploaded Certificate",
+      "path": "articles/certificates/view-certificate.md",
+      "editorial_source": "recovered",
+      "review_status": "verbatim_chat_draft_with_approved_changes",
+      "related_article_ids": [
+        "CD-01",
+        "CD-03",
+        "CE-03",
+        "TR-02"
+      ]
+    },
+    {
+      "id": "CD-03",
+      "category": "certificates",
+      "slug": "remove-or-replace-certificate",
+      "title": "Remove or Replace a Certificate",
+      "path": "articles/certificates/remove-or-replace-certificate.md",
+      "editorial_source": "recovered",
+      "review_status": "verbatim_chat_draft_with_approved_changes",
+      "related_article_ids": [
+        "CD-01",
+        "CD-02",
+        "CE-03",
+        "TR-02"
+      ]
+    },
+    {
+      "id": "TR-01",
+      "category": "troubleshooting",
+      "slug": "cannot-log-in",
+      "title": "I Can't Log In",
+      "path": "articles/troubleshooting/cannot-log-in.md",
+      "editorial_source": "recovered",
+      "review_status": "verbatim_chat_draft_with_approved_changes",
+      "related_article_ids": [
+        "GS-02",
+        "AS-02",
+        "AS-03"
+      ]
+    },
+    {
+      "id": "TR-02",
+      "category": "troubleshooting",
+      "slug": "certificate-wont-upload",
+      "title": "My Certificate Won't Upload",
+      "path": "articles/troubleshooting/certificate-wont-upload.md",
+      "editorial_source": "recovered",
+      "review_status": "verbatim_chat_draft_with_approved_changes",
+      "related_article_ids": [
+        "CD-01",
+        "CD-02",
+        "CD-03",
+        "TR-03"
+      ]
+    },
+    {
+      "id": "TR-03",
+      "category": "troubleshooting",
+      "slug": "changes-not-saving",
+      "title": "My Changes Aren't Saving",
+      "path": "articles/troubleshooting/changes-not-saving.md",
+      "editorial_source": "recovered",
+      "review_status": "verbatim_chat_draft_with_approved_changes",
+      "related_article_ids": [
+        "CR-01",
+        "CR-02",
+        "CE-03",
+        "AS-01",
+        "AS-03"
+      ]
+    }
+  ]
+}
