@@ -40,8 +40,8 @@ export const roadmapSections: RoadmapSection[] = [
     icon: Zap,
     entries: [
       {
-        title: 'Help Center',
-        description: "Building practical guides to help users get started, manage credentials, track continuing education, and use UpTrack's features with confidence.",
+        title: 'Installable Mobile Experience (PWA)',
+        description: 'An installable, mobile-friendly UpTrack experience for iPhone and supported Android devices, with convenient home-screen access to credentials and continuing education records.',
       },
     ],
   },
@@ -51,10 +51,6 @@ export const roadmapSections: RoadmapSection[] = [
     subtitle: 'Planned near-term improvements',
     icon: Compass,
     entries: [
-      {
-        title: 'Installable Mobile Experience (PWA)',
-        description: 'Make UpTrack easier to access from a phone, with the ability to add it to your home screen for a more app-like experience.',
-      },
       {
         title: 'Expiration Reminders',
         description: 'Help users prepare for upcoming credential renewals with timely reminders about important expiration dates.',
@@ -110,6 +106,10 @@ export const roadmapSections: RoadmapSection[] = [
       {
         title: 'Refreshed Application Experience',
         description: 'Navigate UpTrack through an updated interface designed for desktop and mobile screens.',
+      },
+      {
+        title: 'Help Center',
+        description: "Browse practical guides to get started, manage credentials, track continuing education, and use UpTrack's features with confidence.",
       },
     ],
   },

@@ -1,10 +1,10 @@
 import { test, expect, capture, mockCredentialReads, mockDashboard, noOverflow, setTheme, signIn } from './helpers';
 
 const entryTitles = [
-  'Help Center',
-  'Installable Mobile Experience (PWA)', 'Expiration Reminders',
+  'Installable Mobile Experience (PWA)',
+  'Expiration Reminders',
   'Dedicated iPhone App', 'Professional Development Portfolio', 'Expanded Reporting and Insights', 'Data Export and Portability',
-  'Public Product Roadmap', 'Professional Credential Tracking', 'Continuing Education Tracking', 'Dashboard and Reports', 'Refreshed Application Experience',
+  'Public Product Roadmap', 'Professional Credential Tracking', 'Continuing Education Tracking', 'Dashboard and Reports', 'Refreshed Application Experience', 'Help Center',
 ];
 const viewports = [375, 768, 1280] as const;
 
@@ -20,8 +20,9 @@ test('guest can open the public roadmap and all 12 frozen entries render in orde
   }
   const sectionTitles = async (section: string) =>
     page.getByRole('region', { name: section, exact: true }).getByRole('heading', { level: 3 }).allTextContents();
-  expect(await sectionTitles('Now')).toEqual(['Help Center']);
-  expect(await sectionTitles('Completed')).toEqual(entryTitles.slice(7));
+  expect(await sectionTitles('Now')).toEqual(['Installable Mobile Experience (PWA)']);
+  expect(await sectionTitles('Next')).toEqual(['Expiration Reminders']);
+  expect(await sectionTitles('Completed')).toEqual(entryTitles.slice(6));
   await expect(page.getByRole('heading', { level: 3 })).toHaveCount(12);
   await expect(page.getByText('Priorities may change as UpTrack develops. Planned features are not guaranteed, and no release dates are implied.')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Back to UpTrack' })).toHaveAttribute('href', '/');
