@@ -6,7 +6,7 @@ export function RoadmapHeader() {
   const { theme, toggleTheme } = useTheme();
   const dark = theme === 'dark';
   return (
-    <header className="sticky top-0 z-10 border-b border-[var(--ut-landing-header-border)] bg-[var(--ut-landing-header-bg)] backdrop-blur-[14px]">
+    <header className="sticky top-0 z-10 border-b border-[var(--ut-landing-header-border)] bg-[var(--ut-landing-header-bg)] pt-[env(safe-area-inset-top,0px)] backdrop-blur-[14px]">
       <div className="mx-auto flex min-h-[4.25rem] w-[min(100%-3.25rem,76rem)] items-center justify-between gap-4 max-[768px]:min-h-16 max-[768px]:w-[min(100%-2rem,76rem)]">
         <Link to="/" aria-label="UpTrack home" className="inline-flex items-center gap-3 text-[var(--ut-landing-heading)] no-underline">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-[0.7rem] bg-[var(--ut-landing-primary)] text-white">

@@ -8,6 +8,7 @@ import { FormField } from '../../shared/ui/form-field';
 import { ceRecordSchema, emptyCERecordFormValues, toCERecordRequest, type CERecordFormValues } from './ce-record-form-schema';
 import { CERTIFICATE_ACCEPT, CERTIFICATE_HELP, type CERecordCredentialOption } from './ce-record-view';
 import { useCertificateUpload } from './use-certificate-upload';
+import { useRegisterWorkGuard } from '../../core/work-guard/work-guard-context';
 
 interface CERecordFormProps {
   initialValue?: CERecordFormValues;
@@ -22,13 +23,19 @@ interface CERecordFormProps {
 }
 
 export function CERecordForm({ initialValue, credentialOptions = [], showCredentialField = false, editing = false, pending, error, onSubmit, onCancel, firstFieldRef }: CERecordFormProps) {
-  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<CERecordFormValues>({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting, isDirty } } = useForm<CERecordFormValues>({
     resolver: zodResolver(ceRecordSchema),
     mode: 'onTouched',
     defaultValues: initialValue ?? emptyCERecordFormValues(),
   });
   const upload = useCertificateUpload();
   const saving = pending || isSubmitting;
+  useRegisterWorkGuard({
+    id: 'ce-record-form',
+    description: editing ? 'Edit CE record form' : 'Add CE record form',
+    isDirty: () => isDirty,
+    isBusy: () => saving,
+  });
   const certificateUrl = watch('certificateUrl');
   const certificateAssetId = watch('certificateAssetId');
   const titleRegistration = register('title');
