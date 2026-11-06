@@ -2,7 +2,20 @@ import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { routes } from '../../app/router';
 import { renderWithProviders } from '../../test/render-with-providers';
-import { roadmapAbout, roadmapIntro, roadmapSections } from './roadmap-content';
+import { roadmapAbout, roadmapIntro, roadmapSections, visibleRoadmapSections } from './roadmap-content';
+
+describe('visibleRoadmapSections', () => {
+  it('keeps every section that has entries, including Now', () => {
+    expect(visibleRoadmapSections().map((section) => section.key)).toEqual(['now', 'next', 'later', 'completed']);
+  });
+
+  it('hides a section with no entries without adding placeholders and preserves order', () => {
+    const emptyNow = roadmapSections.map((section) => (section.key === 'now' ? { ...section, entries: [] } : section));
+    const visible = visibleRoadmapSections(emptyNow);
+    expect(visible.map((section) => section.key)).toEqual(['next', 'later', 'completed']);
+    expect(visible.flatMap((section) => section.entries)).toHaveLength(11);
+  });
+});
 
 describe('RoadmapPage', () => {
   it('renders all frozen content in the approved order for a guest at /roadmap', async () => {
@@ -60,6 +73,24 @@ describe('RoadmapPage', () => {
     expect(screen.getByRole('link', { name: 'Back to UpTrack' })).toHaveAttribute('href', '/');
     expect(screen.queryByRole('link', { name: 'Roadmap' })).not.toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Roadmap' })).toBeVisible();
+  });
+
+  it('renders without a Now section when Now has no entries, and shows it when it has entries', async () => {
+    const now = roadmapSections.find((section) => section.key === 'now');
+    if (!now) throw new Error('Now section missing');
+    const saved = now.entries;
+    now.entries = [];
+    try {
+      const { unmount } = renderWithProviders(null, { routes, path: '/roadmap' });
+      expect(await screen.findByRole('heading', { level: 1, name: 'Product Roadmap' })).toBeVisible();
+      expect(screen.queryByRole('heading', { level: 2, name: 'Now' })).not.toBeInTheDocument();
+      expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Next', 'Later', 'Completed', 'About This Roadmap']);
+      unmount();
+    } finally {
+      now.entries = saved;
+    }
+    renderWithProviders(null, { routes, path: '/roadmap' });
+    expect(await screen.findByRole('heading', { level: 2, name: 'Now' })).toBeVisible();
   });
 
   it('links to the Help Center from the footer without a self-referential Roadmap link', async () => {

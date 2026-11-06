@@ -114,3 +114,8 @@ export const roadmapSections: RoadmapSection[] = [
     ],
   },
 ];
+
+/** Sections shown on the page: a section with no entries (for example Now between releases) is hidden. */
+export function visibleRoadmapSections(sections: RoadmapSection[] = roadmapSections): RoadmapSection[] {
+  return sections.filter((section) => section.entries.length > 0);
+}
