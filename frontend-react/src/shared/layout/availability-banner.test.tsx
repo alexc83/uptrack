@@ -39,3 +39,15 @@ it('does not show an outage notice for application errors such as a 401-free 500
   expect(screen.queryByText(/You are still signed in/)).not.toBeInTheDocument();
   expect(ready).not.toHaveBeenCalled();
 });
+
+it('logging out during an outage stops recovery polling and leaves no pending work', async () => {
+  vi.spyOn(dashboardApi, 'get').mockRejectedValue(new ApiError('network', 0, networkMessage));
+  const { store } = renderWithProviders(null, { routes, path: '/dashboard', session: 'authenticated' });
+  expect(await screen.findByText(/You are still signed in/)).toBeVisible();
+  await advance(15_000);
+  const polled = ready.mock.calls.length;
+  act(() => store.logout());
+  await advance(120_000);
+  expect(ready).toHaveBeenCalledTimes(polled);
+  expect(store.getSnapshot().status).toBe('unauthenticated');
+});
