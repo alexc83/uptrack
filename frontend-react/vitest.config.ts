@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      'virtual:pwa-register/react': fileURLToPath(new URL('./src/test/mocks/pwa-register.ts', import.meta.url)),
     },
   },
   // The Help Center renders the approved Markdown from ../context/p02-help-center.

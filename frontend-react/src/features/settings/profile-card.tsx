@@ -6,6 +6,7 @@ import type { UserProfileResponse } from '../../lib/dto/users';
 import { FormField } from '../../shared/ui/form-field';
 import { profileSchema, type ProfileFormValues } from './settings-schema';
 import { getSettingsErrorMessage, useUpdateProfile } from './use-settings';
+import { useRegisterWorkGuard } from '../../core/work-guard/work-guard-context';
 
 interface ProfileCardProps {
   profile: UserProfileResponse;
@@ -47,6 +48,13 @@ export function ProfileCard({ profile }: ProfileCardProps) {
     watchedEmail.trim().toLowerCase() !== profile.email.toLowerCase();
 
   const isSaving = isSubmitting || updateProfileMutation.isPending;
+
+  useRegisterWorkGuard({
+    id: 'profile-card',
+    description: 'Profile settings form',
+    isDirty: () => hasChanges,
+    isBusy: () => isSaving,
+  });
 
   async function onSubmit(values: ProfileFormValues) {
     setSaveError(null);

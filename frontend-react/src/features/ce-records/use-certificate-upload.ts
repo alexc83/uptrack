@@ -4,6 +4,7 @@ import { uploadsApi } from '../../core/api/uploads-api';
 import { useSession } from '../../core/auth/session-context';
 import type { CertificateUploadResponse } from '../../lib/dto/uploads';
 import { CERTIFICATE_TYPE_ERROR, isSupportedCertificateFile } from './ce-record-view';
+import { useRegisterWorkGuard } from '../../core/work-guard/work-guard-context';
 
 /**
  * Angular parity: handleFileSelected in ce-record-form-dialog / ce-record-detail-drawer-container.
@@ -16,6 +17,11 @@ export function useCertificateUpload() {
   const [error, setError] = useState<string>();
   const [status, setStatus] = useState<string>();
   const [uploadedFileName, setUploadedFileName] = useState<string>();
+  useRegisterWorkGuard({
+    id: 'certificate-upload',
+    description: 'Certificate upload',
+    isBusy: () => pending,
+  });
   async function upload(file: File): Promise<CertificateUploadResponse | null> {
     if (busy.current) return null;
     const guard = captureSession();

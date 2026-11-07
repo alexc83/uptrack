@@ -7,6 +7,7 @@ import { createSessionStore, type SessionStore } from '../core/auth/session-stor
 import { ThemeProvider } from '../core/theme/theme-provider';
 import { OverlayProvider } from '../shared/ui/overlay-provider';
 import { flowbiteTheme } from '../core/theme/flowbite-theme';
+import { WorkGuardProvider } from '../core/work-guard/work-guard-context';
 
 const queryClient = createQueryClient();
 const appSession = createSessionStore({ queryClient });
@@ -26,7 +27,9 @@ export function AppProviders({ children, client = queryClient, session }: AppPro
       <SessionProvider store={store}>
         <ThemeProvider>
           <FlowbiteThemeProvider theme={flowbiteTheme} applyTheme="replace">
-            <OverlayProvider>{children}</OverlayProvider>
+            <WorkGuardProvider>
+              <OverlayProvider>{children}</OverlayProvider>
+            </WorkGuardProvider>
           </FlowbiteThemeProvider>
         </ThemeProvider>
       </SessionProvider>

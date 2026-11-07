@@ -5,17 +5,24 @@ import type { RefObject } from 'react';
 import type { CredentialRequest } from '../../lib/dto/credentials';
 import { FormField } from '../../shared/ui/form-field';
 import { credentialSchema } from './credential-form-schema';
+import { useRegisterWorkGuard } from '../../core/work-guard/work-guard-context';
 
 export function CredentialForm({ initialValue, pending, error, onSubmit, onCancel, editing = false, firstFieldRef }: {
   initialValue?: CredentialRequest; pending: boolean; error?: string;
   onSubmit: (request: CredentialRequest) => Promise<void>; onCancel: () => void; editing?: boolean;
   firstFieldRef?: RefObject<HTMLInputElement | null>;
 }) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CredentialRequest>({
+  const { register, handleSubmit, formState: { errors, isSubmitting, isDirty } } = useForm<CredentialRequest>({
     resolver: zodResolver(credentialSchema), mode: 'onTouched',
     defaultValues: initialValue ?? { name: '', issuingOrganization: '', expirationDate: '' },
   });
   const saving = pending || isSubmitting;
+  useRegisterWorkGuard({
+    id: 'credential-form',
+    description: editing ? 'Edit credential form' : 'Add credential form',
+    isDirty: () => isDirty,
+    isBusy: () => saving,
+  });
   const nameRegistration = register('name');
   return <form noValidate aria-label={editing ? 'Edit credential' : 'Add credential'} className="space-y-5" onSubmit={event => { void handleSubmit(onSubmit)(event); }}>
     <fieldset disabled={saving} className="grid min-w-0 grid-cols-2 gap-4 [@media(width<=640px)]:grid-cols-1">

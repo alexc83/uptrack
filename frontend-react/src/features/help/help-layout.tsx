@@ -14,7 +14,7 @@ const roundButton = 'inline-flex min-h-11 min-w-11 cursor-pointer items-center j
 function HelpHeader({ menuOpen, onMenu, menuButtonRef }: { menuOpen: boolean; onMenu: () => void; menuButtonRef: React.Ref<HTMLButtonElement> }) {
   const { theme, toggleTheme } = useTheme();
   const dark = theme === 'dark';
-  return <header className="sticky top-0 z-20 border-b border-[var(--ut-landing-header-border)] bg-[var(--ut-landing-header-bg)] backdrop-blur-[14px]">
+  return <header className="sticky top-0 z-20 border-b border-[var(--ut-landing-header-border)] bg-[var(--ut-landing-header-bg)] pt-[env(safe-area-inset-top,0px)] backdrop-blur-[14px]">
     <div className="mx-auto flex min-h-[4.25rem] w-[min(100%-2rem,84rem)] items-center justify-between gap-3">
       <div className="flex items-center gap-3">
         <button ref={menuButtonRef} type="button" aria-label="Open Help Center menu" aria-expanded={menuOpen} aria-controls="help-sidebar" onClick={onMenu} className={`${roundButton} lg:hidden`}><Menu className="h-4 w-4" aria-hidden="true" /></button>
