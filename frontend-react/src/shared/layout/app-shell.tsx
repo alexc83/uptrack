@@ -22,6 +22,7 @@ export function AppShell() {
     setOpen(false);
     if (lastLocation.current === location.key) return;
     lastLocation.current = location.key;
+    mainRef.current?.scrollTo?.(0, 0);
     const frame = requestAnimationFrame(() => mainRef.current?.querySelector('h1')?.focus());
     return () => cancelAnimationFrame(frame);
   }, [location.key, setOpen]);
