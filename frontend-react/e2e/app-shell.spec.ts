@@ -91,6 +91,43 @@ for (const width of [375, 768]) {
   }
 }
 
+test('mobile sticky navigation: hamburger menu remains pinned, accessible, and functional during vertical scrolling', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 600 });
+  await mockDashboard(page);
+
+  for (const route of ['/dashboard', '/credentials', '/ce-records', '/settings']) {
+    await page.goto(route);
+    const trigger = page.getByRole('button', { name: 'Open navigation' });
+    await expect(trigger).toBeVisible();
+    await expect(trigger).toBeInViewport();
+
+    const initialBox = await trigger.boundingBox();
+    expect(initialBox).toBeTruthy();
+
+    // Scroll main content down
+    await page.locator('main').evaluate(element => {
+      element.scrollTop = 500;
+    });
+
+    // The hamburger button must stay pinned in viewport and at the top of the screen
+    await expect(trigger).toBeVisible();
+    await expect(trigger).toBeInViewport();
+    const scrolledBox = await trigger.boundingBox();
+    expect(scrolledBox).toBeTruthy();
+    expect(Math.abs((scrolledBox?.y ?? 0) - (initialBox?.y ?? 0))).toBeLessThanOrEqual(2);
+
+    // Verify hamburger menu opens drawer from scrolled position
+    await trigger.click();
+    const dialog = page.getByRole('dialog', { name: 'Navigation' });
+    await expect(dialog).toBeVisible();
+    await page.getByRole('button', { name: 'Close navigation' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+
+    await noOverflow(page);
+  }
+});
+
 test('767/768/769 breakpoint transitions preserve desktop collapse and remove closed navigation', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('uptrack-sidebar-collapsed', 'true'));
   await page.goto('/credentials');
