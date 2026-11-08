@@ -1,11 +1,22 @@
-import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, type RouteObject } from 'react-router-dom';
 import { AppShell } from '../shared/layout/app-shell';
 import { GuestOnly, RequireAuth } from '../core/auth/route-guards';
 import { RedirectPreservingSearch } from './redirect-preserving-search';
 import { LandingPage } from '../features/landing/landing-page';
 import { RouteError } from './route-error';
+import { PwaUpdatePrompt } from '../shared/layout/pwa-update-prompt';
+
+function RootLayout() {
+  return (
+    <>
+      <Outlet />
+      <PwaUpdatePrompt />
+    </>
+  );
+}
 
 export const routes: RouteObject[] = [{
+  element: <RootLayout />,
   errorElement: <RouteError />,
   children: [
   {

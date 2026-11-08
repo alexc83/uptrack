@@ -3,6 +3,7 @@ node_modules/
 
 # Production build output
 dist/
+dev-dist/
 
 # Test output & Playwright reports
 coverage/
