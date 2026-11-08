@@ -49,7 +49,3 @@ export class WorkGuardRegistry {
 }
 
 export const globalWorkGuard = new WorkGuardRegistry();
-
-if (typeof window !== 'undefined') {
-  (window as unknown as { __workGuard?: WorkGuardRegistry }).__workGuard = globalWorkGuard;
-}
